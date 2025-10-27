@@ -551,8 +551,4 @@ Ajeer.mobile/windows/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 app.*.map.json
-<<<<<<< HEAD
 app.*.symbols
-=======
-app.*.symbols
->>>>>>> 1b4ebd779ec2dde8fa9225cfaba202f9fda6055e
