@@ -527,3 +527,28 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/coverage/
+
+# Build folder - CRITICAL
+/build/
+
+# Platform Folders (MUST be untracked/ignored)
+# We list them explicitly relative to the root or the sub-project folder:
+Ajeer.mobile/android/
+Ajeer.mobile/ios/
+Ajeer.mobile/linux/
+Ajeer.mobile/macos/
+Ajeer.mobile/web/
+Ajeer.mobile/windows/
+
+# Flutter specific ignores that don't need a path prefix
+# if they were already present:
+**/doc/api/
+**/ios/Flutter/.last_build_id
+app.*.map.json
+app.*.symbols
