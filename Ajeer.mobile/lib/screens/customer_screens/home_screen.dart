@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'unit_type_screen.dart'; // Make sure this import is here
 
 // =========================================================================
 // WIDGET 1: THE MAIN SCREEN (STATEFUL)
@@ -375,15 +376,32 @@ class ServiceGridView extends StatelessWidget {
         ),
         itemCount: services.length,
         itemBuilder: (context, index) {
+          // --- MODIFICATION HERE ---
           final serviceName = services[index]['name'];
+          final serviceIcon = services[index]['icon']; // 1. Get the icon
+
           return ServiceGridItem(
-            icon: services[index]['icon'],
+            icon: serviceIcon, // 2. Pass icon to item
             name: serviceName,
             isHighlighted: shouldHighlight(serviceName),
             onTap: () {
               debugPrint('Service tapped: $serviceName');
+
+              // Only navigate if the service is 'Cleaning' for now
+              if (serviceName == 'Cleaning') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UnitTypeScreen(
+                      serviceName: serviceName,
+                      serviceIcon: serviceIcon, // 3. Pass icon to next screen
+                    ),
+                  ),
+                );
+              }
             },
           );
+          // --- END OF MODIFICATION ---
         },
       ),
     );
