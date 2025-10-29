@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Enums to manage the current view state
 enum ResetStep { selectMethod, enterDetails, resetPassword }
 
 enum ResetMethod { none, email, phone }
@@ -13,9 +12,6 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  // =========================================================================
-  // 1. STATE VARIABLES AND CONTROLLERS
-  // =========================================================================
   ResetStep _currentStep = ResetStep.selectMethod;
   ResetMethod _selectedMethod = ResetMethod.none;
 
@@ -31,10 +27,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   bool _isNewPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
-
-  // =========================================================================
-  // 2. HELPER METHODS
-  // =========================================================================
 
   InputDecoration _buildInputDecoration(
     String hint,
@@ -91,8 +83,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
       if (newPassword == confirmPassword) {
         debugPrint('Passwords match! Resetting password...');
-        // Implement your password reset logic here
-        // Navigator.pop(context);
       } else {
         debugPrint('Passwords do not match.');
         _confirmPasswordError = 'Passwords do not match.';
@@ -111,9 +101,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         return;
       }
 
-      // Add more specific validation if needed
       debugPrint('Sending reset code to: $input');
-      // If successful, move to the next step
       _currentStep = ResetStep.resetPassword;
     });
   }
@@ -140,16 +128,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() {
       _currentStep = ResetStep.selectMethod;
       _selectedMethod = ResetMethod.none;
-      // Clear all errors
       _emailPhoneError = null;
       _newPasswordError = null;
       _confirmPasswordError = null;
     });
   }
-
-  // =========================================================================
-  // 3. STEP WIDGET BUILDERS
-  // =========================================================================
 
   Widget _buildSelectMethod() {
     const Color primaryColor = Color(0xFF1976D2);
@@ -392,10 +375,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  // =========================================================================
-  // 4. MAIN BUILD METHOD
-  // =========================================================================
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -411,7 +390,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         child: SafeArea(
           child: Stack(
             children: [
-              // Back button
               Align(
                 alignment: Alignment.topLeft,
                 child: Padding(
@@ -426,8 +404,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 ),
               ),
-
-              // Main content area
               Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -441,7 +417,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         alignment: Alignment.topCenter,
                         clipBehavior: Clip.none,
                         children: [
-                          // The Card (Container for white background)
                           Card(
                             elevation: 8,
                             color: Colors.white,
@@ -462,8 +437,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                             ),
                           ),
-
-                          // The Icon (Overlapping)
                           Positioned(
                             top: -35,
                             child: Container(

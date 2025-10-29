@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../widgets/custom_bottom_nav_bar.dart';
 import 'unit_type_screen.dart';
 import 'bookings_screen.dart';
-
-// =========================================================================
-// WIDGET 1: THE MAIN SCREEN (STATEFUL)
-// =========================================================================
 
 class ServiceScreen extends StatefulWidget {
   const ServiceScreen({super.key});
@@ -15,9 +12,6 @@ class ServiceScreen extends StatefulWidget {
 }
 
 class _ServiceScreenState extends State<ServiceScreen> {
-  // =========================================================================
-  // 1. STATE VARIABLES AND DATA
-  // =========================================================================
   int _selectedIndex = 3;
   String _searchQuery = '';
 
@@ -53,10 +47,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  // =========================================================================
-  // 2. STATE-CHANGING METHODS (FADE TRANSITION REMOVED)
-  // =========================================================================
-
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
@@ -65,7 +55,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
   void _onNavItemTapped(int index) {
     if (index == 2) {
-      // FIXED: Navigate to BookingsScreen using standard MaterialPageRoute (no fade)
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const BookingsScreen()),
@@ -77,9 +66,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
     }
   }
 
-  // =========================================================================
-  // 3. MAIN BUILD METHOD
-  // =========================================================================
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
@@ -91,14 +77,13 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
     final screenHeight = MediaQuery.of(context).size.height;
 
-    // Layout Variables
     const double logoHeight = 105.0;
     const double overlapAdjustment = 10.0;
     final double whiteContainerTop = screenHeight * 0.30;
     final double logoTopPosition =
         whiteContainerTop - logoHeight + overlapAdjustment;
 
-    final double navBarHeight = 56.0 + 20.0;
+    const double navBarHeight = 56.0 + 20.0;
     const double outerBottomMargin = 10.0;
     final double bottomNavClearance =
         navBarHeight +
@@ -110,17 +95,11 @@ class _ServiceScreenState extends State<ServiceScreen> {
       body: Stack(
         children: [
           _buildBackgroundGradient(whiteContainerTop),
-
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
           ),
-
           SearchHeader(onChanged: _onSearchChanged),
-
-          // NOTE: The original code references a local image 'assets/image/home.png'
-          // which is not included in this code block and may not resolve.
-          // This part of the code is kept as-is but might throw an error if the asset is missing.
           _buildHomeImage(logoTopPosition, logoHeight),
         ],
       ),
@@ -131,10 +110,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
       ),
     );
   }
-
-  // =========================================================================
-  // 4. PRIVATE BUILD HELPERS
-  // =========================================================================
 
   Widget _buildBackgroundGradient(double containerTop) {
     return Align(
@@ -153,8 +128,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
   }
 
   Widget _buildHomeImage(double logoTopPosition, double logoHeight) {
-    // Keeping this structure, assuming 'assets/image/home.png' exists.
-    // If it doesn't, this will throw an error and you should replace it with a standard placeholder.
     return Positioned(
       top: logoTopPosition,
       left: 0,
@@ -210,7 +183,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
                 ),
               ),
             ),
-
             Expanded(
               child: ServiceGridView(
                 services: services,
@@ -225,13 +197,28 @@ class _ServiceScreenState extends State<ServiceScreen> {
   }
 }
 
-// =========================================================================
-// WIDGET 2: SEARCH HEADER (STATELESS)
-// =========================================================================
 class SearchHeader extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   const SearchHeader({super.key, required this.onChanged});
+
+  Widget _buildAjeerTitle() {
+    return const Text(
+      'Ajeer',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 34,
+        fontWeight: FontWeight.w900,
+        shadows: [
+          Shadow(
+            blurRadius: 2.0,
+            color: Colors.black26,
+            offset: Offset(1.0, 1.0),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -242,25 +229,10 @@ class SearchHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 8.0, bottom: 8.0),
-            child: Text(
-              'Ajeer',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 34,
-                fontWeight: FontWeight.w900,
-                shadows: [
-                  Shadow(
-                    blurRadius: 2.0,
-                    color: Colors.black26,
-                    offset: Offset(1.0, 1.0),
-                  ),
-                ],
-              ),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
+            child: _buildAjeerTitle(),
           ),
-
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -269,12 +241,9 @@ class SearchHeader extends StatelessWidget {
                 icon: const Icon(Icons.menu, color: Colors.white),
                 onPressed: () {
                   debugPrint('Menu icon tapped!');
-                  // TODO: Add navigation to SettingsScreen here
                 },
               ),
-
               const SizedBox(width: 4.0),
-
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
@@ -326,9 +295,6 @@ class SearchHeader extends StatelessWidget {
   }
 }
 
-// =========================================================================
-// WIDGET 3: SERVICE GRID VIEW (STATELESS)
-// =========================================================================
 class ServiceGridView extends StatelessWidget {
   final List<Map<String, dynamic>> services;
   final String searchQuery;
@@ -372,7 +338,6 @@ class ServiceGridView extends StatelessWidget {
               debugPrint('Service tapped: $serviceName');
 
               if (serviceName == 'Cleaning') {
-                // NOTE: The UnitTypeScreen is assumed to be defined elsewhere as per imports.
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -391,114 +356,6 @@ class ServiceGridView extends StatelessWidget {
   }
 }
 
-// =========================================================================
-// WIDGET 4: CUSTOM BOTTOM NAV BAR (LOCAL)
-// =========================================================================
-class CustomBottomNavBar extends StatelessWidget {
-  final List<Map<String, dynamic>> items;
-  final int selectedIndex;
-  final ValueChanged<int> onIndexChanged;
-
-  const CustomBottomNavBar({
-    super.key,
-    required this.items,
-    required this.selectedIndex,
-    required this.onIndexChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const double verticalPadding = 6.0;
-    const double horizontalPadding = 17.0;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        horizontalPadding,
-        0,
-        horizontalPadding,
-        25.0,
-      ),
-      child: Container(
-        height: kBottomNavigationBarHeight + verticalPadding * 2,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(50.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.25),
-              spreadRadius: 2,
-              blurRadius: 7,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: items.asMap().entries.map((entry) {
-            int index = entry.key;
-            Map<String, dynamic> item = entry.value;
-            bool isSelected = index == selectedIndex;
-
-            bool hasNotification = (item['notificationCount'] ?? 0) > 0;
-
-            return Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  onIndexChanged(index);
-                },
-                behavior: HitTestBehavior.translucent,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 5.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Icon(
-                            isSelected ? item['activeIcon'] : item['icon'],
-                            size: 28.0,
-                            color: isSelected ? Colors.blue : Colors.grey,
-                          ),
-                          if (hasNotification)
-                            Positioned(
-                              top: -2,
-                              right: -4,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item['label'],
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isSelected ? Colors.blue : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-}
-
-// =========================================================================
-// WIDGET 5: SERVICE GRID ITEM (STATELESS) - FIXED FOR TEXT OVERFLOW
-// =========================================================================
 class ServiceGridItem extends StatelessWidget {
   final IconData? icon;
   final String name;
@@ -525,8 +382,7 @@ class ServiceGridItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Column(
-        mainAxisSize:
-            MainAxisSize.min, // Added for better vertical constraint handling
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: iconContainerSize,
@@ -548,7 +404,6 @@ class ServiceGridItem extends StatelessWidget {
             child: Icon(icon, size: iconSize, color: primaryColor),
           ),
           const SizedBox(height: 8),
-          // FIX: Wrap the Text widget in a Flexible widget and set maxLines
           Flexible(
             child: Text(
               name,
@@ -558,8 +413,8 @@ class ServiceGridItem extends StatelessWidget {
                 color: isHighlighted ? primaryColor : Colors.black87,
               ),
               textAlign: TextAlign.center,
-              maxLines: 2, // Allows "Pest Control" or "AC Repair" to wrap
-              overflow: TextOverflow.ellipsis, // Prevents overflow errors
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

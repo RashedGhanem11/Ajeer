@@ -1,4 +1,3 @@
-// lib/screens/signup_screen.dart
 import 'package:flutter/material.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -9,9 +8,6 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  // =========================================================================
-  // 1. STATE VARIABLES AND CONTROLLERS
-  // =========================================================================
   final _formKey = GlobalKey<FormState>();
 
   final _firstNameController = TextEditingController();
@@ -34,9 +30,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     borderSide: BorderSide(color: Colors.red, width: 2.5),
   );
 
-  // =========================================================================
-  // 2. LIFECYCLE METHODS
-  // =========================================================================
   @override
   void dispose() {
     _firstNameController.dispose();
@@ -48,9 +41,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  // =========================================================================
-  // 3. MAIN BUILD METHOD
-  // =========================================================================
+  void _handleSignUp() {
+    if (_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Sign Up Successful!')));
+      debugPrint("Sign Up Successful!");
+      // Optionally navigate to Home or Login after successful sign up
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -71,10 +71,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     );
   }
-
-  // =========================================================================
-  // 4. WIDGET BUILDER METHODS
-  // =========================================================================
 
   Widget _buildHeaderGradient(double screenHeight) {
     return Container(
@@ -206,7 +202,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // Reusable decoration for all input fields
   InputDecoration _createInputDecoration({
     required String hint,
     required IconData icon,
@@ -392,14 +387,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-              if (_formKey.currentState!.validate()) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Sign Up Successful!')),
-                );
-                debugPrint("Sign Up Successful!");
-              }
-            },
+            onTap: _handleSignUp,
             borderRadius: BorderRadius.circular(30.0),
             child: const Padding(
               padding: EdgeInsets.symmetric(vertical: 14.0),

@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../widgets/custom_bottom_nav_bar.dart';
 import 'home_screen.dart';
-
-// =========================================================================
-// WIDGET 1: THE BOOKINGS SCREEN (STATEFUL)
-// =========================================================================
 
 class BookingsScreen extends StatefulWidget {
   const BookingsScreen({super.key});
@@ -15,25 +12,19 @@ class BookingsScreen extends StatefulWidget {
 
 class _BookingsScreenState extends State<BookingsScreen>
     with SingleTickerProviderStateMixin {
-  // =========================================================================
-  // 1. STATE VARIABLES AND DATA
-  // =========================================================================
   int _selectedIndex = 2;
   late TabController _tabController;
 
   bool _isSelectionMode = false;
   final Set<int> _selectedBookingIndices = {};
-
-  final List<Map<String, dynamic>> pendingBookings = const [
+  final List<Map<String, dynamic>> pendingBookings = [
     {'provider': 'Ahmad M.', 'service': 'Cleaning, Deep cleaning'},
     {'provider': 'Sara B.', 'service': 'Gardening, Grass cutting'},
   ];
-
-  final List<Map<String, dynamic>> activeBookings = const [
+  final List<Map<String, dynamic>> activeBookings = [
     {'provider': 'Fatima K.', 'service': 'Plumbing, Pipe fix'},
   ];
-
-  final List<Map<String, dynamic>> closedBookings = const [
+  final List<Map<String, dynamic>> closedBookings = [
     {
       'provider': 'Khalid S.',
       'service': 'AC Repair, Full service',
@@ -66,10 +57,6 @@ class _BookingsScreenState extends State<BookingsScreen>
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  // =========================================================================
-  // 2. INIT & DISPOSE
-  // =========================================================================
-
   @override
   void initState() {
     super.initState();
@@ -90,10 +77,6 @@ class _BookingsScreenState extends State<BookingsScreen>
     super.dispose();
   }
 
-  // =========================================================================
-  // 3. STATE-CHANGING METHODS (NAVIGATION FIXED)
-  // =========================================================================
-
   void _onNavItemTapped(int index) {
     if (_isSelectionMode) {
       setState(() {
@@ -103,7 +86,6 @@ class _BookingsScreenState extends State<BookingsScreen>
     }
 
     if (index == 3) {
-      // Navigate to Home without fade transition
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ServiceScreen()),
@@ -152,9 +134,6 @@ class _BookingsScreenState extends State<BookingsScreen>
     });
   }
 
-  // =========================================================================
-  // 4. MAIN BUILD METHOD
-  // =========================================================================
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
@@ -168,13 +147,11 @@ class _BookingsScreenState extends State<BookingsScreen>
 
     const double logoHeight = 105.0;
     const double overlapAdjustment = 10.0;
-
-    // --- ADJUSTED: Raise white container up (0.30 -> 0.25) ---
     final double whiteContainerTop = screenHeight * 0.25;
     final double logoTopPosition =
         whiteContainerTop - logoHeight + overlapAdjustment;
 
-    final double navBarHeight = 56.0 + 20.0;
+    const double navBarHeight = 56.0 + 20.0;
     const double outerBottomMargin = 10.0;
     final double bottomNavClearance =
         navBarHeight +
@@ -222,10 +199,6 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  // =========================================================================
-  // 5. PRIVATE BUILD HELPERS
-  // =========================================================================
-
   Widget _buildBackgroundGradient(double containerTop) {
     return Align(
       alignment: Alignment.topCenter,
@@ -242,32 +215,30 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  // --- MODIFIED: Removed the back button Align widget ---
+  Widget _buildAjeerTitle() {
+    return const Text(
+      'Ajeer',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 34,
+        fontWeight: FontWeight.w900,
+        shadows: [
+          Shadow(
+            blurRadius: 2.0,
+            color: Colors.black26,
+            offset: Offset(1.0, 1.0),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBookingsHeader(BuildContext context) {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 5,
       left: 10,
       right: 10,
-      child: const Stack(
-        alignment: Alignment.center,
-        children: [
-          Text(
-            'Ajeer',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 34,
-              fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  blurRadius: 2.0,
-                  color: Colors.black26,
-                  offset: Offset(1.0, 1.0),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      child: Stack(alignment: Alignment.center, children: [_buildAjeerTitle()]),
     );
   }
 
@@ -328,7 +299,6 @@ class _BookingsScreenState extends State<BookingsScreen>
               ),
             ),
             const SizedBox(height: 15.0),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: _CustomTabBar(
@@ -338,9 +308,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                 closedCount: closedBookings.length,
               ),
             ),
-
             const SizedBox(height: 10.0),
-
             Expanded(
               child: TabBarView(
                 controller: _tabController,
@@ -409,9 +377,6 @@ class _BookingsScreenState extends State<BookingsScreen>
   }
 }
 
-// =========================================================================
-// WIDGET 2: CUSTOM TAB BAR (STATEFUL)
-// =========================================================================
 class _CustomTabBar extends StatefulWidget {
   final TabController tabController;
   final int activeCount;
@@ -512,7 +477,7 @@ class _CustomTabBarState extends State<_CustomTabBar> {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  const SizedBox(width: 8), // Small spacer for text and dot
+                  const SizedBox(width: 8),
                   Text(
                     text,
                     style: TextStyle(
@@ -522,7 +487,6 @@ class _CustomTabBarState extends State<_CustomTabBar> {
                       color: isSelected ? Colors.black87 : Colors.grey[600],
                     ),
                   ),
-
                   if (count > 0)
                     Positioned(
                       top: -14,
@@ -554,12 +518,8 @@ class _CustomTabBarState extends State<_CustomTabBar> {
   }
 }
 
-// Enum to define booking status
 enum _BookingStatus { active, pending, closed }
 
-// =========================================================================
-// WIDGET 3: BOOKING ITEM (STATELESS)
-// =========================================================================
 class _BookingItem extends StatelessWidget {
   final String providerName;
   final String serviceName;
@@ -695,7 +655,6 @@ class _BookingItem extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 1. Avatar
               CircleAvatar(
                 radius: 24,
                 backgroundColor: avatarColor,
@@ -709,8 +668,6 @@ class _BookingItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // 2. Text Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -731,8 +688,6 @@ class _BookingItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-
-              // 3. Trailing Widgets
               _buildTrailingWidget(context),
             ],
           ),
@@ -741,9 +696,6 @@ class _BookingItem extends StatelessWidget {
     );
   }
 
-  // ===============================================================
-  // ===== TRAILING WIDGET BUILDER =====
-  // ===============================================================
   Widget _buildTrailingWidget(BuildContext context) {
     const Color primaryBlue = Color(0xFF1976D2);
     const Color primaryRed = Color(0xFFD32F2F);
@@ -869,111 +821,5 @@ class _BookingItem extends StatelessWidget {
           ),
         );
     }
-  }
-}
-
-// =========================================================================
-// WIDGET 4: CUSTOM BOTTOM NAV BAR (LOCAL)
-// =========================================================================
-class CustomBottomNavBar extends StatelessWidget {
-  final List<Map<String, dynamic>> items;
-  final int selectedIndex;
-  final ValueChanged<int> onIndexChanged;
-
-  const CustomBottomNavBar({
-    Key? key,
-    required this.items,
-    required this.selectedIndex,
-    required this.onIndexChanged,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    const double verticalPadding = 6.0;
-    const double horizontalPadding = 17.0;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        horizontalPadding,
-        0,
-        horizontalPadding,
-        25.0,
-      ),
-      child: Container(
-        height: kBottomNavigationBarHeight + verticalPadding * 2,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(50.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.25),
-              spreadRadius: 2,
-              blurRadius: 7,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: items.asMap().entries.map((entry) {
-            int index = entry.key;
-            Map<String, dynamic> item = entry.value;
-            bool isSelected = index == selectedIndex;
-
-            // Check for notifications
-            bool hasNotification = (item['notificationCount'] ?? 0) > 0;
-
-            return Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  onIndexChanged(index); // Use the callback
-                },
-                behavior: HitTestBehavior.translucent,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 5.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Icon(
-                            isSelected ? item['activeIcon'] : item['icon'],
-                            size: 28.0,
-                            color: isSelected ? Colors.blue : Colors.grey,
-                          ),
-                          if (hasNotification)
-                            Positioned(
-                              top: -2,
-                              right: -4,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item['label'],
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isSelected ? Colors.blue : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
   }
 }

@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import '../../widgets/custom_bottom_nav_bar.dart';
 import 'date_time_screen.dart';
-import 'bookings_screen.dart'; // <-- ADDED: Import BookingsScreen
-
-// =========================================================================
-// WIDGET 1: THE UNIT TYPE SCREEN (STATEFUL)
-// =========================================================================
+import 'bookings_screen.dart';
 
 class UnitTypeScreen extends StatefulWidget {
   final String serviceName;
@@ -23,10 +19,6 @@ class UnitTypeScreen extends StatefulWidget {
 }
 
 class _UnitTypeScreenState extends State<UnitTypeScreen> {
-  // =========================================================================
-  // 1. STATE VARIABLES AND DATA
-  // =========================================================================
-
   int _selectedIndex = 3;
   final List<Map<String, dynamic>> navItems = [
     {
@@ -58,16 +50,10 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
     'carpet cleaning',
   ];
 
-  // =========================================================================
-  // 2. STATE-CHANGING METHODS (NAVIGATION FIXED)
-  // =========================================================================
-
   void _onNavItemTapped(int index) {
     if (index == 3) {
-      // Navigate to Home
       Navigator.popUntil(context, (route) => route.isFirst);
     } else if (index == 2) {
-      // FIXED: Navigate to Bookings Screen
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const BookingsScreen()),
@@ -83,16 +69,34 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
   void _onUnitTypeTapped(String unitType) {
     setState(() {
       if (_selectedUnitType == unitType) {
-        _selectedUnitType = null; // Allow deselection
+        _selectedUnitType = null;
       } else {
-        _selectedUnitType = unitType; // Select new one
+        _selectedUnitType = unitType;
       }
     });
   }
 
-  // =========================================================================
-  // 3. MAIN BUILD METHOD
-  // =========================================================================
+  void _onNextTap() {
+    if (_selectedUnitType != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DateTimeScreen(
+            serviceName: widget.serviceName,
+            unitType: _selectedUnitType!,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a unit type first.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
@@ -105,16 +109,14 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // Layout Variables
     const double logoHeight = 105.0;
     const double overlapAdjustment = 10.0;
     final double whiteContainerTop = screenHeight * 0.30;
     final double logoTopPosition =
         whiteContainerTop - logoHeight + overlapAdjustment;
 
-    // Bottom Nav Bar clearance
-    final double navBarHeight = 56.0 + 20.0;
-    final double outerBottomMargin = 10.0;
+    const double navBarHeight = 56.0 + 20.0;
+    const double outerBottomMargin = 10.0;
     final double bottomNavClearance =
         navBarHeight +
         outerBottomMargin +
@@ -125,44 +127,22 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
       body: Stack(
         children: [
           _buildBackgroundGradient(whiteContainerTop),
-
           _buildServiceIcon(
             whiteContainerTop,
             MediaQuery.of(context).padding.top,
             screenWidth,
           ),
-
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
           ),
-
           _buildHomeImage(logoTopPosition, logoHeight),
-
           UnitTypeNavigationHeader(
             onBackTap: () {
               Navigator.pop(context);
             },
-            onNextTap: () {
-              if (_selectedUnitType != null) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DateTimeScreen(
-                      serviceName: widget.serviceName,
-                      unitType: _selectedUnitType!,
-                    ),
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please select a unit type first.'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
+            onNextTap: _onNextTap,
+            isNextEnabled: _selectedUnitType != null,
           ),
         ],
       ),
@@ -173,10 +153,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
       ),
     );
   }
-
-  // =========================================================================
-  // 4. PRIVATE BUILD HELPERS
-  // =========================================================================
 
   Widget _buildBackgroundGradient(double containerTop) {
     return Align(
@@ -312,21 +288,42 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
   }
 }
 
-// =========================================================================
-// WIDGET 2: NAVIGATION HEADER (STATELESS)
-// =========================================================================
 class UnitTypeNavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
+  final bool isNextEnabled;
 
   const UnitTypeNavigationHeader({
     super.key,
     required this.onBackTap,
     required this.onNextTap,
+    this.isNextEnabled = false,
   });
+
+  Widget _buildAjeerTitle() {
+    return const Text(
+      'Ajeer',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 34,
+        fontWeight: FontWeight.w900,
+        shadows: [
+          Shadow(
+            blurRadius: 2.0,
+            color: Colors.black26,
+            offset: Offset(1.0, 1.0),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final Color nextIconColor = isNextEnabled
+        ? Colors.white
+        : Colors.white.withOpacity(0.5);
+
     return Positioned(
       top: MediaQuery.of(context).padding.top + 5,
       left: 10,
@@ -339,28 +336,11 @@ class UnitTypeNavigationHeader extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: onBackTap,
           ),
-          const Text(
-            'Ajeer',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 34,
-              fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  blurRadius: 2.0,
-                  color: Colors.black26,
-                  offset: Offset(1.0, 1.0),
-                ),
-              ],
-            ),
-          ),
+          _buildAjeerTitle(),
           IconButton(
             iconSize: 28.0,
-            icon: Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white.withOpacity(0.5),
-            ),
-            onPressed: onNextTap,
+            icon: Icon(Icons.arrow_forward_ios, color: nextIconColor),
+            onPressed: isNextEnabled ? onNextTap : null,
           ),
         ],
       ),
@@ -368,9 +348,6 @@ class UnitTypeNavigationHeader extends StatelessWidget {
   }
 }
 
-// =========================================================================
-// WIDGET 3: UNIT TYPE LIST VIEW (STATELESS)
-// =========================================================================
 class UnitTypeListView extends StatelessWidget {
   final List<String> unitTypes;
   final String? selectedUnitType;
@@ -411,9 +388,6 @@ class UnitTypeListView extends StatelessWidget {
   }
 }
 
-// =========================================================================
-// WIDGET 4: SELECTABLE UNIT ITEM (STATELESS)
-// =========================================================================
 class SelectableUnitItem extends StatelessWidget {
   final String name;
   final bool isSelected;
@@ -480,111 +454,6 @@ class SelectableUnitItem extends StatelessWidget {
               color: isSelected ? Colors.greenAccent : Colors.grey[400],
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// =========================================================================
-// WIDGET 5: CUSTOM BOTTOM NAV BAR (LOCAL)
-// =========================================================================
-class CustomBottomNavBar extends StatelessWidget {
-  final List<Map<String, dynamic>> items;
-  final int selectedIndex;
-  final ValueChanged<int> onIndexChanged;
-
-  const CustomBottomNavBar({
-    super.key,
-    required this.items,
-    required this.selectedIndex,
-    required this.onIndexChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const double verticalPadding = 6.0;
-    const double horizontalPadding = 17.0;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        horizontalPadding,
-        0,
-        horizontalPadding,
-        25.0,
-      ),
-      child: Container(
-        height: kBottomNavigationBarHeight + verticalPadding * 2,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(50.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.25),
-              spreadRadius: 2,
-              blurRadius: 7,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: items.asMap().entries.map((entry) {
-            int index = entry.key;
-            Map<String, dynamic> item = entry.value;
-            bool isSelected = index == selectedIndex;
-
-            bool hasNotification = (item['notificationCount'] ?? 0) > 0;
-
-            return Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  onIndexChanged(index); // Use the callback
-                },
-                behavior: HitTestBehavior.translucent,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 5.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Icon(
-                            isSelected ? item['activeIcon'] : item['icon'],
-                            size: 28.0,
-                            color: isSelected ? Colors.blue : Colors.grey,
-                          ),
-                          if (hasNotification)
-                            Positioned(
-                              top: -2,
-                              right: -4,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item['label'],
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isSelected ? Colors.blue : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
         ),
       ),
     );

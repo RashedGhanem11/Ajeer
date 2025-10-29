@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import '../../widgets/custom_bottom_nav_bar.dart';
 
-import 'bookings_screen.dart'; // <-- ADDED: Import BookingsScreen
-
-// =========================================================================
-// WIDGET 1: THE DATE TIME SCREEN (STATEFUL)
-// =========================================================================
+import 'bookings_screen.dart';
 
 class DateTimeScreen extends StatefulWidget {
   final String serviceName;
@@ -23,10 +20,6 @@ class DateTimeScreen extends StatefulWidget {
 }
 
 class _DateTimeScreenState extends State<DateTimeScreen> {
-  // =========================================================================
-  // 1. STATE VARIABLES AND DATA
-  // =========================================================================
-
   int _selectedIndex = 3;
   final List<Map<String, dynamic>> navItems = [
     {
@@ -59,16 +52,10 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     _days = List.generate(30, (i) => DateTime.now().add(Duration(days: i)));
   }
 
-  // =========================================================================
-  // 2. STATE-CHANGING METHODS (NAVIGATION FIXED)
-  // =========================================================================
-
   void _onNavItemTapped(int index) {
     if (index == 3) {
-      // Go back to the root (HomeScreen)
       Navigator.popUntil(context, (route) => route.isFirst);
     } else if (index == 2) {
-      // FIXED: Navigate to Bookings Screen
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const BookingsScreen()),
@@ -153,9 +140,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     }
   }
 
-  // =========================================================================
-  // 3. MAIN BUILD METHOD
-  // =========================================================================
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
@@ -167,16 +151,14 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
 
     final screenHeight = MediaQuery.of(context).size.height;
 
-    // Layout Variables
     const double logoHeight = 105.0;
     const double overlapAdjustment = 10.0;
     final double whiteContainerTop = screenHeight * 0.30;
     final double logoTopPosition =
         whiteContainerTop - logoHeight + overlapAdjustment;
 
-    // Bottom Nav Bar clearance
-    final double navBarHeight = 56.0 + 20.0;
-    final double outerBottomMargin = 10.0;
+    const double navBarHeight = 56.0 + 20.0;
+    const double outerBottomMargin = 10.0;
     final double bottomNavClearance =
         navBarHeight +
         outerBottomMargin +
@@ -187,26 +169,21 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       body: Stack(
         children: [
           _buildBackgroundGradient(whiteContainerTop),
-
           _buildServiceIcon(
             whiteContainerTop,
             MediaQuery.of(context).padding.top,
           ),
-
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
           ),
-
           _buildHomeImage(logoTopPosition, logoHeight),
-
           UnitTypeNavigationHeader(
             onBackTap: () {
               Navigator.pop(context);
             },
             onNextTap: () {
               debugPrint('Next arrow tapped!');
-              // TODO: Navigate to the next screen (e.g., Address Screen)
             },
           ),
         ],
@@ -218,10 +195,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       ),
     );
   }
-
-  // =========================================================================
-  // 4. PRIVATE BUILD HELPERS
-  // =========================================================================
 
   Widget _buildBackgroundGradient(double containerTop) {
     return Align(
@@ -353,11 +326,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  // =========================================================================
-  // 5. NEW PRIVATE BUILD HELPERS (for date/time content)
-  // =========================================================================
-
-  /// Main content area inside the white container
   Widget _buildDateTimeContent(double bottomNavClearance) {
     return SingleChildScrollView(
       padding: EdgeInsets.only(
@@ -371,8 +339,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         children: [
           _buildTopControls(),
           const SizedBox(height: 15),
-
-          // Conditional content based on mode
           if (_selectionMode == 'Custom') ...[
             _buildDateDisplay(),
             _buildDaySlider(),
@@ -386,7 +352,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  /// The "Custom" / "Instant" buttons
   Widget _buildTopControls() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -398,7 +363,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  /// The date display and edit button
   Widget _buildDateDisplay() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -445,7 +409,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  /// Helper for the "Custom" and "Instant" chips
   Widget _buildModeChip(String label, bool isSelected) {
     return ChoiceChip(
       label: Text(label),
@@ -469,7 +432,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  /// The horizontal list of selectable days
   Widget _buildDaySlider() {
     return Container(
       height: 95,
@@ -490,7 +452,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  /// A single item in the horizontal day list
   Widget _buildDayItem(DateTime date, bool isSelected) {
     return GestureDetector(
       onTap: () => _onDateSelected(date),
@@ -555,7 +516,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  /// The button-like display for selecting time
   Widget _buildTimeSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -602,7 +562,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  /// The card shown for "Instant" booking
   Widget _buildInstantBookingCard() {
     return Container(
       margin: const EdgeInsets.only(top: 20),
@@ -633,9 +592,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 }
 
-// =========================================================================
-// WIDGET 2: NAVIGATION HEADER (STATELESS)
-// =========================================================================
 class UnitTypeNavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
@@ -645,6 +601,24 @@ class UnitTypeNavigationHeader extends StatelessWidget {
     required this.onBackTap,
     required this.onNextTap,
   });
+
+  Widget _buildAjeerTitle() {
+    return const Text(
+      'Ajeer',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 34,
+        fontWeight: FontWeight.w900,
+        shadows: [
+          Shadow(
+            blurRadius: 2.0,
+            color: Colors.black26,
+            offset: Offset(1.0, 1.0),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -660,132 +634,13 @@ class UnitTypeNavigationHeader extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: onBackTap,
           ),
-          const Text(
-            'Ajeer',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 34,
-              fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  blurRadius: 2.0,
-                  color: Colors.black26,
-                  offset: Offset(1.0, 1.0),
-                ),
-              ],
-            ),
-          ),
+          _buildAjeerTitle(),
           IconButton(
             iconSize: 28.0,
             icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
             onPressed: onNextTap,
           ),
         ],
-      ),
-    );
-  }
-}
-
-// =========================================================================
-// WIDGET 3: CUSTOM BOTTOM NAV BAR (LOCAL)
-// =========================================================================
-class CustomBottomNavBar extends StatelessWidget {
-  final List<Map<String, dynamic>> items;
-  final int selectedIndex;
-  final ValueChanged<int> onIndexChanged;
-
-  const CustomBottomNavBar({
-    super.key,
-    required this.items,
-    required this.selectedIndex,
-    required this.onIndexChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const double verticalPadding = 6.0;
-    const double horizontalPadding = 17.0;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        horizontalPadding,
-        0,
-        horizontalPadding,
-        25.0,
-      ),
-      child: Container(
-        height: kBottomNavigationBarHeight + verticalPadding * 2,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(50.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.25),
-              spreadRadius: 2,
-              blurRadius: 7,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: items.asMap().entries.map((entry) {
-            int index = entry.key;
-            Map<String, dynamic> item = entry.value;
-            bool isSelected = index == selectedIndex;
-
-            bool hasNotification = (item['notificationCount'] ?? 0) > 0;
-
-            return Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  onIndexChanged(index); // Use the callback
-                },
-                behavior: HitTestBehavior.translucent,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 5.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Icon(
-                            isSelected ? item['activeIcon'] : item['icon'],
-                            size: 28.0,
-                            color: isSelected ? Colors.blue : Colors.grey,
-                          ),
-                          if (hasNotification)
-                            Positioned(
-                              top: -2,
-                              right: -4,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item['label'],
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isSelected ? Colors.blue : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
       ),
     );
   }

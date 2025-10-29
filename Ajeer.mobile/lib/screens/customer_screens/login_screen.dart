@@ -11,9 +11,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // =========================================================================
-  // 1. STATE VARIABLES AND CONTROLLERS
-  // =========================================================================
   bool _isPasswordVisible = false;
 
   final TextEditingController _emailController = TextEditingController();
@@ -21,7 +18,6 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _emailError;
   String? _passwordError;
 
-  // Reusable border style for input fields
   final OutlineInputBorder _inputBorder = OutlineInputBorder(
     borderRadius: BorderRadius.circular(12.0),
     borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
@@ -32,9 +28,6 @@ class _LoginScreenState extends State<LoginScreen> {
     borderSide: BorderSide(color: Colors.red, width: 2.5),
   );
 
-  // =========================================================================
-  // 2. LIFECYCLE METHODS
-  // =========================================================================
   @override
   void dispose() {
     _emailController.dispose();
@@ -42,46 +35,15 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // =========================================================================
-  // 3. LOGIC METHODS
-  // =========================================================================
-
   void _validateAndLogin() {
-    // Validation is bypassed for testing
-    /*
-    bool hasError = false;
-    setState(() {
-      _emailError = null;
-      _passwordError = null;
-
-      if (_emailController.text.isEmpty) {
-        _emailError = "Email or phone number is required";
-        hasError = true;
-      }
-
-      if (_passwordController.text.isEmpty) {
-        _passwordError = "Password is required";
-        hasError = true;
-      }
-    });
-
-    if (hasError) {
-      return; 
-    }
-    */
-
     debugPrint("Validation bypassed for testing! Navigating to Home Screen...");
 
-    // Navigate to the Home Screen (ServiceScreen)
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const ServiceScreen()),
     );
   }
 
-  // =========================================================================
-  // 4. MAIN BUILD METHOD
-  // =========================================================================
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -101,10 +63,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
-  // =========================================================================
-  // 5. WIDGET BUILDER METHODS (UI Components)
-  // =========================================================================
 
   Widget _buildHeaderGradient(double screenHeight) {
     return Container(
@@ -284,7 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         },
         child: const Text(
-          "forgot?",
+          "Forgot?",
           style: TextStyle(color: Colors.blue, fontSize: 14.0),
         ),
       ),
