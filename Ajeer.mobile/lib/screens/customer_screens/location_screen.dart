@@ -1,27 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
-import 'date_time_screen.dart';
 import 'bookings_screen.dart';
+import 'date_time_screen.dart';
 
-class UnitTypeScreen extends StatefulWidget {
+class LocationScreen extends StatefulWidget {
   final String serviceName;
-  final IconData serviceIcon;
+  final String unitType;
+  final DateTime selectedDate;
+  final TimeOfDay selectedTime;
+  final String selectionMode;
 
-  const UnitTypeScreen({
+  const LocationScreen({
     super.key,
     required this.serviceName,
-    required this.serviceIcon,
+    required this.unitType,
+    required this.selectedDate,
+    required this.selectedTime,
+    required this.selectionMode,
   });
 
   @override
-  State<UnitTypeScreen> createState() => _UnitTypeScreenState();
+  State<LocationScreen> createState() => _LocationScreenState();
 }
 
-class _UnitTypeScreenState extends State<UnitTypeScreen>
-    with SingleTickerProviderStateMixin {
+class _LocationScreenState extends State<LocationScreen> {
   int _selectedIndex = 3;
-  String? _selectedUnitType;
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -43,19 +47,15 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  final List<String> _unitTypes = const [
-    'Deep Cleaning',
-    'House Keeping',
-    'Office Cleaning',
-    'move in/out cleaning',
-    'carpet cleaning',
-  ];
-
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
+  static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
+  static const Color _secondaryBlue = Color(0xFF57b2ff);
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
+  static const double _mapBorderRadius = 25.0;
+  static const double _horizontalPadding = 20.0;
 
   void _onNavItemTapped(int index) {
     if (index == 3) {
@@ -72,35 +72,30 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     }
   }
 
-  void _onUnitTypeTapped(String unitType) {
-    setState(() {
-      if (_selectedUnitType == unitType) {
-        _selectedUnitType = null;
-      } else {
-        _selectedUnitType = unitType;
-      }
-    });
+  void _onBackTap() {
+    Navigator.pop(context);
   }
 
   void _onNextTap() {
-    if (_selectedUnitType != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DateTimeScreen(
-            serviceName: widget.serviceName,
-            unitType: _selectedUnitType!,
-          ),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a unit type first.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    // Navigation placeholder for the next screen (Contact/Payment)
+  }
+
+  void _showMaximizedMap(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close Map',
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, a1, a2) {
+        return _MaximizedMapDialog(
+          mapBorderRadius: _mapBorderRadius,
+          primaryColor: _primaryBlue,
+        );
+      },
+      transitionBuilder: (context, a1, a2, child) {
+        return FadeTransition(opacity: a1, child: child);
+      },
+    );
   }
 
   @override
@@ -113,8 +108,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-
     final double whiteContainerTop = screenHeight * 0.30;
     final double logoTopPosition =
         whiteContainerTop - _logoHeight + _overlapAdjustment;
@@ -126,23 +119,16 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
       body: Stack(
         children: [
           _buildBackgroundGradient(whiteContainerTop),
-          _buildServiceIcon(
+          _buildLocationIcon(
             whiteContainerTop,
             MediaQuery.of(context).padding.top,
-            screenWidth,
           ),
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
           ),
           _buildHomeImage(logoTopPosition),
-          _UnitTypeNavigationHeader(
-            onBackTap: () {
-              Navigator.pop(context);
-            },
-            onNextTap: _onNextTap,
-            isNextEnabled: _selectedUnitType != null,
-          ),
+          _NavigationHeader(onBackTap: _onBackTap, onNextTap: _onNextTap),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -169,11 +155,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     );
   }
 
-  Widget _buildServiceIcon(
-    double containerTop,
-    double statusBarHeight,
-    double screenWidth,
-  ) {
+  Widget _buildLocationIcon(double containerTop, double statusBarHeight) {
     final double headerHeight = statusBarHeight + 60;
     final double availableHeight = containerTop - headerHeight;
     final double iconTopPosition = headerHeight + (availableHeight / 2) - 70;
@@ -186,8 +168,8 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
         height: 100.0,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [Color(0xFFc2e3ff), Color(0xFF57b2ff)],
+          gradient: LinearGradient(
+            colors: [_secondaryLightBlue, _secondaryBlue],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -200,7 +182,11 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
           ],
           border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
         ),
-        child: Icon(widget.serviceIcon, size: 60.0, color: Colors.white),
+        child: const Icon(
+          Icons.location_on_outlined,
+          size: 55.0,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -253,7 +239,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
             Padding(
               padding: const EdgeInsets.only(left: 20.0, top: 20.0),
               child: Text(
-                widget.serviceName,
+                'Pick a location',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -261,42 +247,125 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
                 ),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.only(left: 20.0, top: 4.0, bottom: 10.0),
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 20.0,
+                top: 4.0,
+                bottom: 10.0,
+              ),
               child: Text(
-                'Select unit type(s)',
-                style: TextStyle(
+                '${widget.serviceName} - ${widget.unitType}',
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
                   color: Colors.grey,
                 ),
               ),
             ),
-            Expanded(
-              child: _UnitTypeListView(
-                unitTypes: _unitTypes,
-                selectedUnitType: _selectedUnitType,
-                onUnitTypeTap: _onUnitTypeTapped,
-                bottomPadding: bottomNavClearance,
-              ),
-            ),
+            Expanded(child: _buildMapPlaceholder(bottomNavClearance)),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapPlaceholder(double bottomNavClearance) {
+    // Standard horizontal padding is 20.0 on the outer container.
+    // Applying Padding of 0.0 here and relying on the parent container's width.
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        _horizontalPadding,
+        0.0,
+        _horizontalPadding,
+        bottomNavClearance - _horizontalPadding,
+      ),
+      child: Center(
+        child: Container(
+          width: double
+              .infinity, // Allows the container to expand to the full width defined by parent padding
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(_mapBorderRadius),
+            border: Border.all(color: Colors.grey[400]!, width: 2.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: AspectRatio(
+            aspectRatio: 1 / 1.5, // Sets the height to be 1.5 times the width
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(Icons.location_on, size: 150, color: Colors.red.shade100),
+                Positioned(
+                  top: 15,
+                  right: 15,
+                  child: FloatingActionButton(
+                    mini: true,
+                    backgroundColor: _primaryBlue,
+                    onPressed: () => _showMaximizedMap(context),
+                    child: const Icon(Icons.open_in_full, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _UnitTypeNavigationHeader extends StatelessWidget {
+class _MaximizedMapDialog extends StatelessWidget {
+  final double mapBorderRadius;
+  final Color primaryColor;
+
+  const _MaximizedMapDialog({
+    required this.mapBorderRadius,
+    required this.primaryColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Container(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+            child: Center(
+              child: Icon(
+                Icons.location_on,
+                size: 200,
+                color: Colors.red.shade100,
+              ),
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 10,
+            child: FloatingActionButton(
+              mini: true,
+              backgroundColor: primaryColor,
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Icon(Icons.close_fullscreen, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
-  final bool isNextEnabled;
 
-  const _UnitTypeNavigationHeader({
-    required this.onBackTap,
-    required this.onNextTap,
-    this.isNextEnabled = false,
-  });
+  const _NavigationHeader({required this.onBackTap, required this.onNextTap});
 
   Widget _buildAjeerTitle() {
     return const Text(
@@ -333,125 +402,10 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
           _buildAjeerTitle(),
           IconButton(
             iconSize: 28.0,
-            icon: Icon(
-              Icons.arrow_forward_ios,
-              // Fix: Always use white color, letting the `onPressed` null/non-null state handle interaction.
-              color: Colors.white.withOpacity(isNextEnabled ? 1.0 : 0.5),
-            ),
-            // Fix: Restored functionality to navigate when enabled.
-            onPressed: isNextEnabled ? onNextTap : null,
+            icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+            onPressed: onNextTap,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _UnitTypeListView extends StatelessWidget {
-  final List<String> unitTypes;
-  final String? selectedUnitType;
-  final ValueChanged<String> onUnitTypeTap;
-  final double bottomPadding;
-
-  const _UnitTypeListView({
-    required this.unitTypes,
-    required this.selectedUnitType,
-    required this.onUnitTypeTap,
-    required this.bottomPadding,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: EdgeInsets.only(
-        left: 20.0,
-        right: 20.0,
-        top: 10.0,
-        bottom: bottomPadding,
-      ),
-      itemCount: unitTypes.length,
-      itemBuilder: (context, index) {
-        final unitName = unitTypes[index];
-        final bool isSelected = (selectedUnitType == unitName);
-
-        return _SelectableUnitItem(
-          name: unitName,
-          isSelected: isSelected,
-          onTap: () {
-            onUnitTypeTap(unitName);
-          },
-        );
-      },
-    );
-  }
-}
-
-class _SelectableUnitItem extends StatelessWidget {
-  final String name;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _SelectableUnitItem({
-    required this.name,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-                  colors: [Color(0xFF8CCBFF), Color(0xFF1976D2)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                )
-              : null,
-          color: isSelected ? null : Colors.grey[100],
-          borderRadius: BorderRadius.circular(15.0),
-          border: isSelected
-              ? null
-              : Border.all(color: Colors.grey[400]!, width: 1.5),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.blue.withOpacity(0.3),
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 5,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              name,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? Colors.white : Colors.grey[700],
-              ),
-            ),
-            Icon(
-              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: isSelected ? Colors.greenAccent : Colors.grey[400],
-            ),
-          ],
-        ),
       ),
     );
   }

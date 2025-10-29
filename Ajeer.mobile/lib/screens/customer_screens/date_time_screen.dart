@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
-
 import 'bookings_screen.dart';
+import 'location_screen.dart'; // New import for navigation
 
 class DateTimeScreen extends StatefulWidget {
   final String serviceName;
@@ -21,7 +21,12 @@ class DateTimeScreen extends StatefulWidget {
 
 class _DateTimeScreenState extends State<DateTimeScreen> {
   int _selectedIndex = 3;
-  final List<Map<String, dynamic>> navItems = [
+  String _selectionMode = 'Custom';
+  DateTime _selectedDate = DateTime.now();
+  TimeOfDay _selectedTime = TimeOfDay.now();
+  late List<DateTime> _days;
+
+  final List<Map<String, dynamic>> _navItems = const [
     {
       'label': 'Profile',
       'icon': Icons.person_outline,
@@ -41,10 +46,13 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  String _selectionMode = 'Custom';
-  DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = TimeOfDay.now();
-  late List<DateTime> _days;
+  static const Color _lightBlue = Color(0xFF8CCBFF);
+  static const Color _primaryBlue = Color(0xFF1976D2);
+  static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
+  static const Color _secondaryBlue = Color(0xFF57b2ff);
+  static const double _logoHeight = 105.0;
+  static const double _overlapAdjustment = 10.0;
+  static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
 
   @override
   void initState() {
@@ -64,7 +72,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       setState(() {
         _selectedIndex = index;
       });
-      debugPrint('Tapped index $index');
     }
   }
 
@@ -90,14 +97,12 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1976D2),
+              primary: _primaryBlue,
               onPrimary: Colors.white,
               onSurface: Colors.black87,
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF1976D2),
-              ),
+              style: TextButton.styleFrom(foregroundColor: _primaryBlue),
             ),
           ),
           child: child!,
@@ -118,14 +123,12 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1976D2),
+              primary: _primaryBlue,
               onPrimary: Colors.white,
               onSurface: Colors.black87,
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF1976D2),
-              ),
+              style: TextButton.styleFrom(foregroundColor: _primaryBlue),
             ),
           ),
           child: child!,
@@ -140,6 +143,21 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     }
   }
 
+  void _onNextTap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationScreen(
+          serviceName: widget.serviceName,
+          unitType: widget.unitType,
+          selectedDate: _selectedDate,
+          selectedTime: _selectedTime,
+          selectionMode: _selectionMode,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
@@ -151,18 +169,12 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
 
     final screenHeight = MediaQuery.of(context).size.height;
 
-    const double logoHeight = 105.0;
-    const double overlapAdjustment = 10.0;
     final double whiteContainerTop = screenHeight * 0.30;
     final double logoTopPosition =
-        whiteContainerTop - logoHeight + overlapAdjustment;
+        whiteContainerTop - _logoHeight + _overlapAdjustment;
 
-    const double navBarHeight = 56.0 + 20.0;
-    const double outerBottomMargin = 10.0;
     final double bottomNavClearance =
-        navBarHeight +
-        outerBottomMargin +
-        MediaQuery.of(context).padding.bottom;
+        _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       extendBody: true,
@@ -177,19 +189,17 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
           ),
-          _buildHomeImage(logoTopPosition, logoHeight),
-          UnitTypeNavigationHeader(
+          _buildHomeImage(logoTopPosition),
+          _NavigationHeader(
             onBackTap: () {
               Navigator.pop(context);
             },
-            onNextTap: () {
-              debugPrint('Next arrow tapped!');
-            },
+            onNextTap: _onNextTap,
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        items: navItems,
+      bottomNavigationBar: _CustomBottomNavBar(
+        items: _navItems,
         selectedIndex: _selectedIndex,
         onIndexChanged: _onNavItemTapped,
       ),
@@ -203,7 +213,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         height: containerTop + 50,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF8CCBFF), Color(0xFF1976D2)],
+            colors: [_lightBlue, _primaryBlue],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -225,8 +235,8 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         height: 100.0,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [Color(0xFFc2e3ff), Color(0xFF57b2ff)],
+          gradient: LinearGradient(
+            colors: [_secondaryLightBlue, _secondaryBlue],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -248,7 +258,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  Widget _buildHomeImage(double logoTopPosition, double logoHeight) {
+  Widget _buildHomeImage(double logoTopPosition) {
     return Positioned(
       top: logoTopPosition,
       left: 0,
@@ -257,7 +267,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         child: Image.asset(
           'assets/image/home.png',
           width: 140,
-          height: logoHeight,
+          height: _logoHeight,
           fit: BoxFit.contain,
         ),
       ),
@@ -417,16 +427,14 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         if (selected) _onModeSelected(label);
       },
       backgroundColor: Colors.grey[100],
-      selectedColor: const Color(0xFF1976D2),
+      selectedColor: _primaryBlue,
       checkmarkColor: Colors.white,
       labelStyle: TextStyle(
         fontWeight: FontWeight.bold,
         color: isSelected ? Colors.white : Colors.black54,
       ),
       shape: StadiumBorder(
-        side: BorderSide(
-          color: isSelected ? const Color(0xFF1976D2) : Colors.grey[400]!,
-        ),
+        side: BorderSide(color: isSelected ? _primaryBlue : Colors.grey[400]!),
       ),
       elevation: isSelected ? 3 : 0,
     );
@@ -461,7 +469,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         decoration: BoxDecoration(
           gradient: isSelected
               ? const LinearGradient(
-                  colors: [Color(0xFF8CCBFF), Color(0xFF1976D2)],
+                  colors: [_lightBlue, _primaryBlue],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 )
@@ -592,15 +600,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 }
 
-class UnitTypeNavigationHeader extends StatelessWidget {
+class _NavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
 
-  const UnitTypeNavigationHeader({
-    super.key,
-    required this.onBackTap,
-    required this.onNextTap,
-  });
+  const _NavigationHeader({required this.onBackTap, required this.onNextTap});
 
   Widget _buildAjeerTitle() {
     return const Text(
@@ -644,4 +648,12 @@ class UnitTypeNavigationHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CustomBottomNavBar extends CustomBottomNavBar {
+  const _CustomBottomNavBar({
+    required super.items,
+    required super.selectedIndex,
+    required super.onIndexChanged,
+  });
 }
