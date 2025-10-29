@@ -21,6 +21,17 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _emailError;
   String? _passwordError;
 
+  // Reusable border style for input fields
+  final OutlineInputBorder _inputBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12.0),
+    borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
+  );
+
+  final OutlineInputBorder _errorBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12.0),
+    borderSide: BorderSide(color: Colors.red, width: 2.5),
+  );
+
   // =========================================================================
   // 2. LIFECYCLE METHODS
   // =========================================================================
@@ -37,7 +48,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _validateAndLogin() {
     // Validation is bypassed for testing
-    // To enable validation, uncomment the block below:
     /*
     bool hasError = false;
     setState(() {
@@ -60,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     */
 
-    print("Validation bypassed for testing! Navigating to Home Screen...");
+    debugPrint("Validation bypassed for testing! Navigating to Home Screen...");
 
     // Navigate to the Home Screen (ServiceScreen)
     Navigator.pushReplacement(
@@ -85,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           _buildHeaderGradient(screenHeight),
           _buildTitle(),
-          _buildLoginForm(screenHeight, formTopPosition),
+          _buildLoginForm(formTopPosition),
           _buildLogo(logoTopPosition, logoHeight),
         ],
       ),
@@ -140,13 +150,11 @@ class _LoginScreenState extends State<LoginScreen> {
       top: logoTopPosition,
       left: 0,
       right: 0,
-      child: Column(
-        children: [Image.asset('assets/image/home.png', height: logoHeight)],
-      ),
+      child: Image.asset('assets/image/home.png', height: logoHeight),
     );
   }
 
-  Widget _buildLoginForm(double screenHeight, double formTopPosition) {
+  Widget _buildLoginForm(double formTopPosition) {
     return Positioned(
       top: formTopPosition,
       left: 0,
@@ -203,33 +211,37 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  InputDecoration _createInputDecoration({
+    required String hint,
+    required IconData icon,
+    Widget? suffixIcon,
+    String? error,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: Colors.grey[400]),
+      prefixIcon: Icon(icon, color: Colors.grey[500]),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: Colors.grey[100],
+      errorText: error,
+      enabledBorder: _inputBorder,
+      focusedBorder: _inputBorder.copyWith(
+        borderSide: BorderSide(color: Colors.grey[500]!, width: 2.5),
+      ),
+      errorBorder: _errorBorder,
+      focusedErrorBorder: _errorBorder,
+    );
+  }
+
   Widget _buildEmailField() {
     return TextField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
-      decoration: InputDecoration(
-        hintText: "Email or phone number",
-        hintStyle: TextStyle(color: Colors.grey[400]),
-        prefixIcon: Icon(Icons.email_outlined, color: Colors.grey[500]),
-        filled: true,
-        fillColor: Colors.grey[100],
-        errorText: _emailError,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: Colors.red, width: 2.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: Colors.red, width: 2.5),
-        ),
+      decoration: _createInputDecoration(
+        hint: "Email or phone number",
+        icon: Icons.email_outlined,
+        error: _emailError,
       ),
     );
   }
@@ -238,10 +250,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return TextField(
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
-      decoration: InputDecoration(
-        hintText: "Password",
-        hintStyle: TextStyle(color: Colors.grey[400]),
-        prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
+      decoration: _createInputDecoration(
+        hint: "Password",
+        icon: Icons.lock_outline,
+        error: _passwordError,
         suffixIcon: IconButton(
           icon: Icon(
             _isPasswordVisible
@@ -255,25 +267,6 @@ class _LoginScreenState extends State<LoginScreen> {
             });
           },
         ),
-        filled: true,
-        fillColor: Colors.grey[100],
-        errorText: _passwordError,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: Colors.red, width: 2.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: Colors.red, width: 2.5),
-        ),
       ),
     );
   }
@@ -285,7 +278,9 @@ class _LoginScreenState extends State<LoginScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
+            MaterialPageRoute(
+              builder: (context) => const ForgotPasswordScreen(),
+            ),
           );
         },
         child: const Text(

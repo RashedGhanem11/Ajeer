@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'unit_type_screen.dart'; // Make sure this import is here
+import 'unit_type_screen.dart';
+import 'bookings_screen.dart';
 
 // =========================================================================
 // WIDGET 1: THE MAIN SCREEN (STATEFUL)
-// This is your "Brain". It holds all the state.
 // =========================================================================
 
 class ServiceScreen extends StatefulWidget {
@@ -17,12 +17,11 @@ class ServiceScreen extends StatefulWidget {
 class _ServiceScreenState extends State<ServiceScreen> {
   // =========================================================================
   // 1. STATE VARIABLES AND DATA
-  // (All state and data lives here)
   // =========================================================================
   int _selectedIndex = 3;
   String _searchQuery = '';
 
-  final List<Map<String, dynamic>> services = [
+  final List<Map<String, dynamic>> services = const [
     {'name': 'Cleaning', 'icon': Icons.cleaning_services},
     {'name': 'Plumbing', 'icon': Icons.plumbing},
     {'name': 'Electrical', 'icon': Icons.electrical_services},
@@ -34,7 +33,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
     {'name': 'Carpentry', 'icon': Icons.carpenter},
   ];
 
-  final List<Map<String, dynamic>> navItems = [
+  final List<Map<String, dynamic>> navItems = const [
     {
       'label': 'Profile',
       'icon': Icons.person_outline,
@@ -49,13 +48,13 @@ class _ServiceScreenState extends State<ServiceScreen> {
       'label': 'Bookings',
       'icon': Icons.book_outlined,
       'activeIcon': Icons.book,
+      'notificationCount': 3,
     },
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
   // =========================================================================
-  // 2. STATE-CHANGING METHODS
-  // (All calls to setState() are consolidated here)
+  // 2. STATE-CHANGING METHODS (FADE TRANSITION REMOVED)
   // =========================================================================
 
   void _onSearchChanged(String query) {
@@ -65,14 +64,21 @@ class _ServiceScreenState extends State<ServiceScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    if (index == 2) {
+      // FIXED: Navigate to BookingsScreen using standard MaterialPageRoute (no fade)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const BookingsScreen()),
+      );
+    } else if (index != _selectedIndex) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   // =========================================================================
-  // 3. MAIN BUILD METHOD (Now much cleaner)
-  // (This method just assembles the pieces)
+  // 3. MAIN BUILD METHOD
   // =========================================================================
   @override
   Widget build(BuildContext context) {
@@ -92,16 +98,12 @@ class _ServiceScreenState extends State<ServiceScreen> {
     final double logoTopPosition =
         whiteContainerTop - logoHeight + overlapAdjustment;
 
-    // --- FIX FOR OVERFLOW ---
-    // This calculation is still needed by the screen to pass down
-    // to the ServiceGridView.
     final double navBarHeight = 56.0 + 20.0;
-    final double outerBottomMargin = 10.0;
+    const double outerBottomMargin = 10.0;
     final double bottomNavClearance =
         navBarHeight +
         outerBottomMargin +
         MediaQuery.of(context).padding.bottom;
-    // ------------------------
 
     return Scaffold(
       extendBody: true,
@@ -109,19 +111,16 @@ class _ServiceScreenState extends State<ServiceScreen> {
         children: [
           _buildBackgroundGradient(whiteContainerTop),
 
-          // REFACTORED: Call the new _buildWhiteContainer
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
           ),
 
-          // REFACTORED: Call the new SearchHeader widget
           SearchHeader(onChanged: _onSearchChanged),
 
           _buildHomeImage(logoTopPosition, logoHeight),
         ],
       ),
-      // REFACTORED: Call the new CustomBottomNavBar widget
       bottomNavigationBar: CustomBottomNavBar(
         items: navItems,
         selectedIndex: _selectedIndex,
@@ -132,7 +131,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
   // =========================================================================
   // 4. PRIVATE BUILD HELPERS
-  // (Simple widgets that are only used by this screen)
   // =========================================================================
 
   Widget _buildBackgroundGradient(double containerTop) {
@@ -167,8 +165,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
     );
   }
 
-  // REFACTORED: This widget is now much simpler.
-  // It only builds the white container and passes data to the ServiceGridView.
   Widget _buildWhiteContainer({
     required double containerTop,
     required double bottomNavClearance,
@@ -197,7 +193,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 15.0), // Space for overlapping logo
+            const SizedBox(height: 15.0),
             Padding(
               padding: const EdgeInsets.only(left: 20.0, top: 20.0),
               child: Text(
@@ -210,7 +206,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
               ),
             ),
 
-            // REFACTORED: The GridView is now its own widget.
             Expanded(
               child: ServiceGridView(
                 services: services,
@@ -227,8 +222,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
 // =========================================================================
 // WIDGET 2: SEARCH HEADER (STATELESS)
-// This widget only knows how to build the search bar.
-// It reports changes via the `onChanged` callback.
 // =========================================================================
 class SearchHeader extends StatelessWidget {
   final ValueChanged<String> onChanged;
@@ -237,10 +230,8 @@ class SearchHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // This is the exact same code from your _buildSearchOverlay method.
     return Positioned(
       top: MediaQuery.of(context).padding.top,
-      // MODIFICATION: Adjust left padding to account for the IconButton's own padding
       left: 12,
       right: 20,
       child: Column(
@@ -265,25 +256,20 @@ class SearchHeader extends StatelessWidget {
             ),
           ),
 
-          // --- NEW LAYOUT: Row for Icon + Search Bar ---
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 1. THE NEW MENU ICON
               IconButton(
-                iconSize: 30.0, // Make it a good, tappable size
+                iconSize: 30.0,
                 icon: const Icon(Icons.menu, color: Colors.white),
                 onPressed: () {
                   debugPrint('Menu icon tapped!');
                   // TODO: Add navigation to SettingsScreen here
-                  // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsScreen()));
                 },
               ),
 
-              // A small gap between icon and search bar
               const SizedBox(width: 4.0),
 
-              // 2. THE SEARCH BAR, WRAPPED IN EXPANDED
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
@@ -304,7 +290,7 @@ class SearchHeader extends StatelessWidget {
                     ],
                   ),
                   child: TextField(
-                    onChanged: onChanged, // Use the callback
+                    onChanged: onChanged,
                     textAlignVertical: TextAlignVertical.center,
                     style: const TextStyle(color: Colors.white, fontSize: 16.0),
                     decoration: InputDecoration(
@@ -329,7 +315,6 @@ class SearchHeader extends StatelessWidget {
               ),
             ],
           ),
-          // --- END OF MODIFICATION ---
         ],
       ),
     );
@@ -338,8 +323,6 @@ class SearchHeader extends StatelessWidget {
 
 // =========================================================================
 // WIDGET 3: SERVICE GRID VIEW (STATELESS)
-// This widget only knows how to build the grid.
-// It receives all the data it needs as parameters.
 // =========================================================================
 class ServiceGridView extends StatelessWidget {
   final List<Map<String, dynamic>> services;
@@ -355,19 +338,16 @@ class ServiceGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The highlighting logic now lives inside the widget that uses it.
     String normalizedQuery = searchQuery.trim().toLowerCase();
     bool shouldHighlight(String serviceName) {
       return normalizedQuery.isNotEmpty &&
           serviceName.toLowerCase().contains(normalizedQuery);
     }
 
-    // This is the exact same code from the Expanded() block
-    // in your old _buildWhiteContainer method.
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 15.0),
       child: GridView.builder(
-        padding: EdgeInsets.only(bottom: bottomPadding), // Apply padding
+        padding: EdgeInsets.only(bottom: bottomPadding),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           childAspectRatio: 1.0,
@@ -376,32 +356,29 @@ class ServiceGridView extends StatelessWidget {
         ),
         itemCount: services.length,
         itemBuilder: (context, index) {
-          // --- MODIFICATION HERE ---
           final serviceName = services[index]['name'];
-          final serviceIcon = services[index]['icon']; // 1. Get the icon
+          final serviceIcon = services[index]['icon'];
 
           return ServiceGridItem(
-            icon: serviceIcon, // 2. Pass icon to item
+            icon: serviceIcon,
             name: serviceName,
             isHighlighted: shouldHighlight(serviceName),
             onTap: () {
               debugPrint('Service tapped: $serviceName');
 
-              // Only navigate if the service is 'Cleaning' for now
               if (serviceName == 'Cleaning') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => UnitTypeScreen(
                       serviceName: serviceName,
-                      serviceIcon: serviceIcon, // 3. Pass icon to next screen
+                      serviceIcon: serviceIcon,
                     ),
                   ),
                 );
               }
             },
           );
-          // --- END OF MODIFICATION ---
         },
       ),
     );
@@ -409,7 +386,7 @@ class ServiceGridView extends StatelessWidget {
 }
 
 // =========================================================================
-// WIDGET 4: CUSTOM BOTTOM NAV BAR (STATELESS)
+// WIDGET 4: CUSTOM BOTTOM NAV BAR (LOCAL)
 // =========================================================================
 class CustomBottomNavBar extends StatelessWidget {
   final List<Map<String, dynamic>> items;
@@ -457,10 +434,12 @@ class CustomBottomNavBar extends StatelessWidget {
             Map<String, dynamic> item = entry.value;
             bool isSelected = index == selectedIndex;
 
+            bool hasNotification = (item['notificationCount'] ?? 0) > 0;
+
             return Expanded(
               child: GestureDetector(
                 onTap: () {
-                  onIndexChanged(index); // Use the callback
+                  onIndexChanged(index);
                 },
                 behavior: HitTestBehavior.translucent,
                 child: Container(
@@ -468,10 +447,28 @@ class CustomBottomNavBar extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        isSelected ? item['activeIcon'] : item['icon'],
-                        size: 28.0,
-                        color: isSelected ? Colors.blue : Colors.grey,
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            isSelected ? item['activeIcon'] : item['icon'],
+                            size: 28.0,
+                            color: isSelected ? Colors.blue : Colors.grey,
+                          ),
+                          if (hasNotification)
+                            Positioned(
+                              top: -2,
+                              right: -4,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -495,7 +492,6 @@ class CustomBottomNavBar extends StatelessWidget {
 
 // =========================================================================
 // WIDGET 5: SERVICE GRID ITEM (STATELESS)
-// (This was already well-factored, so it is unchanged)
 // =========================================================================
 class ServiceGridItem extends StatelessWidget {
   final IconData? icon;

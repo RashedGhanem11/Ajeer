@@ -9,10 +9,11 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  // A key to identify our form & trigger validation
+  // =========================================================================
+  // 1. STATE VARIABLES AND CONTROLLERS
+  // =========================================================================
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers to get the text from fields
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -23,9 +24,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
+  final OutlineInputBorder _inputBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12.0),
+    borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
+  );
+
+  final OutlineInputBorder _errorBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12.0),
+    borderSide: BorderSide(color: Colors.red, width: 2.5),
+  );
+
+  // =========================================================================
+  // 2. LIFECYCLE METHODS
+  // =========================================================================
   @override
   void dispose() {
-    // Clean up the controllers when the widget is disposed.
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
@@ -35,17 +48,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  // =========================================================================
+  // 3. MAIN BUILD METHOD
+  // =========================================================================
   @override
   Widget build(BuildContext context) {
-    // --- This layout is identical to your LoginScreen ---
     final screenHeight = MediaQuery.of(context).size.height;
     const double logoHeight = 105.0;
 
-    // --- MODIFIED ---
-    // Moved the form up from 30% to 25% of the screen height
     final double formTopPosition = screenHeight * 0.25;
-    // --- END MODIFIED ---
-
     final double logoTopPosition = formTopPosition - logoHeight;
 
     return Scaffold(
@@ -53,16 +64,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
       body: Stack(
         children: [
           _buildHeaderGradient(screenHeight),
-          _buildTitle(), // <-- This widget now contains the back button
-          // We pass the key values to the form widget
-          _buildSignUpForm(screenHeight, formTopPosition),
+          _buildTitleWithBackButton(context),
+          _buildSignUpForm(formTopPosition),
           _buildLogo(logoTopPosition, logoHeight),
         ],
       ),
     );
   }
 
-  // --- These widgets are copied directly from LoginScreen for identical style ---
+  // =========================================================================
+  // 4. WIDGET BUILDER METHODS
+  // =========================================================================
 
   Widget _buildHeaderGradient(double screenHeight) {
     return Container(
@@ -77,15 +89,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- MODIFIED: This widget now includes the back button ---
-  Widget _buildTitle() {
+  Widget _buildTitleWithBackButton(BuildContext context) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.only(top: 10.0),
         child: Stack(
-          // Use a Stack to layer the title and the button
           children: [
-            // This is your original centered title
             const Align(
               alignment: Alignment.topCenter,
               child: Text(
@@ -104,58 +113,44 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
             ),
-
-            // --- ADDED THIS WIDGET ---
-            // This is the new back button
             Align(
               alignment: Alignment.topLeft,
               child: Padding(
-                // Add some padding to push it in from the edge
                 padding: const EdgeInsets.only(left: 12.0),
                 child: IconButton(
                   icon: const Icon(
-                    Icons.arrow_back_ios_new, // The iOS-style icon
+                    Icons.arrow_back_ios_new,
                     color: Colors.white,
                     size: 24.0,
                   ),
                   onPressed: () {
-                    // This is the same action as your "Log in" text button
                     Navigator.pop(context);
                   },
                 ),
               ),
             ),
-            // --- END ADDED WIDGET ---
           ],
         ),
       ),
     );
   }
-  // --- END MODIFIED ---
 
   Widget _buildLogo(double logoTopPosition, double logoHeight) {
-    // Note: You might want a different logo for sign up,
-    // but we use the same one for consistency for now.
     return Positioned(
       top: logoTopPosition,
       left: 0,
       right: 0,
-      child: Column(
-        children: [Image.asset('assets/image/home.png', height: logoHeight)],
-      ),
+      child: Image.asset('assets/image/home.png', height: logoHeight),
     );
   }
 
-  // --- This is the main Sign Up Form widget ---
-
-  Widget _buildSignUpForm(double screenHeight, double formTopPosition) {
+  Widget _buildSignUpForm(double formTopPosition) {
     return Positioned(
       top: formTopPosition,
       left: 0,
       right: 0,
       bottom: 0,
       child: Container(
-        // Style is copied from LoginScreen's form
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: const BorderRadius.only(
@@ -173,49 +168,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         child: SingleChildScrollView(
           child: Padding(
-            // --- MODIFIED ---
-            // Reduced top padding from 40.0 to 30.0
             padding: const EdgeInsets.fromLTRB(30.0, 30.0, 30.0, 20.0),
-            // --- END MODIFIED ---
-
-            // We use a Form widget to get validation features
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Create Account", // <-- Changed text
+                    "Create Account",
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
-                  // --- MODIFIED ---
-                  // Reduced spacing from 25.0 to 20.0
                   const SizedBox(height: 20.0),
-                  _buildNameFields(), // <-- New widget for first/last name
-                  // Reduced spacing from 20.0 to 15.0
+                  _buildNameFields(),
                   const SizedBox(height: 15.0),
-                  _buildPhoneField(), // <-- New widget for phone
-                  // Reduced spacing from 20.0 to 15.0
+                  _buildPhoneField(),
                   const SizedBox(height: 15.0),
-                  _buildEmailField(), // <-- Adapted from LoginScreen
-                  // Reduced spacing from 20.0 to 15.0
+                  _buildEmailField(),
                   const SizedBox(height: 15.0),
-                  _buildPasswordField(), // <-- Adapted from LoginScreen
-                  // Reduced spacing from 20.0 to 15.0
+                  _buildPasswordField(),
                   const SizedBox(height: 15.0),
-                  _buildConfirmPasswordField(), // <-- New widget for confirm
-                  // Reduced spacing from 30.0 to 25.0
+                  _buildConfirmPasswordField(),
                   const SizedBox(height: 25.0),
-                  _buildSignUpButton(), // <-- Adapted from LoginScreen
-                  // Reduced spacing from 30.0 to 25.0
+                  _buildSignUpButton(),
                   const SizedBox(height: 25.0),
-                  _buildLoginLink(), // <-- Adapted from LoginScreen
-                  const SizedBox(height: 20.0), // Keep some bottom space
-                  // --- END MODIFIED ---
+                  _buildLoginLink(),
+                  const SizedBox(height: 20.0),
                 ],
               ),
             ),
@@ -225,12 +206,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // I created this helper to avoid repeating the decoration code 5 times
-  InputDecoration _buildInputDecoration({
+  // Reusable decoration for all input fields
+  InputDecoration _createInputDecoration({
     required String hint,
     required IconData icon,
     Widget? suffixIcon,
-    Color? fillColor, // <-- MODIFIED: Added parameter
+    Color? fillColor = Colors.grey,
   }) {
     return InputDecoration(
       hintText: hint,
@@ -238,39 +219,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
       prefixIcon: Icon(icon, color: Colors.grey[500]),
       suffixIcon: suffixIcon,
       filled: true,
-      // MODIFIED: Use parameter or default to grey
-      fillColor: fillColor ?? Colors.grey[100],
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
+      fillColor: fillColor == Colors.white ? Colors.white : Colors.grey[100],
+      enabledBorder: _inputBorder,
+      focusedBorder: _inputBorder.copyWith(
+        borderSide: BorderSide(color: Colors.grey[500]!, width: 2.5),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
-      ),
-      // Add error borders for validation
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: Colors.red, width: 2.5),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: Colors.red, width: 2.5),
-      ),
+      errorBorder: _errorBorder,
+      focusedErrorBorder: _errorBorder,
     );
   }
 
-  // New widget for side-by-side name fields
   Widget _buildNameFields() {
     return Row(
       children: [
         Expanded(
           child: TextFormField(
             controller: _firstNameController,
-            decoration: _buildInputDecoration(
+            decoration: _createInputDecoration(
               hint: "First Name",
               icon: Icons.person_outline,
-              fillColor: Colors.white, // <-- MODIFIED
+              fillColor: Colors.white,
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -284,10 +252,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
         Expanded(
           child: TextFormField(
             controller: _lastNameController,
-            decoration: _buildInputDecoration(
+            decoration: _createInputDecoration(
               hint: "Last Name",
               icon: Icons.person_outline,
-              fillColor: Colors.white, // <-- MODIFIED
+              fillColor: Colors.white,
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -305,7 +273,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return TextFormField(
       controller: _phoneController,
       keyboardType: TextInputType.phone,
-      decoration: _buildInputDecoration(
+      decoration: _createInputDecoration(
         hint: "Phone Number",
         icon: Icons.phone_outlined,
       ),
@@ -313,7 +281,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         if (value == null || value.isEmpty) {
           return 'Please enter phone number';
         }
-        // You can add more complex phone validation here if needed
         return null;
       },
     );
@@ -323,7 +290,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
-      decoration: _buildInputDecoration(
+      decoration: _createInputDecoration(
         hint: "Email",
         icon: Icons.email_outlined,
       ),
@@ -340,7 +307,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return TextFormField(
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
-      decoration: _buildInputDecoration(
+      decoration: _createInputDecoration(
         hint: "Password",
         icon: Icons.lock_outline,
         suffixIcon: IconButton(
@@ -370,10 +337,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return TextFormField(
       controller: _confirmPasswordController,
       obscureText: !_isConfirmPasswordVisible,
-      decoration: _buildInputDecoration(
+      decoration: _createInputDecoration(
         hint: "Confirm Password",
         icon: Icons.lock_outline,
-        fillColor: Colors.white, // <-- MODIFIED
+        fillColor: Colors.white,
         suffixIcon: IconButton(
           icon: Icon(
             _isConfirmPasswordVisible
@@ -392,7 +359,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         if (value == null || value.isEmpty) {
           return 'Please confirm your password';
         }
-        // Here is the matching logic
         if (value != _passwordController.text) {
           return 'Passwords do not match';
         }
@@ -402,7 +368,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildSignUpButton() {
-    // Copied directly from _buildLoginButton, just changed text and logic
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 80.0),
       child: Container(
@@ -428,15 +393,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
-              // This is where the validation happens
               if (_formKey.currentState!.validate()) {
-                // If the form is valid, show a snackbar (or proceed with auth)
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Sign Up Successful!')),
                 );
-                // TODO: Add your sign-up logic (e.g., Firebase, API call)
-                print("First Name: ${_firstNameController.text}");
-                print("Email: ${_emailController.text}");
+                debugPrint("Sign Up Successful!");
               }
             },
             borderRadius: BorderRadius.circular(30.0),
@@ -444,7 +405,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               padding: EdgeInsets.symmetric(vertical: 14.0),
               child: Center(
                 child: Text(
-                  "SIGN UP", // <-- Changed text
+                  "SIGN UP",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18.0,
@@ -460,18 +421,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildLoginLink() {
-    // Copied from _buildSignUpLink, just changed text and logic
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          "Already have an account? ", // <-- Changed text
+          "Already have an account? ",
           style: TextStyle(color: Colors.grey[600]),
         ),
         TextButton(
           onPressed: () {
-            // This pops the current screen off the stack,
-            // returning to the LoginScreen
             Navigator.pop(context);
           },
           style: TextButton.styleFrom(
@@ -480,7 +438,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           child: const Text(
-            "Log in", // <-- Changed text
+            "Log in",
             style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
           ),
         ),

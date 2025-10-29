@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// --- ADDED IMPORT ---
 import 'date_time_screen.dart';
-// --- END ---
+import 'bookings_screen.dart'; // <-- ADDED: Import BookingsScreen
 
 // =========================================================================
 // WIDGET 1: THE UNIT TYPE SCREEN (STATEFUL)
@@ -44,28 +43,35 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
       'label': 'Bookings',
       'icon': Icons.book_outlined,
       'activeIcon': Icons.book,
+      'notificationCount': 3,
     },
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  // --- MODIFICATION 1: Changed back to single selection ---
   String? _selectedUnitType;
 
   final List<String> _unitTypes = [
     'Deep Cleaning',
     'House Keeping',
     'Office Cleaning',
-    'move in/ out cleaning', // Changed
-    'carpet cleaning', // Added
+    'move in/ out cleaning',
+    'carpet cleaning',
   ];
 
   // =========================================================================
-  // 2. STATE-CHANGING METHODS
+  // 2. STATE-CHANGING METHODS (NAVIGATION FIXED)
   // =========================================================================
 
   void _onNavItemTapped(int index) {
     if (index == 3) {
+      // Navigate to Home
       Navigator.popUntil(context, (route) => route.isFirst);
+    } else if (index == 2) {
+      // FIXED: Navigate to Bookings Screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const BookingsScreen()),
+      );
     } else {
       setState(() {
         _selectedIndex = index;
@@ -74,7 +80,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
     }
   }
 
-  // --- MODIFICATION 2: Reverted to single-selection logic ---
   void _onUnitTypeTapped(String unitType) {
     setState(() {
       if (_selectedUnitType == unitType) {
@@ -84,7 +89,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
       }
     });
   }
-  // --- END OF MODIFICATION ---
 
   // =========================================================================
   // 3. MAIN BUILD METHOD
@@ -139,7 +143,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
             onBackTap: () {
               Navigator.pop(context);
             },
-            // --- MODIFICATION: Navigate to DateTimeScreen ---
             onNextTap: () {
               if (_selectedUnitType != null) {
                 Navigator.push(
@@ -172,7 +175,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
   }
 
   // =========================================================================
-  // 4. PRIVATE BUILD HELPERS (Copied & New)
+  // 4. PRIVATE BUILD HELPERS
   // =========================================================================
 
   Widget _buildBackgroundGradient(double containerTop) {
@@ -202,7 +205,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
 
     return Positioned(
       top: iconTopPosition,
-      right: 25.0, // Positioned on the right
+      right: 25.0,
       child: Container(
         width: 100.0,
         height: 100.0,
@@ -243,10 +246,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
     );
   }
 
-  // =========================================================================
-  // 5. PRIVATE BUILD HELPERS (Modified for this screen)
-  // =========================================================================
-
   Widget _buildWhiteContainer({
     required double containerTop,
     required double bottomNavClearance,
@@ -275,7 +274,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 15.0), // Space for overlapping logo
+            const SizedBox(height: 15.0),
             Padding(
               padding: const EdgeInsets.only(left: 20.0, top: 20.0),
               child: Text(
@@ -301,7 +300,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
             Expanded(
               child: UnitTypeListView(
                 unitTypes: _unitTypes,
-                // --- MODIFICATION 3: Pass the single String? ---
                 selectedUnitType: _selectedUnitType,
                 onUnitTypeTap: _onUnitTypeTapped,
                 bottomPadding: bottomNavClearance,
@@ -316,7 +314,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen> {
 
 // =========================================================================
 // WIDGET 2: NAVIGATION HEADER (STATELESS)
-// (This widget is unchanged)
 // =========================================================================
 class UnitTypeNavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
@@ -361,7 +358,6 @@ class UnitTypeNavigationHeader extends StatelessWidget {
             iconSize: 28.0,
             icon: Icon(
               Icons.arrow_forward_ios,
-              // --- MODIFIED: Color depends on selection ---
               color: Colors.white.withOpacity(0.5),
             ),
             onPressed: onNextTap,
@@ -377,7 +373,6 @@ class UnitTypeNavigationHeader extends StatelessWidget {
 // =========================================================================
 class UnitTypeListView extends StatelessWidget {
   final List<String> unitTypes;
-  // --- MODIFICATION 4: Changed from List to single String? ---
   final String? selectedUnitType;
   final ValueChanged<String> onUnitTypeTap;
   final double bottomPadding;
@@ -385,7 +380,7 @@ class UnitTypeListView extends StatelessWidget {
   const UnitTypeListView({
     super.key,
     required this.unitTypes,
-    required this.selectedUnitType, // Updated constructor
+    required this.selectedUnitType,
     required this.onUnitTypeTap,
     required this.bottomPadding,
   });
@@ -402,7 +397,6 @@ class UnitTypeListView extends StatelessWidget {
       itemCount: unitTypes.length,
       itemBuilder: (context, index) {
         final unitName = unitTypes[index];
-        // --- MODIFICATION 5: Updated selection logic ---
         final bool isSelected = (selectedUnitType == unitName);
 
         return SelectableUnitItem(
@@ -416,7 +410,6 @@ class UnitTypeListView extends StatelessWidget {
     );
   }
 }
-// --- END OF MODIFICATION ---
 
 // =========================================================================
 // WIDGET 4: SELECTABLE UNIT ITEM (STATELESS)
@@ -494,8 +487,7 @@ class SelectableUnitItem extends StatelessWidget {
 }
 
 // =========================================================================
-// WIDGET 5: CUSTOM BOTTOM NAV BAR (STATELESS)
-// (This widget is unchanged)
+// WIDGET 5: CUSTOM BOTTOM NAV BAR (LOCAL)
 // =========================================================================
 class CustomBottomNavBar extends StatelessWidget {
   final List<Map<String, dynamic>> items;
@@ -543,6 +535,8 @@ class CustomBottomNavBar extends StatelessWidget {
             Map<String, dynamic> item = entry.value;
             bool isSelected = index == selectedIndex;
 
+            bool hasNotification = (item['notificationCount'] ?? 0) > 0;
+
             return Expanded(
               child: GestureDetector(
                 onTap: () {
@@ -554,10 +548,28 @@ class CustomBottomNavBar extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        isSelected ? item['activeIcon'] : item['icon'],
-                        size: 28.0,
-                        color: isSelected ? Colors.blue : Colors.grey,
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            isSelected ? item['activeIcon'] : item['icon'],
+                            size: 28.0,
+                            color: isSelected ? Colors.blue : Colors.grey,
+                          ),
+                          if (hasNotification)
+                            Positioned(
+                              top: -2,
+                              right: -4,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import 'bookings_screen.dart'; // <-- ADDED: Import BookingsScreen
+
 // =========================================================================
 // WIDGET 1: THE DATE TIME SCREEN (STATEFUL)
 // =========================================================================
@@ -25,7 +27,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   // 1. STATE VARIABLES AND DATA
   // =========================================================================
 
-  int _selectedIndex = 3; // 'Home' is still the active tab
+  int _selectedIndex = 3;
   final List<Map<String, dynamic>> navItems = [
     {
       'label': 'Profile',
@@ -41,42 +43,44 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       'label': 'Bookings',
       'icon': Icons.book_outlined,
       'activeIcon': Icons.book,
+      'notificationCount': 3,
     },
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  // --- NEW STATE VARIABLES ---
-  String _selectionMode = 'Custom'; // 'Custom' or 'Instant'
+  String _selectionMode = 'Custom';
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   late List<DateTime> _days;
-  // --- END OF NEW STATE ---
 
   @override
   void initState() {
     super.initState();
-    // Generate a list of 30 days starting from today
     _days = List.generate(30, (i) => DateTime.now().add(Duration(days: i)));
   }
 
   // =========================================================================
-  // 2. STATE-CHANGING METHODS
+  // 2. STATE-CHANGING METHODS (NAVIGATION FIXED)
   // =========================================================================
 
   void _onNavItemTapped(int index) {
     if (index == 3) {
       // Go back to the root (HomeScreen)
       Navigator.popUntil(context, (route) => route.isFirst);
+    } else if (index == 2) {
+      // FIXED: Navigate to Bookings Screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const BookingsScreen()),
+      );
     } else {
       setState(() {
         _selectedIndex = index;
       });
       debugPrint('Tapped index $index');
-      // Here you would navigate to Profile, Chat, or Bookings
     }
   }
 
-  // --- NEW METHODS ---
   void _onDateSelected(DateTime date) {
     setState(() {
       _selectedDate = date;
@@ -89,7 +93,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     });
   }
 
-  // --- MODIFIED: Show the THEMED date picker ---
   void _showDatePicker() async {
     final pickedDate = await showDatePicker(
       context: context,
@@ -99,16 +102,14 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: const Color(0xFF1976D2), // Your desired blue color
-              onPrimary: Colors.white, // Text color on the primary color
-              onSurface: Colors.black87, // Text color on the picker surface
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1976D2),
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: const Color(
-                  0xFF1976D2,
-                ), // Color for "Cancel" and "OK"
+                foregroundColor: const Color(0xFF1976D2),
               ),
             ),
           ),
@@ -122,7 +123,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     }
   }
 
-  // --- MODIFIED: Show the THEMED time picker ---
   void _showTimePicker() async {
     final pickedTime = await showTimePicker(
       context: context,
@@ -130,16 +130,14 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: const Color(0xFF1976D2), // Your desired blue color
-              onPrimary: Colors.white, // Text color on the primary color
-              onSurface: Colors.black87, // Text color on the picker surface
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1976D2),
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: const Color(
-                  0xFF1976D2,
-                ), // Color for "Cancel" and "OK"
+                foregroundColor: const Color(0xFF1976D2),
               ),
             ),
           ),
@@ -154,7 +152,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       });
     }
   }
-  // --- END OF NEW METHODS ---
 
   // =========================================================================
   // 3. MAIN BUILD METHOD
@@ -169,16 +166,15 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
-    // final screenWidth = MediaQuery.of(context).size.width;
 
-    // Layout Variables (copied from UnitTypeScreen)
+    // Layout Variables
     const double logoHeight = 105.0;
     const double overlapAdjustment = 10.0;
     final double whiteContainerTop = screenHeight * 0.30;
     final double logoTopPosition =
         whiteContainerTop - logoHeight + overlapAdjustment;
 
-    // Bottom Nav Bar clearance (copied from UnitTypeScreen)
+    // Bottom Nav Bar clearance
     final double navBarHeight = 56.0 + 20.0;
     final double outerBottomMargin = 10.0;
     final double bottomNavClearance =
@@ -192,13 +188,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         children: [
           _buildBackgroundGradient(whiteContainerTop),
 
-          // --- MODIFIED: Use a calendar icon ---
           _buildServiceIcon(
             whiteContainerTop,
             MediaQuery.of(context).padding.top,
           ),
 
-          // --- END OF MODIFICATION ---
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
@@ -206,24 +200,15 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
 
           _buildHomeImage(logoTopPosition, logoHeight),
 
-          // --- MODIFIED: Next arrow is enabled ---
           UnitTypeNavigationHeader(
             onBackTap: () {
               Navigator.pop(context);
             },
             onNextTap: () {
               debugPrint('Next arrow tapped!');
-              debugPrint('Service: ${widget.serviceName}');
-              debugPrint('Unit Type: ${widget.unitType}');
-              debugPrint('Mode: $_selectionMode');
-              if (_selectionMode == 'Custom') {
-                debugPrint('Date: $_selectedDate');
-                debugPrint('Time: $_selectedTime');
-              }
               // TODO: Navigate to the next screen (e.g., Address Screen)
             },
           ),
-          // --- END OF MODIFICATION ---
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -235,7 +220,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 
   // =========================================================================
-  // 4. PRIVATE BUILD HELPERS (Copied & Modified)
+  // 4. PRIVATE BUILD HELPERS
   // =========================================================================
 
   Widget _buildBackgroundGradient(double containerTop) {
@@ -254,7 +239,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  // --- MODIFIED: Hardcoded calendar icon ---
   Widget _buildServiceIcon(double containerTop, double statusBarHeight) {
     final double headerHeight = statusBarHeight + 60;
     final double availableHeight = containerTop - headerHeight;
@@ -262,7 +246,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
 
     return Positioned(
       top: iconTopPosition,
-      right: 25.0, // Positioned on the right
+      right: 25.0,
       child: Container(
         width: 100.0,
         height: 100.0,
@@ -282,7 +266,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           ],
           border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
         ),
-        // Use a calendar icon
         child: const Icon(
           Icons.calendar_today_outlined,
           size: 55.0,
@@ -291,7 +274,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       ),
     );
   }
-  // --- END OF MODIFICATION ---
 
   Widget _buildHomeImage(double logoTopPosition, double logoHeight) {
     return Positioned(
@@ -309,7 +291,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  // --- MODIFIED: New content for this screen ---
   Widget _buildWhiteContainer({
     required double containerTop,
     required double bottomNavClearance,
@@ -338,10 +319,9 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 15.0), // Space for overlapping logo
+            const SizedBox(height: 15.0),
             Padding(
               padding: const EdgeInsets.only(left: 20.0, top: 20.0),
-              // New Title
               child: Text(
                 'Select Date & Time',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -357,7 +337,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                 top: 4.0,
                 bottom: 10.0,
               ),
-              // New Subtitle (shows context)
               child: Text(
                 '${widget.serviceName} - ${widget.unitType}',
                 style: const TextStyle(
@@ -367,14 +346,12 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                 ),
               ),
             ),
-            // New content
             Expanded(child: _buildDateTimeContent(bottomNavClearance)),
           ],
         ),
       ),
     );
   }
-  // --- END OF MODIFICATION ---
 
   // =========================================================================
   // 5. NEW PRIVATE BUILD HELPERS (for date/time content)
@@ -392,20 +369,18 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- MODIFIED: Layout changed ---
-          _buildTopControls(), // Just the buttons
+          _buildTopControls(),
           const SizedBox(height: 15),
 
           // Conditional content based on mode
           if (_selectionMode == 'Custom') ...[
-            _buildDateDisplay(), // The date text + edit icon
+            _buildDateDisplay(),
             _buildDaySlider(),
             const SizedBox(height: 10),
             _buildTimeSelector(),
           ] else ...[
             _buildInstantBookingCard(),
           ],
-          // --- END OF MODIFICATION ---
         ],
       ),
     );
@@ -416,7 +391,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        // Left side: Mode Toggle
         _buildModeChip('Custom', _selectionMode == 'Custom'),
         const SizedBox(width: 8),
         _buildModeChip('Instant', _selectionMode == 'Instant'),
@@ -424,7 +398,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  // --- NEW WIDGET ---
   /// The date display and edit button
   Widget _buildDateDisplay() {
     return Column(
@@ -471,7 +444,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       ],
     );
   }
-  // --- END OF NEW WIDGET ---
 
   /// Helper for the "Custom" and "Instant" chips
   Widget _buildModeChip(String label, bool isSelected) {
@@ -482,10 +454,8 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         if (selected) _onModeSelected(label);
       },
       backgroundColor: Colors.grey[100],
-      selectedColor: const Color(0xFF1976D2), // Dark blue
-      // --- MODIFICATION: Added checkmark color ---
+      selectedColor: const Color(0xFF1976D2),
       checkmarkColor: Colors.white,
-      // --- END OF MODIFICATION ---
       labelStyle: TextStyle(
         fontWeight: FontWeight.bold,
         color: isSelected ? Colors.white : Colors.black54,
@@ -502,7 +472,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   /// The horizontal list of selectable days
   Widget _buildDaySlider() {
     return Container(
-      height: 95, // Fixed height for the slider
+      height: 95,
       margin: const EdgeInsets.symmetric(vertical: 20),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -525,7 +495,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     return GestureDetector(
       onTap: () => _onDateSelected(date),
       child: Container(
-        width: 65, // Allows ~5.5 items on screen
+        width: 65,
         margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
           gradient: isSelected
@@ -554,7 +524,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              DateFormat.MMM().format(date).toUpperCase(), // "MAR"
+              DateFormat.MMM().format(date).toUpperCase(),
               style: TextStyle(
                 color: isSelected ? Colors.white.withOpacity(0.9) : Colors.grey,
                 fontSize: 12,
@@ -563,7 +533,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              date.day.toString(), // "22"
+              date.day.toString(),
               style: TextStyle(
                 color: isSelected ? Colors.white : Colors.black87,
                 fontSize: 20,
@@ -572,7 +542,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              DateFormat.E().format(date).toUpperCase(), // "SAT"
+              DateFormat.E().format(date).toUpperCase(),
               style: TextStyle(
                 color: isSelected ? Colors.white.withOpacity(0.9) : Colors.grey,
                 fontSize: 12,
@@ -616,7 +586,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _selectedTime.format(context), // e.g., "10:30 AM"
+                  _selectedTime.format(context),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -665,7 +635,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
 
 // =========================================================================
 // WIDGET 2: NAVIGATION HEADER (STATELESS)
-// (Copied from UnitTypeScreen, next arrow is enabled)
 // =========================================================================
 class UnitTypeNavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
@@ -708,7 +677,6 @@ class UnitTypeNavigationHeader extends StatelessWidget {
           ),
           IconButton(
             iconSize: 28.0,
-            // --- MODIFIED: Icon is fully white (enabled) ---
             icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
             onPressed: onNextTap,
           ),
@@ -719,8 +687,7 @@ class UnitTypeNavigationHeader extends StatelessWidget {
 }
 
 // =========================================================================
-// WIDGET 3: CUSTOM BOTTOM NAV BAR (STATELESS)
-// (Copied from UnitTypeScreen)
+// WIDGET 3: CUSTOM BOTTOM NAV BAR (LOCAL)
 // =========================================================================
 class CustomBottomNavBar extends StatelessWidget {
   final List<Map<String, dynamic>> items;
@@ -768,6 +735,8 @@ class CustomBottomNavBar extends StatelessWidget {
             Map<String, dynamic> item = entry.value;
             bool isSelected = index == selectedIndex;
 
+            bool hasNotification = (item['notificationCount'] ?? 0) > 0;
+
             return Expanded(
               child: GestureDetector(
                 onTap: () {
@@ -779,10 +748,28 @@ class CustomBottomNavBar extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        isSelected ? item['activeIcon'] : item['icon'],
-                        size: 28.0,
-                        color: isSelected ? Colors.blue : Colors.grey,
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            isSelected ? item['activeIcon'] : item['icon'],
+                            size: 28.0,
+                            color: isSelected ? Colors.blue : Colors.grey,
+                          ),
+                          if (hasNotification)
+                            Positioned(
+                              top: -2,
+                              right: -4,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
