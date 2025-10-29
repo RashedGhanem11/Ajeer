@@ -17,14 +17,15 @@ class _BookingsScreenState extends State<BookingsScreen>
 
   bool _isSelectionMode = false;
   final Set<int> _selectedBookingIndices = {};
-  final List<Map<String, dynamic>> pendingBookings = [
+
+  final List<Map<String, dynamic>> _pendingBookings = [
     {'provider': 'Ahmad M.', 'service': 'Cleaning, Deep cleaning'},
     {'provider': 'Sara B.', 'service': 'Gardening, Grass cutting'},
   ];
-  final List<Map<String, dynamic>> activeBookings = [
+  final List<Map<String, dynamic>> _activeBookings = [
     {'provider': 'Fatima K.', 'service': 'Plumbing, Pipe fix'},
   ];
-  final List<Map<String, dynamic>> closedBookings = [
+  final List<Map<String, dynamic>> _closedBookings = [
     {
       'provider': 'Khalid S.',
       'service': 'AC Repair, Full service',
@@ -37,7 +38,7 @@ class _BookingsScreenState extends State<BookingsScreen>
     },
   ];
 
-  final List<Map<String, dynamic>> navItems = const [
+  final List<Map<String, dynamic>> _navItems = const [
     {
       'label': 'Profile',
       'icon': Icons.person_outline,
@@ -57,24 +58,33 @@ class _BookingsScreenState extends State<BookingsScreen>
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
+  static const Color _primaryBlue = Color(0xFF1976D2);
+  static const Color _lightBlue = Color(0xFF8CCBFF);
+  static const double _logoHeight = 105.0;
+  static const double _borderRadius = 50.0;
+  static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(() {
-      if (_isSelectionMode) {
-        setState(() {
-          _isSelectionMode = false;
-          _selectedBookingIndices.clear();
-        });
-      }
-    });
+    _tabController.addListener(_onTabChange);
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChange);
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onTabChange() {
+    if (_isSelectionMode) {
+      setState(() {
+        _isSelectionMode = false;
+        _selectedBookingIndices.clear();
+      });
+    }
   }
 
   void _onNavItemTapped(int index) {
@@ -122,12 +132,14 @@ class _BookingsScreenState extends State<BookingsScreen>
   }
 
   void _deleteSelectedBookings() {
+    if (_tabController.index != 2) return;
+
     final sortedIndices = _selectedBookingIndices.toList()
       ..sort((a, b) => b.compareTo(a));
 
     setState(() {
       for (final index in sortedIndices) {
-        closedBookings.removeAt(index);
+        _closedBookings.removeAt(index);
       }
       _isSelectionMode = false;
       _selectedBookingIndices.clear();
@@ -139,24 +151,15 @@ class _BookingsScreenState extends State<BookingsScreen>
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: Brightness.light,
       ),
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
-
-    const double logoHeight = 105.0;
-    const double overlapAdjustment = 10.0;
     final double whiteContainerTop = screenHeight * 0.25;
-    final double logoTopPosition =
-        whiteContainerTop - logoHeight + overlapAdjustment;
-
-    const double navBarHeight = 56.0 + 20.0;
-    const double outerBottomMargin = 10.0;
+    final double logoTopPosition = whiteContainerTop - _logoHeight + 10.0;
     final double bottomNavClearance =
-        navBarHeight +
-        outerBottomMargin +
-        MediaQuery.of(context).padding.bottom;
+        _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
     return WillPopScope(
       onWillPop: () async {
@@ -179,11 +182,11 @@ class _BookingsScreenState extends State<BookingsScreen>
               containerTop: whiteContainerTop,
               bottomNavClearance: bottomNavClearance,
             ),
-            _buildHomeImage(logoTopPosition, logoHeight),
+            _buildHomeImage(logoTopPosition),
           ],
         ),
         bottomNavigationBar: CustomBottomNavBar(
-          items: navItems,
+          items: _navItems,
           selectedIndex: _selectedIndex,
           onIndexChanged: _onNavItemTapped,
         ),
@@ -206,7 +209,7 @@ class _BookingsScreenState extends State<BookingsScreen>
         height: containerTop + 50,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF8CCBFF), Color(0xFF1976D2)],
+            colors: [_lightBlue, _primaryBlue],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -215,34 +218,36 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  Widget _buildAjeerTitle() {
-    return const Text(
-      'Ajeer',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 34,
-        fontWeight: FontWeight.w900,
-        shadows: [
-          Shadow(
-            blurRadius: 2.0,
-            color: Colors.black26,
-            offset: Offset(1.0, 1.0),
+  Widget _buildAjeerTitle(BuildContext context) {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 5,
+      left: 0,
+      right: 0,
+      child: const Center(
+        child: Text(
+          'Ajeer',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 34,
+            fontWeight: FontWeight.w900,
+            shadows: [
+              Shadow(
+                blurRadius: 2.0,
+                color: Colors.black26,
+                offset: Offset(1.0, 1.0),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildBookingsHeader(BuildContext context) {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 5,
-      left: 10,
-      right: 10,
-      child: Stack(alignment: Alignment.center, children: [_buildAjeerTitle()]),
-    );
+    return _buildAjeerTitle(context);
   }
 
-  Widget _buildHomeImage(double logoTopPosition, double logoHeight) {
+  Widget _buildHomeImage(double logoTopPosition) {
     return Positioned(
       top: logoTopPosition,
       left: 0,
@@ -251,7 +256,7 @@ class _BookingsScreenState extends State<BookingsScreen>
         child: Image.asset(
           'assets/image/home.png',
           width: 140,
-          height: logoHeight,
+          height: _logoHeight,
           fit: BoxFit.contain,
         ),
       ),
@@ -271,8 +276,8 @@ class _BookingsScreenState extends State<BookingsScreen>
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(50.0),
-            topRight: Radius.circular(50.0),
+            topLeft: Radius.circular(_borderRadius),
+            topRight: Radius.circular(_borderRadius),
           ),
           boxShadow: [
             BoxShadow(
@@ -286,9 +291,9 @@ class _BookingsScreenState extends State<BookingsScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 15.0),
+            const SizedBox(height: 35.0),
             Padding(
-              padding: const EdgeInsets.only(left: 20.0, top: 20.0),
+              padding: const EdgeInsets.only(left: 20.0),
               child: Text(
                 'Bookings',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -303,9 +308,9 @@ class _BookingsScreenState extends State<BookingsScreen>
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: _CustomTabBar(
                 tabController: _tabController,
-                activeCount: activeBookings.length,
-                pendingCount: pendingBookings.length,
-                closedCount: closedBookings.length,
+                activeCount: _activeBookings.length,
+                pendingCount: _pendingBookings.length,
+                closedCount: _closedBookings.length,
               ),
             ),
             const SizedBox(height: 10.0),
@@ -314,17 +319,17 @@ class _BookingsScreenState extends State<BookingsScreen>
                 controller: _tabController,
                 children: [
                   _buildBookingList(
-                    bookings: activeBookings,
+                    bookings: _activeBookings,
                     status: _BookingStatus.active,
                     bottomPadding: bottomNavClearance,
                   ),
                   _buildBookingList(
-                    bookings: pendingBookings,
+                    bookings: _pendingBookings,
                     status: _BookingStatus.pending,
                     bottomPadding: bottomNavClearance,
                   ),
                   _buildBookingList(
-                    bookings: closedBookings,
+                    bookings: _closedBookings,
                     status: _BookingStatus.closed,
                     bottomPadding: bottomNavClearance,
                   ),
@@ -352,7 +357,7 @@ class _BookingsScreenState extends State<BookingsScreen>
     }
 
     final double finalBottomPadding =
-        _isSelectionMode && _tabController.index == 2
+        _isSelectionMode && status == _BookingStatus.closed
         ? bottomPadding + 80
         : bottomPadding;
 
@@ -376,6 +381,8 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 }
+
+enum _BookingStatus { active, pending, closed }
 
 class _CustomTabBar extends StatefulWidget {
   final TabController tabController;
@@ -401,13 +408,22 @@ class _CustomTabBarState extends State<_CustomTabBar> {
   @override
   void initState() {
     super.initState();
-    widget.tabController.addListener(() {
-      if (mounted) {
-        setState(() {
-          _selectedIndex = widget.tabController.index;
-        });
-      }
-    });
+    widget.tabController.addListener(_updateSelectedIndex);
+    _selectedIndex = widget.tabController.index;
+  }
+
+  @override
+  void dispose() {
+    widget.tabController.removeListener(_updateSelectedIndex);
+    super.dispose();
+  }
+
+  void _updateSelectedIndex() {
+    if (mounted) {
+      setState(() {
+        _selectedIndex = widget.tabController.index;
+      });
+    }
   }
 
   @override
@@ -477,7 +493,6 @@ class _CustomTabBarState extends State<_CustomTabBar> {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  const SizedBox(width: 8),
                   Text(
                     text,
                     style: TextStyle(
@@ -518,8 +533,6 @@ class _CustomTabBarState extends State<_CustomTabBar> {
   }
 }
 
-enum _BookingStatus { active, pending, closed }
-
 class _BookingItem extends StatelessWidget {
   final String providerName;
   final String serviceName;
@@ -540,6 +553,10 @@ class _BookingItem extends StatelessWidget {
     required this.onLongPress,
   }) : super(key: key);
 
+  static const Color _primaryBlue = Color(0xFF1976D2);
+  static const Color _primaryRed = Color(0xFFD32F2F);
+  static const double _minActionWidth = 80.0;
+
   void _showConfirmationDialog(
     BuildContext context, {
     required String title,
@@ -548,11 +565,8 @@ class _BookingItem extends StatelessWidget {
     required Color confirmColor,
     required VoidCallback onConfirm,
   }) {
-    const Color primaryRed = Color(0xFFD32F2F);
-    final bool isDestructive = confirmColor == primaryRed;
-    final Color titleColor = isDestructive
-        ? primaryRed
-        : const Color(0xFF1976D2);
+    final bool isDestructive = confirmColor == _primaryRed;
+    final Color titleColor = isDestructive ? _primaryRed : _primaryBlue;
 
     showDialog(
       context: context,
@@ -623,18 +637,16 @@ class _BookingItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String letter = '?';
-    if (providerName.isNotEmpty) {
-      final List<String> parts = providerName.split(' ');
-      if (parts.isNotEmpty && parts[0].isNotEmpty) {
-        letter = parts[0][0].toUpperCase();
-      }
-    }
+    String letter =
+        providerName.isNotEmpty && providerName.split(' ')[0].isNotEmpty
+        ? providerName.split(' ')[0][0].toUpperCase()
+        : '?';
 
+    final int hash = letter.hashCode;
     final Color avatarColor =
-        Colors.primaries[letter.hashCode % Colors.primaries.length].shade100;
+        Colors.primaries[hash % Colors.primaries.length].shade100;
     final Color avatarLetterColor =
-        Colors.primaries[letter.hashCode % Colors.primaries.length].shade700;
+        Colors.primaries[hash % Colors.primaries.length].shade700;
 
     return GestureDetector(
       onTap: onTap,
@@ -646,7 +658,7 @@ class _BookingItem extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
           side: BorderSide(
-            color: isSelected ? Colors.red : Colors.grey[300]!,
+            color: isSelected ? _primaryRed : Colors.grey[300]!,
             width: 2.0,
           ),
         ),
@@ -697,9 +709,6 @@ class _BookingItem extends StatelessWidget {
   }
 
   Widget _buildTrailingWidget(BuildContext context) {
-    const Color primaryBlue = Color(0xFF1976D2);
-    const Color primaryRed = Color(0xFFD32F2F);
-
     switch (status) {
       case _BookingStatus.active:
         return Row(
@@ -713,8 +722,8 @@ class _BookingItem extends StatelessWidget {
                 title: 'Call Provider',
                 content: 'Would you like to call $providerName?',
                 confirmText: 'Call',
-                confirmColor: primaryBlue,
-                onConfirm: () => debugPrint('Calling provider...'),
+                confirmColor: _primaryBlue,
+                onConfirm: () {},
               ),
             ),
             IconButton(
@@ -725,95 +734,61 @@ class _BookingItem extends StatelessWidget {
                 title: 'Message Provider',
                 content: 'Would you like to message $providerName?',
                 confirmText: 'Message',
-                confirmColor: primaryBlue,
-                onConfirm: () => debugPrint('Messaging provider...'),
+                confirmColor: _primaryBlue,
+                onConfirm: () {},
               ),
             ),
           ],
         );
 
       case _BookingStatus.pending:
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              height: 28,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red[100],
-                  foregroundColor: primaryRed,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+        return Container(
+          constraints: const BoxConstraints(minWidth: _minActionWidth),
+          child: SizedBox(
+            height: 32,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[100],
+                foregroundColor: _primaryRed,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('Cancel', style: TextStyle(fontSize: 12)),
-                onPressed: () => _showConfirmationDialog(
-                  context,
-                  title: 'Cancel Booking',
-                  content: 'Are you sure you want to cancel this booking?',
-                  confirmText: 'Cancel Booking',
-                  confirmColor: primaryRed,
-                  onConfirm: () {
-                    debugPrint('Cancelling booking...');
-                  },
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+              ),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              onPressed: () => _showConfirmationDialog(
+                context,
+                title: 'Cancel Booking',
+                content: 'Are you sure you want to cancel this booking?',
+                confirmText: 'Cancel Booking',
+                confirmColor: _primaryRed,
+                onConfirm: () {},
               ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  iconSize: 22,
-                  constraints: const BoxConstraints(),
-                  padding: const EdgeInsets.only(top: 4, right: 4),
-                  icon: Icon(Icons.phone_outlined, color: Colors.grey[700]),
-                  onPressed: () => _showConfirmationDialog(
-                    context,
-                    title: 'Call Provider',
-                    content: 'Would you like to call $providerName?',
-                    confirmText: 'Call',
-                    confirmColor: primaryBlue,
-                    onConfirm: () => debugPrint('Calling provider...'),
-                  ),
-                ),
-                IconButton(
-                  iconSize: 22,
-                  constraints: const BoxConstraints(),
-                  padding: const EdgeInsets.only(top: 4, left: 4),
-                  icon: Icon(
-                    Icons.chat_bubble_outline,
-                    color: Colors.grey[700],
-                  ),
-                  onPressed: () => _showConfirmationDialog(
-                    context,
-                    title: 'Message Provider',
-                    content: 'Would you like to message $providerName?',
-                    confirmText: 'Message',
-                    confirmColor: primaryBlue,
-                    onConfirm: () => debugPrint('Messaging provider...'),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         );
 
       case _BookingStatus.closed:
         bool isCompleted = closedStatusText == 'Completed';
+        Color color = isCompleted ? Colors.green[100]! : Colors.red[100]!;
+        Color textColor = isCompleted ? Colors.green[800]! : Colors.red[800]!;
+
         return Container(
-          constraints: const BoxConstraints(minWidth: 90),
+          constraints: const BoxConstraints(minWidth: _minActionWidth),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: isCompleted ? Colors.green[100] : Colors.red[100],
+            color: color,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Center(
             child: Text(
               closedStatusText ?? 'Closed',
               style: TextStyle(
-                color: isCompleted ? Colors.green[800] : Colors.red[800],
+                color: textColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
