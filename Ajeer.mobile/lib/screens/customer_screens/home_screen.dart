@@ -118,6 +118,9 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
           SearchHeader(onChanged: _onSearchChanged),
 
+          // NOTE: The original code references a local image 'assets/image/home.png'
+          // which is not included in this code block and may not resolve.
+          // This part of the code is kept as-is but might throw an error if the asset is missing.
           _buildHomeImage(logoTopPosition, logoHeight),
         ],
       ),
@@ -150,6 +153,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
   }
 
   Widget _buildHomeImage(double logoTopPosition, double logoHeight) {
+    // Keeping this structure, assuming 'assets/image/home.png' exists.
+    // If it doesn't, this will throw an error and you should replace it with a standard placeholder.
     return Positioned(
       top: logoTopPosition,
       left: 0,
@@ -367,6 +372,7 @@ class ServiceGridView extends StatelessWidget {
               debugPrint('Service tapped: $serviceName');
 
               if (serviceName == 'Cleaning') {
+                // NOTE: The UnitTypeScreen is assumed to be defined elsewhere as per imports.
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -491,7 +497,7 @@ class CustomBottomNavBar extends StatelessWidget {
 }
 
 // =========================================================================
-// WIDGET 5: SERVICE GRID ITEM (STATELESS)
+// WIDGET 5: SERVICE GRID ITEM (STATELESS) - FIXED FOR TEXT OVERFLOW
 // =========================================================================
 class ServiceGridItem extends StatelessWidget {
   final IconData? icon;
@@ -519,6 +525,8 @@ class ServiceGridItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Column(
+        mainAxisSize:
+            MainAxisSize.min, // Added for better vertical constraint handling
         children: [
           Container(
             width: iconContainerSize,
@@ -540,14 +548,19 @@ class ServiceGridItem extends StatelessWidget {
             child: Icon(icon, size: iconSize, color: primaryColor),
           ),
           const SizedBox(height: 8),
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: isHighlighted ? primaryColor : Colors.black87,
+          // FIX: Wrap the Text widget in a Flexible widget and set maxLines
+          Flexible(
+            child: Text(
+              name,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: isHighlighted ? primaryColor : Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2, // Allows "Pest Control" or "AC Repair" to wrap
+              overflow: TextOverflow.ellipsis, // Prevents overflow errors
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
