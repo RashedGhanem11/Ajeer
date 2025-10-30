@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
-import 'date_time_screen.dart';
 
 class LocationScreen extends StatefulWidget {
   final String serviceName;
