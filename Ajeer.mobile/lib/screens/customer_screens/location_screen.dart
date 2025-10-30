@@ -1,7 +1,11 @@
+// location_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
+// 1. IMPORT: Import the next screen for navigation
+import 'media_screen.dart';
 
 class LocationScreen extends StatefulWidget {
   final String serviceName;
@@ -26,6 +30,18 @@ class LocationScreen extends StatefulWidget {
 class _LocationScreenState extends State<LocationScreen> {
   int _selectedIndex = 3;
 
+  // --- Constants and Theme Definitions ---
+  static const Color _lightBlue = Color(0xFF8CCBFF);
+  static const Color _primaryBlue = Color(0xFF1976D2);
+  static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
+  static const Color _secondaryBlue = Color(0xFF57b2ff);
+  static const double _logoHeight = 105.0;
+  static const double _overlapAdjustment = 10.0;
+  // Estimated height of the CustomBottomNavBar + padding
+  static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
+  static const double _mapBorderRadius = 25.0;
+  static const double _horizontalPadding = 20.0;
+
   final List<Map<String, dynamic>> _navItems = const [
     {
       'label': 'Profile',
@@ -46,20 +62,14 @@ class _LocationScreenState extends State<LocationScreen> {
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  static const Color _lightBlue = Color(0xFF8CCBFF);
-  static const Color _primaryBlue = Color(0xFF1976D2);
-  static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
-  static const Color _secondaryBlue = Color(0xFF57b2ff);
-  static const double _logoHeight = 105.0;
-  static const double _overlapAdjustment = 10.0;
-  static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
-  static const double _mapBorderRadius = 25.0;
-  static const double _horizontalPadding = 20.0;
+  // --- Navigation and State Management ---
 
   void _onNavItemTapped(int index) {
     if (index == 3) {
+      // Home
       Navigator.popUntil(context, (route) => route.isFirst);
     } else if (index == 2) {
+      // Bookings
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const BookingsScreen()),
@@ -75,8 +85,20 @@ class _LocationScreenState extends State<LocationScreen> {
     Navigator.pop(context);
   }
 
+  // 2. NAVIGATION: Navigate to the MediaScreen
   void _onNextTap() {
-    // Navigation placeholder for the next screen (Contact/Payment)
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MediaScreen(
+          serviceName: widget.serviceName,
+          unitType: widget.unitType,
+          selectedDate: widget.selectedDate,
+          selectedTime: widget.selectedTime,
+          selectionMode: widget.selectionMode,
+        ),
+      ),
+    );
   }
 
   void _showMaximizedMap(BuildContext context) {
@@ -86,7 +108,7 @@ class _LocationScreenState extends State<LocationScreen> {
       barrierLabel: 'Close Map',
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, a1, a2) {
-        return _MaximizedMapDialog(
+        return const _MaximizedMapDialog(
           mapBorderRadius: _mapBorderRadius,
           primaryColor: _primaryBlue,
         );
@@ -99,6 +121,7 @@ class _LocationScreenState extends State<LocationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Set system status bar style once
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
@@ -107,6 +130,7 @@ class _LocationScreenState extends State<LocationScreen> {
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
+    // Calculate layout positions
     final double whiteContainerTop = screenHeight * 0.30;
     final double logoTopPosition =
         whiteContainerTop - _logoHeight + _overlapAdjustment;
@@ -138,6 +162,8 @@ class _LocationScreenState extends State<LocationScreen> {
     );
   }
 
+  // --- Widget Builders ---
+
   Widget _buildBackgroundGradient(double containerTop) {
     return Align(
       alignment: Alignment.topCenter,
@@ -167,7 +193,7 @@ class _LocationScreenState extends State<LocationScreen> {
         height: 100.0,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             colors: [_secondaryLightBlue, _secondaryBlue],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -197,7 +223,7 @@ class _LocationScreenState extends State<LocationScreen> {
       right: 0,
       child: Center(
         child: Image.asset(
-          'assets/image/home.png',
+          'assets/image/home.png', // Ensure this path is correct
           width: 140,
           height: _logoHeight,
           fit: BoxFit.contain,
@@ -236,7 +262,10 @@ class _LocationScreenState extends State<LocationScreen> {
           children: [
             const SizedBox(height: 15.0),
             Padding(
-              padding: const EdgeInsets.only(left: 20.0, top: 20.0),
+              padding: const EdgeInsets.only(
+                left: _horizontalPadding,
+                top: 20.0,
+              ),
               child: Text(
                 'Pick a location',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -248,7 +277,7 @@ class _LocationScreenState extends State<LocationScreen> {
             ),
             Padding(
               padding: const EdgeInsets.only(
-                left: 20.0,
+                left: _horizontalPadding,
                 top: 4.0,
                 bottom: 10.0,
               ),
@@ -269,8 +298,6 @@ class _LocationScreenState extends State<LocationScreen> {
   }
 
   Widget _buildMapPlaceholder(double bottomNavClearance) {
-    // Standard horizontal padding is 20.0 on the outer container.
-    // Applying Padding of 0.0 here and relying on the parent container's width.
     return Padding(
       padding: EdgeInsets.fromLTRB(
         _horizontalPadding,
@@ -280,8 +307,7 @@ class _LocationScreenState extends State<LocationScreen> {
       ),
       child: Center(
         child: Container(
-          width: double
-              .infinity, // Allows the container to expand to the full width defined by parent padding
+          width: double.infinity,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(_mapBorderRadius),
@@ -295,7 +321,7 @@ class _LocationScreenState extends State<LocationScreen> {
             ],
           ),
           child: AspectRatio(
-            aspectRatio: 1 / 1.5, // Sets the height to be 1.5 times the width
+            aspectRatio: 1 / 1.5,
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -318,6 +344,8 @@ class _LocationScreenState extends State<LocationScreen> {
     );
   }
 }
+
+// --- Independent Widgets ---
 
 class _MaximizedMapDialog extends StatelessWidget {
   final double mapBorderRadius;
