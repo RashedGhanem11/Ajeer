@@ -1,12 +1,10 @@
-// media_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
-import 'confirmation_screen.dart'; // NEW IMPORT
+import 'confirmation_screen.dart';
 
 class MediaScreen extends StatefulWidget {
   final String serviceName;
@@ -48,7 +46,10 @@ class _MediaScreenState extends State<MediaScreen> {
   bool _isDescriptionSaved = false;
   final TextEditingController _descriptionController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
-  List<File> _pickedMediaFiles = [];
+
+  List<File> _photoFiles = [];
+  List<File> _videoFiles = [];
+  List<File> _audioFiles = [];
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -84,6 +85,17 @@ class _MediaScreenState extends State<MediaScreen> {
     super.dispose();
   }
 
+  List<File> get _currentMediaFiles {
+    if (_selectedMediaType == 'Photo') {
+      return _photoFiles;
+    } else if (_selectedMediaType == 'Video') {
+      return _videoFiles;
+    } else if (_selectedMediaType == 'Audio') {
+      return _audioFiles;
+    }
+    return [];
+  }
+
   void _handleDescriptionChange() {
     setState(() {
       _userDescription = _descriptionController.text;
@@ -113,7 +125,12 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   void _onNextTap() {
-    // Navigate to the ConfirmationScreen, passing all data
+    List<File> allPickedFiles = [
+      ..._photoFiles,
+      ..._videoFiles,
+      ..._audioFiles,
+    ];
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -124,7 +141,7 @@ class _MediaScreenState extends State<MediaScreen> {
           selectedTime: widget.selectedTime,
           selectionMode: widget.selectionMode,
           userDescription: _userDescription,
-          pickedMediaFiles: _pickedMediaFiles,
+          pickedMediaFiles: allPickedFiles,
         ),
       ),
     );
@@ -153,15 +170,32 @@ class _MediaScreenState extends State<MediaScreen> {
       if (videoFile != null) {
         pickedFiles.add(videoFile);
       }
-    } else {
-      print('Audio picking not implemented with ImagePicker.');
-      Navigator.of(context).pop();
-      return;
+    } else if (_selectedMediaType == 'Audio') {
+      // Audio cannot be picked or recorded directly using ImagePicker.
+      // We will only allow recording, but implementation is outside this package.
+      if (source == ImageSource.gallery) {
+        print('Error: Customer is not allowed to upload existing audio files.');
+        Navigator.of(context).pop();
+        return;
+      } else if (source == ImageSource.camera) {
+        print(
+          'Note: Native audio recording requires a separate plugin (e.g., `record`). Implementation skipped.',
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Audio recording functionality requires a separate plugin and is currently simulated.',
+            ),
+          ),
+        );
+        Navigator.of(context).pop();
+        return;
+      }
     }
 
     if (pickedFiles.isNotEmpty) {
       setState(() {
-        _pickedMediaFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
+        _currentMediaFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
       });
       print('${pickedFiles.length} files selected.');
     } else {
@@ -172,7 +206,7 @@ class _MediaScreenState extends State<MediaScreen> {
 
   void _removeMediaFile(int index) {
     setState(() {
-      _pickedMediaFiles.removeAt(index);
+      _currentMediaFiles.removeAt(index);
     });
   }
 
@@ -183,6 +217,9 @@ class _MediaScreenState extends State<MediaScreen> {
         : mediaType == 'Video'
         ? 'video'
         : 'audio recording';
+
+    // Check if the current tab is Audio
+    bool isAudio = mediaType == 'Audio';
 
     showModalBottomSheet(
       context: context,
@@ -209,18 +246,21 @@ class _MediaScreenState extends State<MediaScreen> {
                 ),
               ),
               const SizedBox(height: 15.0),
-              ListTile(
-                leading: const Icon(Icons.photo_library, color: _primaryBlue),
-                title: Text(
-                  'Select from Gallery / Files',
-                  style: TextStyle(color: Colors.grey.shade700),
+              // Option 1: Select from Gallery/Files (Disabled for Audio)
+              if (!isAudio)
+                ListTile(
+                  leading: const Icon(Icons.photo_library, color: _primaryBlue),
+                  title: Text(
+                    'Select from Gallery / Files',
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
+                  onTap: () => _pickMedia(ImageSource.gallery),
                 ),
-                onTap: () => _pickMedia(ImageSource.gallery),
-              ),
+              // Option 2: Take/Record (Camera Source)
               ListTile(
-                leading: mediaType == 'Photo' || mediaType == 'Video'
-                    ? const Icon(Icons.camera_alt, color: _primaryBlue)
-                    : const Icon(Icons.mic, color: _primaryBlue),
+                leading: isAudio
+                    ? const Icon(Icons.mic, color: _primaryBlue)
+                    : const Icon(Icons.camera_alt, color: _primaryBlue),
                 title: Text(
                   mediaType == 'Photo'
                       ? 'Take Photo'
@@ -454,7 +494,6 @@ class _MediaScreenState extends State<MediaScreen> {
           color: _secondaryBlue,
           onTap: () => setState(() {
             _selectedMediaType = 'Photo';
-            _pickedMediaFiles = [];
           }),
           isSelected: _selectedMediaType == 'Photo',
         ),
@@ -464,7 +503,6 @@ class _MediaScreenState extends State<MediaScreen> {
           color: _secondaryBlue,
           onTap: () => setState(() {
             _selectedMediaType = 'Video';
-            _pickedMediaFiles = [];
           }),
           isSelected: _selectedMediaType == 'Video',
         ),
@@ -474,7 +512,6 @@ class _MediaScreenState extends State<MediaScreen> {
           color: _secondaryBlue,
           onTap: () => setState(() {
             _selectedMediaType = 'Audio';
-            _pickedMediaFiles = [];
           }),
           isSelected: _selectedMediaType == 'Audio',
         ),
@@ -497,7 +534,7 @@ class _MediaScreenState extends State<MediaScreen> {
           ),
         ],
       ),
-      child: _pickedMediaFiles.isEmpty
+      child: _currentMediaFiles.isEmpty
           ? _buildAddButton()
           : _buildMediaGallery(),
     );
@@ -522,9 +559,11 @@ class _MediaScreenState extends State<MediaScreen> {
   Widget _buildMediaGallery() {
     return ListView.builder(
       scrollDirection: Axis.horizontal,
-      itemCount: _pickedMediaFiles.length,
+      itemCount: _currentMediaFiles.length,
       itemBuilder: (context, index) {
-        final file = _pickedMediaFiles[index];
+        final file = _currentMediaFiles[index];
+        final isPhoto = _selectedMediaType == 'Photo';
+
         return Padding(
           padding: EdgeInsets.only(
             left: index == 0 ? 10.0 : 5.0,
@@ -539,10 +578,8 @@ class _MediaScreenState extends State<MediaScreen> {
                 child: Container(
                   width: 120,
                   height: double.infinity,
-                  color: _selectedMediaType == 'Photo'
-                      ? Colors.grey.shade200
-                      : Colors.black,
-                  child: _selectedMediaType == 'Photo'
+                  color: isPhoto ? Colors.grey.shade200 : Colors.black,
+                  child: isPhoto
                       ? Image.file(file, fit: BoxFit.cover)
                       : const Center(
                           child: Icon(

@@ -1,5 +1,3 @@
-// confirmation_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
@@ -68,8 +66,6 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  // FIX: Reverting to using getters for stability, assuming the previous error
-  // was related to the AnimationController and its late initialization.
   List<File> get _photoFiles => widget.pickedMediaFiles
       .where((file) => !file.path.toLowerCase().endsWith('.mp4'))
       .toList();
@@ -208,12 +204,26 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
                 blurRadius: 5.0,
                 color: Colors.black38,
-                offset: Offset(2.0, 2.0),
+                offset: const Offset(2.0, 2.0),
               ),
+              if (_isConfirmIconTapped)
+                BoxShadow(
+                  color: _confirmGreen.withOpacity(1.0),
+                  blurRadius: 70.0,
+                  spreadRadius: 20.0,
+                  offset: const Offset(0, 0),
+                )
+              else
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.6),
+                  blurRadius: 20.0,
+                  spreadRadius: 3.0,
+                  offset: const Offset(0, 0),
+                ),
             ],
             border: Border.all(
               color: Colors.white.withOpacity(0.5),
@@ -647,7 +657,7 @@ class _MediaSummary extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 10.0),
         decoration: BoxDecoration(
           color: isSelected ? _primaryBlue : Colors.grey[100],
-          borderRadius: BorderRadius.circular(10.0),
+          borderRadius: BorderRadius.circular(18.0),
           border: Border.all(
             color: isSelected ? _primaryBlue : Colors.grey.shade400,
             width: 1.5,
@@ -678,28 +688,29 @@ class _MediaSummary extends StatelessWidget {
               ],
             ),
             if (count > 0)
-              Positioned(
-                // FIX: Repositioned badge to top-right, slightly outside
-                top: -8, // Move up for higher placement
-                right: -8, // Move right for top-right corner placement
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 22,
-                    minHeight: 22,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$count',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 35.0, bottom: 25.0),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 22,
+                      minHeight: 22,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$count',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
