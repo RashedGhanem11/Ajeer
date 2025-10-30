@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
+import 'confirmation_screen.dart'; // NEW IMPORT
 
 class MediaScreen extends StatefulWidget {
   final String serviceName;
@@ -112,10 +113,21 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   void _onNextTap() {
-    print('Navigating to the next screen (Contact/Payment)...');
-    print('Selected media type: $_selectedMediaType');
-    print('Description: $_userDescription');
-    print('Number of media files: ${_pickedMediaFiles.length}');
+    // Navigate to the ConfirmationScreen, passing all data
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ConfirmationScreen(
+          serviceName: widget.serviceName,
+          unitType: widget.unitType,
+          selectedDate: widget.selectedDate,
+          selectedTime: widget.selectedTime,
+          selectionMode: widget.selectionMode,
+          userDescription: _userDescription,
+          pickedMediaFiles: _pickedMediaFiles,
+        ),
+      ),
+    );
   }
 
   void _onSaveDescription() {
