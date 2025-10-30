@@ -2,13 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart'; // Import for image picking
-import 'dart:io'; // Import for File
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
-// import 'location_screen.dart'; // Not used in this file
-
-// --- MediaScreen Widget ---
 
 class MediaScreen extends StatefulWidget {
   final String serviceName;
@@ -31,7 +28,6 @@ class MediaScreen extends StatefulWidget {
 }
 
 class _MediaScreenState extends State<MediaScreen> {
-  // --- Constants ---
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
@@ -45,14 +41,13 @@ class _MediaScreenState extends State<MediaScreen> {
   static const double _borderRadiusLarge = 20.0;
   static const double _containerHeight = 150.0;
 
-  // --- State Variables ---
   int _selectedIndex = 3;
   String _selectedMediaType = 'Photo';
   String _userDescription = '';
   bool _isDescriptionSaved = false;
-  File? _pickedMediaFile; // Stores the picked file (Photo/Video/Audio)
   final TextEditingController _descriptionController = TextEditingController();
-  final ImagePicker _picker = ImagePicker(); // Instance of ImagePicker
+  final ImagePicker _picker = ImagePicker();
+  List<File> _pickedMediaFiles = [];
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -74,7 +69,6 @@ class _MediaScreenState extends State<MediaScreen> {
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  // --- Lifecycle & Controller Management ---
   @override
   void initState() {
     super.initState();
@@ -89,7 +83,6 @@ class _MediaScreenState extends State<MediaScreen> {
     super.dispose();
   }
 
-  // --- Description Handlers ---
   void _handleDescriptionChange() {
     setState(() {
       _userDescription = _descriptionController.text;
@@ -99,21 +92,6 @@ class _MediaScreenState extends State<MediaScreen> {
     });
   }
 
-  void _onSaveDescription() {
-    setState(() {
-      _isDescriptionSaved = true;
-    });
-    FocusScope.of(context).unfocus();
-  }
-
-  void _onEditDescription() {
-    setState(() {
-      _isDescriptionSaved = false;
-    });
-    FocusScope.of(context).requestFocus();
-  }
-
-  // --- Navigation Handlers ---
   void _onNavItemTapped(int index) {
     if (index == 3) {
       Navigator.popUntil(context, (route) => route.isFirst);
@@ -134,45 +112,62 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   void _onNextTap() {
-    // In a real app, you'd process _pickedMediaFile and _userDescription here
     print('Navigating to the next screen (Contact/Payment)...');
     print('Selected media type: $_selectedMediaType');
     print('Description: $_userDescription');
-    print('Media file path: ${_pickedMediaFile?.path ?? 'None'}');
+    print('Number of media files: ${_pickedMediaFiles.length}');
   }
 
-  // --- Media Picker Logic ---
+  void _onSaveDescription() {
+    setState(() {
+      _isDescriptionSaved = true;
+    });
+    FocusScope.of(context).unfocus();
+  }
+
+  void _onEditDescription() {
+    setState(() {
+      _isDescriptionSaved = false;
+    });
+    FocusScope.of(context).requestFocus();
+  }
+
   Future<void> _pickMedia(ImageSource source) async {
-    XFile? pickedFile;
+    List<XFile> pickedFiles = [];
     if (_selectedMediaType == 'Photo') {
-      pickedFile = await _picker.pickImage(source: source);
+      pickedFiles = await _picker.pickMultiImage();
     } else if (_selectedMediaType == 'Video') {
-      pickedFile = await _picker.pickVideo(source: source);
-    } else if (_selectedMediaType == 'Audio') {
-      // Audio pickers are not natively supported by ImagePicker,
-      // a separate package would be needed for a real audio upload.
-      // For this example, we'll just log and exit.
+      final XFile? videoFile = await _picker.pickVideo(source: source);
+      if (videoFile != null) {
+        pickedFiles.add(videoFile);
+      }
+    } else {
       print('Audio picking not implemented with ImagePicker.');
       Navigator.of(context).pop();
       return;
     }
 
-    if (pickedFile != null) {
+    if (pickedFiles.isNotEmpty) {
       setState(() {
-        _pickedMediaFile = File(pickedFile!.path);
+        _pickedMediaFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
       });
-      print('File selected: ${pickedFile.path}');
+      print('${pickedFiles.length} files selected.');
     } else {
       print('No media selected.');
     }
     Navigator.of(context).pop();
   }
 
-  // --- Dialogs ---
+  void _removeMediaFile(int index) {
+    setState(() {
+      _pickedMediaFiles.removeAt(index);
+    });
+  }
+
   void _showMediaUploadDialog(BuildContext context) {
     String mediaType = _selectedMediaType;
-    String actionWord = mediaType == 'Photo'
-        ? 'image'
+    String action = mediaType == 'Photo'
+        ? 'images'
         : mediaType == 'Video'
         ? 'video'
         : 'audio recording';
@@ -194,7 +189,7 @@ class _MediaScreenState extends State<MediaScreen> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                'Add your $actionWord',
+                'Add ${mediaType == 'Photo' ? 'multiple photos' : action}',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20.0,
@@ -202,7 +197,6 @@ class _MediaScreenState extends State<MediaScreen> {
                 ),
               ),
               const SizedBox(height: 15.0),
-              // Option for Gallery
               ListTile(
                 leading: const Icon(Icons.photo_library, color: _primaryBlue),
                 title: Text(
@@ -211,7 +205,6 @@ class _MediaScreenState extends State<MediaScreen> {
                 ),
                 onTap: () => _pickMedia(ImageSource.gallery),
               ),
-              // Option for Camera/Recorder
               ListTile(
                 leading: mediaType == 'Photo' || mediaType == 'Video'
                     ? const Icon(Icons.camera_alt, color: _primaryBlue)
@@ -224,9 +217,7 @@ class _MediaScreenState extends State<MediaScreen> {
                       : 'Record Audio',
                   style: TextStyle(color: Colors.grey.shade700),
                 ),
-                onTap: () => mediaType == 'Photo' || mediaType == 'Video'
-                    ? _pickMedia(ImageSource.camera)
-                    : null, // Audio recording would use a different package
+                onTap: () => _pickMedia(ImageSource.camera),
               ),
               const SizedBox(height: 10.0),
             ],
@@ -235,8 +226,6 @@ class _MediaScreenState extends State<MediaScreen> {
       },
     );
   }
-
-  // --- Build Methods ---
 
   @override
   Widget build(BuildContext context) {
@@ -451,21 +440,30 @@ class _MediaScreenState extends State<MediaScreen> {
           type: 'Photo',
           icon: Icons.image_outlined,
           color: _secondaryBlue,
-          onTap: () => setState(() => _selectedMediaType = 'Photo'),
+          onTap: () => setState(() {
+            _selectedMediaType = 'Photo';
+            _pickedMediaFiles = [];
+          }),
           isSelected: _selectedMediaType == 'Photo',
         ),
         _TabButton(
           type: 'Video',
           icon: Icons.videocam_outlined,
           color: _secondaryBlue,
-          onTap: () => setState(() => _selectedMediaType = 'Video'),
+          onTap: () => setState(() {
+            _selectedMediaType = 'Video';
+            _pickedMediaFiles = [];
+          }),
           isSelected: _selectedMediaType == 'Video',
         ),
         _TabButton(
           type: 'Audio',
           icon: Icons.mic_none,
           color: _secondaryBlue,
-          onTap: () => setState(() => _selectedMediaType = 'Audio'),
+          onTap: () => setState(() {
+            _selectedMediaType = 'Audio';
+            _pickedMediaFiles = [];
+          }),
           isSelected: _selectedMediaType == 'Audio',
         ),
       ],
@@ -487,85 +485,85 @@ class _MediaScreenState extends State<MediaScreen> {
           ),
         ],
       ),
-      child: Center(
-        child: _pickedMediaFile == null
-            ? GestureDetector(
-                onTap: () => _showMediaUploadDialog(context),
-                child: Container(
-                  padding: const EdgeInsets.all(10.0),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _secondaryBlue.withOpacity(0.2),
-                  ),
-                  child: const Icon(Icons.add, size: 40.0, color: _primaryBlue),
-                ),
-              )
-            : _buildMediaPreview(),
+      child: _pickedMediaFiles.isEmpty
+          ? _buildAddButton()
+          : _buildMediaGallery(),
+    );
+  }
+
+  Widget _buildAddButton() {
+    return Center(
+      child: GestureDetector(
+        onTap: () => _showMediaUploadDialog(context),
+        child: Container(
+          padding: const EdgeInsets.all(10.0),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _secondaryBlue.withOpacity(0.2),
+          ),
+          child: const Icon(Icons.add, size: 40.0, color: _primaryBlue),
+        ),
       ),
     );
   }
 
-  Widget _buildMediaPreview() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(_borderRadiusLarge - 2),
-          child: _selectedMediaType == 'Photo'
-              ? Image.file(
-                  _pickedMediaFile!,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
+  Widget _buildMediaGallery() {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: _pickedMediaFiles.length,
+      itemBuilder: (context, index) {
+        final file = _pickedMediaFiles[index];
+        return Padding(
+          padding: EdgeInsets.only(
+            left: index == 0 ? 10.0 : 5.0,
+            right: 5.0,
+            top: 10.0,
+            bottom: 10.0,
+          ),
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(15.0),
+                child: Container(
+                  width: 120,
                   height: double.infinity,
-                )
-              : Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  color: Colors.black,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _selectedMediaType == 'Video'
-                            ? Icons.videocam
-                            : Icons.mic,
-                        color: Colors.white,
-                        size: 50,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${_selectedMediaType} Selected',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
+                  color: _selectedMediaType == 'Photo'
+                      ? Colors.grey.shade200
+                      : Colors.black,
+                  child: _selectedMediaType == 'Photo'
+                      ? Image.file(file, fit: BoxFit.cover)
+                      : const Center(
+                          child: Icon(
+                            Icons.play_circle_outline,
+                            color: Colors.white,
+                            size: 40,
+                          ),
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () =>
-                            setState(() => _pickedMediaFile = null),
-                        child: const Text(
-                          'Remove',
-                          style: TextStyle(color: _lightBlue),
-                        ),
-                      ),
-                    ],
+                ),
+              ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: () => _removeMediaFile(index),
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                   ),
                 ),
-        ),
-        // Overlay for edit/remove
-        Positioned(
-          top: 5,
-          right: 5,
-          child: IconButton(
-            icon: const Icon(
-              Icons.close,
-              color: Colors.white,
-              shadows: [Shadow(color: Colors.black, blurRadius: 5)],
-            ),
-            onPressed: () => setState(() => _pickedMediaFile = null),
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -598,9 +596,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 child: Padding(
                   padding: EdgeInsets.only(
                     top: 10.0,
-                    right: _isDescriptionSaved
-                        ? 10.0
-                        : 30.0, // Adjust padding when saved
+                    right: _isDescriptionSaved ? 10.0 : 30.0,
                     bottom: 5.0,
                   ),
                   child: TextField(
@@ -625,7 +621,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 ),
               ),
               const SizedBox(height: 5.0),
-              if (!_isDescriptionSaved) // Only show the Save button when not saved
+              if (!_isDescriptionSaved)
                 Align(
                   alignment: Alignment.centerRight,
                   child: ElevatedButton(
@@ -683,8 +679,6 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 }
 
-// --- TabButton Widget ---
-
 class _TabButton extends StatelessWidget {
   final String type;
   final IconData icon;
@@ -702,22 +696,11 @@ class _TabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Accessing state constants using a common pattern for private classes
     const Color primaryBlue = _MediaScreenState._primaryBlue;
     const Color mediumGrayBorder = _MediaScreenState._mediumGrayBorder;
 
     return GestureDetector(
-      onTap: () {
-        onTap();
-        // Clear media when changing tab
-        final _MediaScreenState? state = context
-            .findAncestorStateOfType<_MediaScreenState>();
-        if (state != null && state._pickedMediaFile != null) {
-          state.setState(() {
-            state._pickedMediaFile = null;
-          });
-        }
-      },
+      onTap: onTap,
       child: Column(
         children: [
           Container(
@@ -749,8 +732,6 @@ class _TabButton extends StatelessWidget {
     );
   }
 }
-
-// --- NavigationHeader Widget ---
 
 class _NavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
