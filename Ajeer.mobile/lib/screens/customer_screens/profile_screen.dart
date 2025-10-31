@@ -25,6 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const double _fieldVerticalPadding = 16.0;
   static const double _whiteContainerHeightRatio = 0.3;
   static const double _profileTextGapReduction = 10.0;
+  static const double _maxButtonWidth = 260.0;
 
   int _selectedIndex = 0;
   bool _isPasswordVisible = false;
@@ -216,7 +217,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(
+              Flexible(
+                flex: 3,
                 child: TextButton(
                   child: const Text(
                     'Cancel',
@@ -226,7 +228,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
+              Flexible(
+                flex: 2,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primaryBlue,
@@ -347,21 +350,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       left: 0,
       right: 0,
       child: Center(
-        child: ElevatedButton.icon(
-          onPressed: _showSwitchModeDialog,
-          icon: const Icon(Icons.handyman, size: 20),
-          label: const Text(
-            'Switch to Provider Mode',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: _primaryBlue,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30.0),
+        child: SizedBox(
+          width: _maxButtonWidth,
+          child: ElevatedButton.icon(
+            onPressed: _showSwitchModeDialog,
+            icon: const Icon(Icons.handyman, size: 20),
+            label: const Text(
+              'Switch to Provider Mode',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            elevation: 8,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: _primaryBlue,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30.0),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              elevation: 8,
+            ),
           ),
         ),
       ),
@@ -456,58 +462,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            20.0,
-            (_profileAvatarHeight / 2) + 20.0 - _profileTextGapReduction,
-            20.0,
-            bottomNavClearance + 20.0,
-          ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'My Profile',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  0,
+                  (_profileAvatarHeight / 2) + 20.0 - _profileTextGapReduction,
+                  0,
+                  20.0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'My Profile',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                     ),
+                    _buildEditSaveButtons(),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(bottom: bottomNavClearance + 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildInfoField(
+                        controller: _firstNameController,
+                        label: 'First Name',
+                        icon: Icons.person_outline,
+                      ),
+                      _buildInfoField(
+                        controller: _lastNameController,
+                        label: 'Last Name',
+                        icon: Icons.person_outline,
+                      ),
+                      _buildInfoField(
+                        controller: _mobileController,
+                        label: 'Mobile Number',
+                        icon: Icons.call_outlined,
+                        keyboardType: TextInputType.phone,
+                      ),
+                      _buildInfoField(
+                        controller: _emailController,
+                        label: 'Email',
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      _buildInfoField(
+                        controller: _passwordController,
+                        label: 'Password',
+                        icon: Icons.lock_outline,
+                        isPassword: true,
+                      ),
+                    ],
                   ),
-                  _buildEditSaveButtons(),
-                ],
-              ),
-              const SizedBox(height: 20.0),
-              _buildInfoField(
-                controller: _firstNameController,
-                label: 'First Name',
-                icon: Icons.person_outline,
-              ),
-              _buildInfoField(
-                controller: _lastNameController,
-                label: 'Last Name',
-                icon: Icons.person_outline,
-              ),
-              _buildInfoField(
-                controller: _mobileController,
-                label: 'Mobile Number',
-                icon: Icons.call_outlined,
-                keyboardType: TextInputType.phone,
-              ),
-              _buildInfoField(
-                controller: _emailController,
-                label: 'Email',
-                icon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
-              ),
-              _buildInfoField(
-                controller: _passwordController,
-                label: 'Password',
-                icon: Icons.lock_outline,
-                isPassword: true,
+                ),
               ),
             ],
           ),
