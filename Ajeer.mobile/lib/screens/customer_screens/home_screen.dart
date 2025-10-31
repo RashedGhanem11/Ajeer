@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'unit_type_screen.dart';
 import 'bookings_screen.dart';
-import '../../services/services.dart'; // Import corrected path
+import '../../services/services.dart';
 
 class ServiceScreen extends StatefulWidget {
   const ServiceScreen({super.key});
@@ -18,7 +18,6 @@ class _ServiceScreenState extends State<ServiceScreen> {
   int _selectedIndex = 3;
   String _searchQuery = '';
 
-  // Use the external service list
   final List<Service> services = kAvailableServices;
 
   final List<Map<String, dynamic>> navItems = const [
@@ -290,7 +289,6 @@ class SearchHeader extends StatelessWidget {
 }
 
 class ServiceGridView extends StatelessWidget {
-  // Use the Service model
   final List<Service> services;
   final String searchQuery;
   final double bottomPadding;
@@ -306,7 +304,6 @@ class ServiceGridView extends StatelessWidget {
   Widget build(BuildContext context) {
     String normalizedQuery = searchQuery.trim().toLowerCase();
 
-    // Filter services based on search query
     final filteredServices = services.where((service) {
       return service.name.toLowerCase().contains(normalizedQuery);
     }).toList();
@@ -326,9 +323,9 @@ class ServiceGridView extends StatelessWidget {
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
         ),
-        itemCount: filteredServices.length, // Use filtered list
+        itemCount: filteredServices.length,
         itemBuilder: (context, index) {
-          final service = filteredServices[index]; // Use Service object
+          final service = filteredServices[index];
           final serviceName = service.name;
           final serviceIcon = service.icon;
 
@@ -339,14 +336,11 @@ class ServiceGridView extends StatelessWidget {
             onTap: () {
               debugPrint('Service tapped: $serviceName');
 
-              // Navigate only if the service has unit types configured
               if (service.unitTypes.isNotEmpty) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => UnitTypeScreen(
-                      service: service, // Pass the Service object
-                    ),
+                    builder: (context) => UnitTypeScreen(service: service),
                   ),
                 );
               } else {

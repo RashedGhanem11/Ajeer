@@ -5,10 +5,9 @@ import 'package:flutter/services.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'date_time_screen.dart';
 import 'bookings_screen.dart';
-import '../../services/services.dart'; // Import corrected path
+import '../../services/services.dart';
 
 class UnitTypeScreen extends StatefulWidget {
-  // Now takes the full Service object
   final Service service;
 
   const UnitTypeScreen({super.key, required this.service});
@@ -50,7 +49,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
 
   void _onNavItemTapped(int index) {
     if (index == 3) {
-      // Pop to the first route (ServiceScreen/HomeScreen)
       Navigator.popUntil(context, (route) => route.isFirst);
     } else if (index == 2) {
       Navigator.push(
@@ -126,7 +124,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     final double bottomNavClearance =
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
-    // Use the keys from the service's unit types to build the list in order
     final unitTypeKeys = widget.service.unitTypes.keys.toList();
 
     return Scaffold(
@@ -141,7 +138,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
-            unitTypeKeys: unitTypeKeys, // Pass the keys
+            unitTypeKeys: unitTypeKeys,
           ),
           _buildHomeImage(logoTopPosition),
           _UnitTypeNavigationHeader(
@@ -273,7 +270,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
             Expanded(
               child: _UnitTypeListView(
                 unitTypes: unitTypeKeys,
-                unitData: widget.service.unitTypes, // Pass the UnitType map
+                unitData: widget.service.unitTypes,
                 selectedUnitTypes: _selectedUnitTypes,
                 onUnitTypeTap: _onUnitTypeTapped,
                 bottomPadding: bottomNavClearance,
@@ -345,7 +342,6 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
 }
 
 class _UnitTypeListView extends StatelessWidget {
-  // Use UnitType model for the data map
   final Map<String, UnitType> unitData;
   final List<String> unitTypes;
   final Set<String> selectedUnitTypes;
@@ -377,7 +373,6 @@ class _UnitTypeListView extends StatelessWidget {
 
         return _SelectableUnitItem(
           name: unitName,
-          // Safely access data using the UnitType model properties
           estimatedTime: data?.estimatedTimeMinutes ?? 0,
           price: data?.priceJOD ?? 0.0,
           isSelected: isSelected,
