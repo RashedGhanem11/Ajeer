@@ -29,21 +29,24 @@ class ConfirmationScreen extends StatefulWidget {
   State<ConfirmationScreen> createState() => _ConfirmationScreenState();
 }
 
-class _ConfirmationScreenState extends State<ConfirmationScreen> {
-  static const Color _lightBlue = Color(0xFF8CCBFF);
-  static const Color _primaryBlue = Color(0xFF1976D2);
-  static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
-  static const Color _secondaryBlue = Color(0xFF57b2ff);
-  static const Color _confirmGreen = Color(0xFF4CAF50);
-  static const Color _lightGrayText = Color(0xFFA0A0A0);
-  static const Color _mediumGrayBorder = Color(0xFFDCDCDC);
-  static const double _logoHeight = 105.0;
-  static const double _overlapAdjustment = 10.0;
-  static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
-  static const double _horizontalPadding = 20.0;
+class _ConfirmationConstants {
+  static const Color lightBlue = Color(0xFF8CCBFF);
+  static const Color primaryBlue = Color(0xFF1976D2);
+  static const Color confirmGreen = Color(0xFF4CAF50);
+  static const Color darkGreen = Color(0xFF2E7D32);
+  static const Color lightGreen = Color(0xFF81C784);
+  static const Color darkRed = Color(0xFFD32F2F);
+  static const Color lightRed = Color(0xFFE57373);
+  static const Color lightGrayText = Color(0xFFA0A0A0);
+  static const Color mediumGrayBorder = Color(0xFFDCDCDC);
+  static const double logoHeight = 105.0;
+  static const double overlapAdjustment = 10.0;
+  static const double navBarTotalHeight = 56.0 + 20.0 + 10.0;
+  static const double horizontalPadding = 20.0;
+}
 
+class _ConfirmationScreenState extends State<ConfirmationScreen> {
   int _selectedIndex = 3;
-  bool _isConfirmIconTapped = false;
   String _currentMediaView = 'Images';
 
   final List<Map<String, dynamic>> _navItems = const [
@@ -103,62 +106,222 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   }
 
   void _onConfirmTap() {
-    setState(() {
-      _isConfirmIconTapped = !_isConfirmIconTapped;
-    });
-
-    if (_isConfirmIconTapped) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Booking for ${widget.serviceName} confirmed!'),
-          backgroundColor: _confirmGreen,
-        ),
-      );
-    }
+    _showPaymentDialog();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle.dark.copyWith(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
+  void _showPaymentDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          contentPadding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          content: Container(
+            padding: const EdgeInsets.all(24.0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20.0),
+              gradient: const LinearGradient(
+                colors: [
+                  _ConfirmationConstants.darkGreen,
+                  _ConfirmationConstants.lightGreen,
+                ],
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.payment, color: Colors.white, size: 28),
+                    SizedBox(width: 12),
+                    Text(
+                      'Confirm Booking',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+                const Text(
+                  'Continue to payment?',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                        _showCancelDialog();
+                      },
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: _ConfirmationConstants.confirmGreen,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                      ),
+                      child: const Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Booking for ${widget.serviceName} confirmed!',
+                            ),
+                            backgroundColor:
+                                _ConfirmationConstants.confirmGreen,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
+  }
 
-    final screenHeight = MediaQuery.of(context).size.height;
-    final double whiteContainerTop = screenHeight * 0.30;
-    final double logoTopPosition =
-        whiteContainerTop - _logoHeight + _overlapAdjustment;
-    final double bottomNavClearance =
-        _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
-
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
-          _buildBackgroundGradient(whiteContainerTop),
-          _buildConfirmIcon(
-            whiteContainerTop,
-            MediaQuery.of(context).padding.top,
+  void _showCancelDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          contentPadding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
           ),
-          _buildWhiteContainer(
-            containerTop: whiteContainerTop,
-            bottomNavClearance: bottomNavClearance,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          content: Container(
+            padding: const EdgeInsets.all(24.0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20.0),
+              gradient: const LinearGradient(
+                colors: [
+                  _ConfirmationConstants.darkRed,
+                  _ConfirmationConstants.lightRed,
+                ],
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      'Cancel Booking',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+                const Text(
+                  'Are you sure you want to cancel this booking?',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      child: const Text(
+                        'No',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                      },
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                      ),
+                      child: const Text(
+                        'Yes, Cancel',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                        Navigator.popUntil(context, (route) => route.isFirst);
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          _buildHomeImage(logoTopPosition),
-          _ConfirmationNavigationHeader(
-            onBackTap: () => Navigator.pop(context),
-            onConfirmTap: _onConfirmTap,
-            isConfirmed: _isConfirmIconTapped,
-          ),
-        ],
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        items: _navItems,
-        selectedIndex: _selectedIndex,
-        onIndexChanged: _onNavItemTapped,
-      ),
+        );
+      },
     );
   }
 
@@ -169,7 +332,10 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         height: containerTop + 50,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [_lightBlue, _primaryBlue],
+            colors: [
+              _ConfirmationConstants.lightBlue,
+              _ConfirmationConstants.primaryBlue,
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -181,7 +347,10 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   Widget _buildConfirmIcon(double containerTop, double statusBarHeight) {
     final double headerHeight = statusBarHeight + 60;
     final double availableHeight = containerTop - headerHeight;
-    final double iconTopPosition = headerHeight + (availableHeight / 2) - 70;
+    final double iconTopPosition =
+        headerHeight +
+        (availableHeight / 2) -
+        _ConfirmationConstants.logoHeight / 2;
 
     return Positioned(
       top: iconTopPosition,
@@ -193,37 +362,26 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
           height: 100.0,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: _isConfirmIconTapped
-                ? LinearGradient(
-                    colors: [_confirmGreen.withOpacity(0.8), _confirmGreen],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : const LinearGradient(
-                    colors: [_secondaryLightBlue, _secondaryBlue],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+            gradient: LinearGradient(
+              colors: [
+                _ConfirmationConstants.confirmGreen.withOpacity(0.8),
+                _ConfirmationConstants.confirmGreen,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             boxShadow: [
               BoxShadow(
                 blurRadius: 5.0,
                 color: Colors.black38,
                 offset: const Offset(2.0, 2.0),
               ),
-              if (_isConfirmIconTapped)
-                BoxShadow(
-                  color: _confirmGreen.withOpacity(1.0),
-                  blurRadius: 70.0,
-                  spreadRadius: 20.0,
-                  offset: const Offset(0, 0),
-                )
-              else
-                BoxShadow(
-                  color: Colors.white.withOpacity(0.6),
-                  blurRadius: 20.0,
-                  spreadRadius: 3.0,
-                  offset: const Offset(0, 0),
-                ),
+              BoxShadow(
+                color: _ConfirmationConstants.confirmGreen.withOpacity(1.0),
+                blurRadius: 70.0,
+                spreadRadius: 20.0,
+                offset: const Offset(0, 0),
+              ),
             ],
             border: Border.all(
               color: Colors.white.withOpacity(0.5),
@@ -245,75 +403,14 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         child: Image.asset(
           'assets/image/home.png',
           width: 140,
-          height: _logoHeight,
+          height: _ConfirmationConstants.logoHeight,
           fit: BoxFit.contain,
         ),
       ),
     );
   }
 
-  Widget _buildWhiteContainer({
-    required double containerTop,
-    required double bottomNavClearance,
-  }) {
-    return Positioned(
-      top: containerTop,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(50.0),
-            topRight: Radius.circular(50.0),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: Offset(0, -3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 15.0),
-            Padding(
-              padding: const EdgeInsets.only(
-                left: _horizontalPadding,
-                top: 20.0,
-                bottom: 10.0,
-              ),
-              child: Text(
-                'Confirm your booking',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  _horizontalPadding,
-                  10.0,
-                  _horizontalPadding,
-                  bottomNavClearance,
-                ),
-                child: _buildConfirmationDetails(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildConfirmationDetails() {
+  Widget _buildConfirmationDetails(double bottomNavClearance) {
     IconData serviceIcon;
     switch (widget.serviceName) {
       case 'Cleaning':
@@ -329,48 +426,54 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         serviceIcon = Icons.home_repair_service;
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _DetailItem(
-          icon: serviceIcon,
-          title: widget.serviceName,
-          subtitle: widget.unitType,
-        ),
-        _DetailItem(
-          icon: Icons.calendar_today_outlined,
-          title: DateFormat.yMMMMd().format(widget.selectedDate),
-          subtitle: widget.selectionMode == 'Custom'
-              ? widget.selectedTime.format(context)
-              : 'Instant Booking',
-        ),
-        const _DetailItem(
-          icon: Icons.location_on_outlined,
-          title: 'Amman',
-          subtitle: 'Khalda',
-        ),
-        const _DetailItem(
-          icon: Icons.person_outline,
-          title: 'Khalid. S',
-          subtitle: '0796753640',
-        ),
-        const SizedBox(height: 20.0),
-
-        _MediaSummary(
-          photoCount: _photoFiles.length,
-          videoCount: _videoFiles.length,
-          audioCount: 0,
-          currentView: _currentMediaView,
-          onViewChange: (view) => setState(() => _currentMediaView = view),
-        ),
-        const SizedBox(height: 10.0),
-        _buildMediaContent(),
-        const SizedBox(height: 20.0),
-
-        if (widget.userDescription != null &&
-            widget.userDescription!.trim().isNotEmpty)
-          _DescriptionDisplay(description: widget.userDescription!),
-      ],
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        _ConfirmationConstants.horizontalPadding,
+        10.0,
+        _ConfirmationConstants.horizontalPadding,
+        bottomNavClearance,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _DetailItem(
+            icon: serviceIcon,
+            title: widget.serviceName,
+            subtitle: widget.unitType,
+          ),
+          _DetailItem(
+            icon: Icons.calendar_today_outlined,
+            title: DateFormat.yMMMMd().format(widget.selectedDate),
+            subtitle: widget.selectionMode == 'Custom'
+                ? widget.selectedTime.format(context)
+                : 'Instant Booking',
+          ),
+          const _DetailItem(
+            icon: Icons.location_on_outlined,
+            title: 'Amman',
+            subtitle: 'Khalda',
+          ),
+          const _DetailItem(
+            icon: Icons.person_outline,
+            title: 'Khalid. S',
+            subtitle: '0796753640',
+          ),
+          const SizedBox(height: 20.0),
+          _MediaSummary(
+            photoCount: _photoFiles.length,
+            videoCount: _videoFiles.length,
+            audioCount: 0,
+            currentView: _currentMediaView,
+            onViewChange: (view) => setState(() => _currentMediaView = view),
+          ),
+          const SizedBox(height: 10.0),
+          _buildMediaContent(),
+          const SizedBox(height: 20.0),
+          if (widget.userDescription != null &&
+              widget.userDescription!.trim().isNotEmpty)
+            _DescriptionDisplay(description: widget.userDescription!),
+        ],
+      ),
     );
   }
 
@@ -406,9 +509,16 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(placeholderIcon, size: 30, color: _lightGrayText),
+              Icon(
+                placeholderIcon,
+                size: 30,
+                color: _ConfirmationConstants.lightGrayText,
+              ),
               const SizedBox(height: 5),
-              Text(placeholderText, style: TextStyle(color: _lightGrayText)),
+              Text(
+                placeholderText,
+                style: TextStyle(color: _ConfirmationConstants.lightGrayText),
+              ),
             ],
           ),
         ),
@@ -452,17 +562,104 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+    );
+
+    final screenHeight = MediaQuery.of(context).size.height;
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+    final double whiteContainerTop = screenHeight * 0.30;
+    final double logoTopPosition =
+        whiteContainerTop -
+        _ConfirmationConstants.logoHeight +
+        _ConfirmationConstants.overlapAdjustment;
+    final double bottomNavClearance =
+        _ConfirmationConstants.navBarTotalHeight +
+        MediaQuery.of(context).padding.bottom;
+
+    return Scaffold(
+      extendBody: true,
+      body: Stack(
+        children: [
+          _buildBackgroundGradient(whiteContainerTop),
+          _buildConfirmIcon(whiteContainerTop, statusBarHeight),
+          Positioned(
+            top: whiteContainerTop,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(50.0),
+                  topRight: Radius.circular(50.0),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    spreadRadius: 1,
+                    blurRadius: 10,
+                    offset: Offset(0, -3),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 15.0),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: _ConfirmationConstants.horizontalPadding,
+                      top: 20.0,
+                      bottom: 10.0,
+                    ),
+                    child: Text(
+                      'Confirm your booking',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildConfirmationDetails(bottomNavClearance),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _buildHomeImage(logoTopPosition),
+          _ConfirmationNavigationHeader(
+            onBackTap: () => Navigator.pop(context),
+            onConfirmTap: _onConfirmTap,
+          ),
+        ],
+      ),
+      bottomNavigationBar: CustomBottomNavBar(
+        items: _navItems,
+        selectedIndex: _selectedIndex,
+        onIndexChanged: _onNavItemTapped,
+      ),
+    );
+  }
 }
 
 class _ConfirmationNavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
   final VoidCallback onConfirmTap;
-  final bool isConfirmed;
 
   const _ConfirmationNavigationHeader({
     required this.onBackTap,
     required this.onConfirmTap,
-    required this.isConfirmed,
   });
 
   Widget _buildAjeerTitle() {
@@ -516,10 +713,6 @@ class _DetailItem extends StatelessWidget {
     required this.subtitle,
   });
 
-  static const Color _mediumGrayBorder =
-      _ConfirmationScreenState._mediumGrayBorder;
-  static const Color _primaryBlue = _ConfirmationScreenState._primaryBlue;
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -529,7 +722,11 @@ class _DetailItem extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 10.0, right: 15.0),
-            child: Icon(icon, color: _primaryBlue, size: 30),
+            child: Icon(
+              icon,
+              color: _ConfirmationConstants.primaryBlue,
+              size: 30,
+            ),
           ),
           Expanded(
             child: Container(
@@ -540,7 +737,10 @@ class _DetailItem extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(15.0),
-                border: Border.all(color: _mediumGrayBorder, width: 2.0),
+                border: Border.all(
+                  color: _ConfirmationConstants.mediumGrayBorder,
+                  width: 2.0,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -593,8 +793,6 @@ class _MediaSummary extends StatelessWidget {
     required this.currentView,
     required this.onViewChange,
   });
-
-  static const Color _primaryBlue = _ConfirmationScreenState._primaryBlue;
 
   @override
   Widget build(BuildContext context) {
@@ -656,10 +854,14 @@ class _MediaSummary extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 4.0),
         padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 10.0),
         decoration: BoxDecoration(
-          color: isSelected ? _primaryBlue : Colors.grey[100],
+          color: isSelected
+              ? _ConfirmationConstants.primaryBlue
+              : Colors.grey[100],
           borderRadius: BorderRadius.circular(18.0),
           border: Border.all(
-            color: isSelected ? _primaryBlue : Colors.grey.shade400,
+            color: isSelected
+                ? _ConfirmationConstants.primaryBlue
+                : Colors.grey.shade400,
             width: 1.5,
           ),
         ),
@@ -672,7 +874,9 @@ class _MediaSummary extends StatelessWidget {
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? Colors.white : _primaryBlue,
+                  color: isSelected
+                      ? Colors.white
+                      : _ConfirmationConstants.primaryBlue,
                   size: 24,
                 ),
                 const SizedBox(height: 5),
@@ -728,9 +932,6 @@ class _DescriptionDisplay extends StatelessWidget {
 
   const _DescriptionDisplay({required this.description});
 
-  static const Color _mediumGrayBorder =
-      _ConfirmationScreenState._mediumGrayBorder;
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -751,7 +952,10 @@ class _DescriptionDisplay extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(15.0),
-            border: Border.all(color: _mediumGrayBorder, width: 2.0),
+            border: Border.all(
+              color: _ConfirmationConstants.mediumGrayBorder,
+              width: 2.0,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),

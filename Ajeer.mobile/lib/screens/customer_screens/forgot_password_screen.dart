@@ -11,6 +11,12 @@ class ForgotPasswordScreen extends StatefulWidget {
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
+// --- Constants Class for Cleanliness ---
+class _ForgotPasswordConstants {
+  static const Color primaryBlue = Color(0xFF1976D2);
+  static const Color lightBlue = Color(0xFF8CCBFF);
+}
+
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   ResetStep _currentStep = ResetStep.selectMethod;
   ResetMethod _selectedMethod = ResetMethod.none;
@@ -28,13 +34,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool _isNewPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
 
+  @override
+  void dispose() {
+    _emailPhoneController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  // --- Input Decoration Builder ---
   InputDecoration _buildInputDecoration(
     String hint,
     IconData icon, [
     String? errorText,
   ]) {
     const BorderRadius borderRadius = BorderRadius.all(Radius.circular(12.0));
-    const Color primaryColor = Color(0xFF1976D2);
+    const Color primaryColor = _ForgotPasswordConstants.primaryBlue;
 
     return InputDecoration(
       hintText: hint,
@@ -63,6 +78,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
+  // --- Validation and Navigation Handlers ---
   void _validateAndReset() {
     setState(() {
       _newPasswordError = null;
@@ -76,13 +92,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         return;
       }
 
+      // Simple password strength check (optional)
+      if (newPassword.length < 6) {
+        _newPasswordError = 'Password must be at least 6 characters long.';
+        return;
+      }
+
       if (confirmPassword.isEmpty) {
         _confirmPasswordError = 'Please confirm your password.';
         return;
       }
 
       if (newPassword == confirmPassword) {
+        // Success Logic: Password reset confirmed, potentially navigate to login
         debugPrint('Passwords match! Resetting password...');
+        // Example: Navigator.popUntil(context, (route) => route.isFirst);
       } else {
         debugPrint('Passwords do not match.');
         _confirmPasswordError = 'Passwords do not match.';
@@ -93,7 +117,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   void _validateEmailPhone() {
     setState(() {
       _emailPhoneError = null;
-      final input = _emailPhoneController.text;
+      final input = _emailPhoneController.text.trim();
 
       if (input.isEmpty) {
         _emailPhoneError =
@@ -101,7 +125,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         return;
       }
 
+      // Basic input validation (can be enhanced)
+      if (_selectedMethod == ResetMethod.email && !input.contains('@')) {
+        _emailPhoneError = 'Please enter a valid email address.';
+        return;
+      }
+
       debugPrint('Sending reset code to: $input');
+      // On successful validation (and assumed code sent):
       _currentStep = ResetStep.resetPassword;
     });
   }
@@ -128,14 +159,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() {
       _currentStep = ResetStep.selectMethod;
       _selectedMethod = ResetMethod.none;
+      _emailPhoneController.clear();
+      _newPasswordController.clear();
+      _confirmPasswordController.clear();
       _emailPhoneError = null;
       _newPasswordError = null;
       _confirmPasswordError = null;
     });
   }
 
+  // --- Step Widgets ---
+
   Widget _buildSelectMethod() {
-    const Color primaryColor = Color(0xFF1976D2);
+    const Color primaryColor = _ForgotPasswordConstants.primaryBlue;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -225,11 +261,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           keyboardType: isEmail
               ? TextInputType.emailAddress
               : TextInputType.phone,
+          textInputAction: TextInputAction.done,
           decoration: _buildInputDecoration(
             isEmail ? 'your-email@example.com' : '+962 7XXXXXXXX',
             isEmail ? Icons.email_outlined : Icons.phone_outlined,
             _emailPhoneError,
           ),
+          onSubmitted: (_) => _validateEmailPhone(),
         ),
         const SizedBox(height: 30),
         Row(
@@ -264,6 +302,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 30),
+        // New Password Field
         TextField(
           controller: _newPasswordController,
           obscureText: _isNewPasswordObscured,
@@ -289,6 +328,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
         ),
         const SizedBox(height: 20),
+        // Confirm Password Field
         TextField(
           controller: _confirmPasswordController,
           obscureText: _isConfirmPasswordObscured,
@@ -312,6 +352,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   },
                 ),
               ),
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _validateAndReset(),
         ),
         const SizedBox(height: 30),
         Row(
@@ -333,13 +375,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildContinueButton({required VoidCallback onPressed}) {
-    const Color primaryColor = Color(0xFF1976D2);
-    const Color accentColor = Color(0xFF478eff);
+    const Color primaryColor = _ForgotPasswordConstants.primaryBlue;
 
     return Container(
       decoration: BoxDecoration(
         color: primaryColor,
-        border: Border.all(color: accentColor, width: 2.0),
+        border: Border.all(
+          color: _ForgotPasswordConstants.lightBlue,
+          width: 2.0,
+        ),
         borderRadius: BorderRadius.circular(27),
       ),
       child: ElevatedButton(
@@ -375,14 +419,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
+  // --- Main Build Method ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      // Removed transparent background from Scaffold, as it's defined in the body
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF1976D2), Color(0xFF8CCBFF)],
+            colors: [
+              _ForgotPasswordConstants.primaryBlue,
+              _ForgotPasswordConstants.lightBlue,
+            ],
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
           ),
@@ -390,6 +438,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         child: SafeArea(
           child: Stack(
             children: [
+              // Back Button
               Align(
                 alignment: Alignment.topLeft,
                 child: Padding(
@@ -404,6 +453,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 ),
               ),
+              // Main Content
               Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -417,6 +467,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         alignment: Alignment.topCenter,
                         clipBehavior: Clip.none,
                         children: [
+                          // White Card
                           Card(
                             elevation: 8,
                             color: Colors.white,
@@ -437,25 +488,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                             ),
                           ),
+                          // Key Icon (Solid Blue)
                           Positioned(
                             top: -35,
                             child: Container(
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF1976D2),
-                                    Color(0xFF8CCBFF),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
+                                // Gradient replaced with solid color
+                                color: _ForgotPasswordConstants.primaryBlue,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    spreadRadius: 2,
-                                    blurRadius: 5,
-                                    offset: const Offset(0, 3),
+                                    color: Colors.black38,
+                                    spreadRadius: 0.5,
+                                    blurRadius: 10,
+                                    offset: Offset(0, 5),
                                   ),
                                 ],
                               ),
