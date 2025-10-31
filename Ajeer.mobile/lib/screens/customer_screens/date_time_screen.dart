@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
-import 'location_screen.dart'; // New import for navigation
+import 'location_screen.dart';
 
 class DateTimeScreen extends StatefulWidget {
   final String serviceName;
@@ -53,6 +53,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
+  static const double _dialogBorderRadius = 38.0;
 
   @override
   void initState() {
@@ -104,6 +105,12 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(foregroundColor: _primaryBlue),
             ),
+            // Corrected: Use DatePickerThemeData
+            datePickerTheme: DatePickerThemeData(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(_dialogBorderRadius),
+              ),
+            ),
           ),
           child: child!,
         );
@@ -129,6 +136,12 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(foregroundColor: _primaryBlue),
+            ),
+            // Corrected: Use TimePickerThemeData
+            timePickerTheme: TimePickerThemeData(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(_dialogBorderRadius),
+              ),
             ),
           ),
           child: child!,
@@ -235,7 +248,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         height: 100.0,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             colors: [_secondaryLightBlue, _secondaryBlue],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,

@@ -23,6 +23,12 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
   int _selectedIndex = 3;
   String? _selectedUnitType;
 
+  static const Color _lightBlue = Color(0xFF8CCBFF);
+  static const Color _primaryBlue = Color(0xFF1976D2);
+  static const double _logoHeight = 105.0;
+  static const double _overlapAdjustment = 10.0;
+  static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
+
   final List<Map<String, dynamic>> _navItems = const [
     {
       'label': 'Profile',
@@ -50,12 +56,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     'move in/out cleaning',
     'carpet cleaning',
   ];
-
-  static const Color _lightBlue = Color(0xFF8CCBFF);
-  static const Color _primaryBlue = Color(0xFF1976D2);
-  static const double _logoHeight = 105.0;
-  static const double _overlapAdjustment = 10.0;
-  static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
 
   void _onNavItemTapped(int index) {
     if (index == 3) {
@@ -113,8 +113,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-
     final double whiteContainerTop = screenHeight * 0.30;
     final double logoTopPosition =
         whiteContainerTop - _logoHeight + _overlapAdjustment;
@@ -129,7 +127,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
           _buildServiceIcon(
             whiteContainerTop,
             MediaQuery.of(context).padding.top,
-            screenWidth,
           ),
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
@@ -169,11 +166,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     );
   }
 
-  Widget _buildServiceIcon(
-    double containerTop,
-    double statusBarHeight,
-    double screenWidth,
-  ) {
+  Widget _buildServiceIcon(double containerTop, double statusBarHeight) {
     final double headerHeight = statusBarHeight + 60;
     final double availableHeight = containerTop - headerHeight;
     final double iconTopPosition = headerHeight + (availableHeight / 2) - 70;
@@ -335,10 +328,8 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
             iconSize: 28.0,
             icon: Icon(
               Icons.arrow_forward_ios,
-              // Fix: Always use white color, letting the `onPressed` null/non-null state handle interaction.
               color: Colors.white.withOpacity(isNextEnabled ? 1.0 : 0.5),
             ),
-            // Fix: Restored functionality to navigate when enabled.
             onPressed: isNextEnabled ? onNextTap : null,
           ),
         ],
@@ -397,33 +388,32 @@ class _SelectableUnitItem extends StatelessWidget {
     required this.onTap,
   });
 
+  static const Color _primaryBlue = Color(0xFF1976D2);
+  static final Color _fillColor = Colors.grey[100]!;
+  static const double _borderRadius = 15.0;
+  static const double _borderWidth = 2.0;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        margin: const EdgeInsets.symmetric(vertical: 6.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-                  colors: [Color(0xFF8CCBFF), Color(0xFF1976D2)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                )
-              : null,
-          color: isSelected ? null : Colors.grey[100],
-          borderRadius: BorderRadius.circular(15.0),
-          border: isSelected
-              ? null
-              : Border.all(color: Colors.grey[400]!, width: 1.5),
+          color: _fillColor,
+          borderRadius: BorderRadius.circular(_borderRadius),
+          border: Border.all(
+            color: isSelected ? _primaryBlue : Colors.grey[400]!,
+            width: _borderWidth,
+          ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.3),
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 4),
+                    color: _primaryBlue.withOpacity(0.2),
+                    blurRadius: 5,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 3),
                   ),
                 ]
               : [
@@ -443,12 +433,12 @@ class _SelectableUnitItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? Colors.white : Colors.grey[700],
+                color: isSelected ? _primaryBlue : Colors.grey[700],
               ),
             ),
             Icon(
               isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: isSelected ? Colors.greenAccent : Colors.grey[400],
+              color: isSelected ? Colors.green : Colors.grey[400],
             ),
           ],
         ),
