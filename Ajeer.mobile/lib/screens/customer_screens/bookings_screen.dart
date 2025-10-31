@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'home_screen.dart';
+import 'profile_screen.dart';
+import 'chat_screen.dart';
 
 class BookingsScreen extends StatefulWidget {
   const BookingsScreen({super.key});
@@ -95,15 +97,29 @@ class _BookingsScreenState extends State<BookingsScreen>
       });
     }
 
-    if (index == 3) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ServiceScreen()),
-      );
-    } else if (index != _selectedIndex) {
-      setState(() {
-        _selectedIndex = index;
-      });
+    if (index == _selectedIndex) return;
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ChatScreen()),
+        );
+        break;
+      case 2:
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ServiceScreen()),
+        );
+        break;
     }
   }
 

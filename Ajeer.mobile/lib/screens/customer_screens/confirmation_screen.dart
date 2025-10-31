@@ -4,6 +4,9 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
+import 'profile_screen.dart';
+import 'chat_screen.dart';
+import 'home_screen.dart'; // Contains ServiceScreen
 
 class ConfirmationScreen extends StatefulWidget {
   final String serviceName;
@@ -99,17 +102,33 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    if (index == 3) {
-      Navigator.popUntil(context, (route) => route.isFirst);
-    } else if (index == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const BookingsScreen()),
-      );
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
+    if (index == _selectedIndex) return;
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ChatScreen()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BookingsScreen()),
+        );
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ServiceScreen()),
+        );
+        break;
     }
   }
 

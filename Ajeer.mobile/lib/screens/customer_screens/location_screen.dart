@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'media_screen.dart';
+import 'profile_screen.dart';
+import 'chat_screen.dart';
+import 'home_screen.dart'; // Import to access ServiceScreen
 
 class LocationScreen extends StatefulWidget {
   final String serviceName;
@@ -62,17 +65,34 @@ class _LocationScreenState extends State<LocationScreen> {
   ];
 
   void _onNavItemTapped(int index) {
-    if (index == 3) {
-      Navigator.popUntil(context, (route) => route.isFirst);
-    } else if (index == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const BookingsScreen()),
-      );
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
+    if (index == _selectedIndex) return;
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ChatScreen()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BookingsScreen()),
+        );
+        break;
+      case 3:
+        // FIX: Use pushReplacement to ServiceScreen for consistent bottom nav behavior
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ServiceScreen()),
+        );
+        break;
     }
   }
 

@@ -5,6 +5,9 @@ import 'dart:io';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'confirmation_screen.dart';
+import 'profile_screen.dart';
+import 'chat_screen.dart';
+import 'home_screen.dart'; // Import to access ServiceScreen
 
 class MediaScreen extends StatefulWidget {
   final String serviceName;
@@ -110,17 +113,34 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    if (index == 3) {
-      Navigator.popUntil(context, (route) => route.isFirst);
-    } else if (index == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const BookingsScreen()),
-      );
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
+    if (index == _selectedIndex) return;
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ChatScreen()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BookingsScreen()),
+        );
+        break;
+      case 3:
+        // FIX: Use pushReplacement to ServiceScreen for consistent bottom nav behavior
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ServiceScreen()),
+        );
+        break;
     }
   }
 
@@ -415,7 +435,7 @@ class _MediaScreenState extends State<MediaScreen> {
               color: Colors.black26,
               spreadRadius: 1,
               blurRadius: 10,
-              offset: const Offset(0, -3),
+              offset: Offset(0, -3),
             ),
           ],
         ),
@@ -792,7 +812,7 @@ class _NavigationHeader extends StatelessWidget {
           Shadow(
             blurRadius: 2.0,
             color: Colors.black26,
-            offset: const Offset(1.0, 1.0),
+            offset: Offset(1.0, 1.0),
           ),
         ],
       ),

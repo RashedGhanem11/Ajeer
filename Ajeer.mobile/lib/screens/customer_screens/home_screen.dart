@@ -1,11 +1,11 @@
-// lib/screens/customer_screens/home_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'unit_type_screen.dart';
 import 'bookings_screen.dart';
 import '../../services/services.dart';
+import 'profile_screen.dart';
+import 'chat_screen.dart';
 
 class ServiceScreen extends StatefulWidget {
   const ServiceScreen({super.key});
@@ -47,15 +47,29 @@ class _ServiceScreenState extends State<ServiceScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const BookingsScreen()),
-      );
-    } else if (index != _selectedIndex) {
-      setState(() {
-        _selectedIndex = index;
-      });
+    if (index == _selectedIndex) return;
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ChatScreen()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BookingsScreen()),
+        );
+        break;
+      case 3:
+        break;
     }
   }
 
