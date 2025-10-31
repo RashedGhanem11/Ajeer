@@ -17,11 +17,16 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _lightBlue = Color(0xFF8CCBFF);
+  static const Color _saveGreen = Color(0xFF4CAF50);
+  static const Color _cancelRed = Color(0xFFF44336);
   static const double _borderRadius = 50.0;
   static const double _profileAvatarHeight = 100.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
+  static const double _fieldVerticalPadding = 16.0;
 
   int _selectedIndex = 0;
+  bool _isPasswordVisible = false;
+  bool _isEditing = false;
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -43,12 +48,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  String _firstName = 'Justin';
-  String _lastName = 'Mason';
+  String _firstName = 'Ahmad';
+  String _lastName = 'K.';
   String _mobileNumber = '962 700000000';
-  String _email = 'justin.m@example.com';
+  String _email = 'ahmad.k@example.com';
   String _password = '********';
   File? _profileImage;
+  File? _originalProfileImage; // Stores image before editing started
   bool _dataHasChanged = false;
 
   late TextEditingController _firstNameController;
@@ -87,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _emailController.text != _email ||
           (_passwordController.text != _password &&
               _passwordController.text != '********') ||
-          (_profileImage != null);
+          (_profileImage != _originalProfileImage);
 
       if (_dataHasChanged != changed) {
         setState(() {
@@ -129,6 +135,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _pickImage() async {
+    if (!_isEditing) return;
+
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -148,7 +156,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (_passwordController.text != '********') {
         _password = _passwordController.text;
       }
+      _originalProfileImage = _profileImage;
       _dataHasChanged = false;
+      _isEditing = false;
     });
     _passwordController.text = '********';
 
@@ -161,6 +171,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       ),
     );
+  }
+
+  void _toggleEditMode() {
+    if (!_isEditing) {
+      // ENTERING Edit Mode
+      _originalProfileImage = _profileImage; // Save current image
+    } else {
+      // EXITING Edit Mode (Cancel)
+      if (_dataHasChanged) {
+        // Revert all fields to original state
+        _firstNameController.text = _firstName;
+        _lastNameController.text = _lastName;
+        _mobileController.text = _mobileNumber;
+        _emailController.text = _email;
+        _passwordController.text = '********';
+        _profileImage = _originalProfileImage; // Revert profile image
+        _dataHasChanged = false;
+      }
+    }
+    setState(() {
+      _isEditing = !_isEditing;
+    });
   }
 
   void _showSwitchModeDialog() {
@@ -332,36 +364,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              CircleAvatar(
-                radius: _profileAvatarHeight / 2,
-                backgroundColor: _lightBlue,
-                backgroundImage: _profileImage != null
-                    ? FileImage(_profileImage!)
-                    : null,
-                child: _profileImage == null
-                    ? Text(
-                        initial,
-                        style: const TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: _primaryBlue,
-                        ),
-                      )
-                    : null,
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: _primaryBlue, width: 2),
-                  ),
-                  child: const Icon(Icons.edit, color: _primaryBlue, size: 20),
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 4.0),
+                ),
+                child: CircleAvatar(
+                  radius: _profileAvatarHeight / 2,
+                  backgroundColor: _lightBlue,
+                  backgroundImage: _profileImage != null
+                      ? FileImage(_profileImage!)
+                      : null,
+                  child: _profileImage == null
+                      ? Text(
+                          initial,
+                          style: const TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: _primaryBlue,
+                          ),
+                        )
+                      : null,
                 ),
               ),
+              if (_isEditing)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _primaryBlue, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.edit,
+                      color: _primaryBlue,
+                      size: 20,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -404,15 +447,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'My Profile',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'My Profile',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  _buildEditSaveButtons(),
+                ],
               ),
-              const SizedBox(height: 25.0),
+              const SizedBox(height: 20.0),
               _buildInfoField(
                 controller: _firstNameController,
                 label: 'First Name',
@@ -425,8 +474,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               _buildInfoField(
                 controller: _mobileController,
-                label: 'Mobile Number (962 7XXXXXXXX)',
-                icon: Icons.phone_android_outlined,
+                label: 'Mobile Number',
+                icon: Icons.call_outlined,
                 keyboardType: TextInputType.phone,
               ),
               _buildInfoField(
@@ -441,30 +490,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: Icons.lock_outline,
                 isPassword: true,
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 10.0),
-                child: ElevatedButton(
-                  onPressed: _dataHasChanged ? _saveProfile : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryBlue,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[300],
-                    elevation: 5,
-                    minimumSize: const Size(double.infinity, 55),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15.0),
-                    ),
-                    shadowColor: _primaryBlue.withOpacity(0.5),
-                  ),
-                  child: const Text(
-                    'Save Changes',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildEditSaveButtons() {
+    // Determine the color and whether the save button is enabled
+    final Color saveColor = _dataHasChanged ? _saveGreen : Colors.grey;
+    final bool saveEnabled = _dataHasChanged;
+
+    // FIX: The Cancel button is now RED in all cases when in edit mode.
+    final Color cancelColor = _isEditing ? _cancelRed : _primaryBlue;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Save Button (only visible in edit mode)
+        if (_isEditing)
+          _buildActionButton(
+            icon: Icons.check,
+            tooltip: 'Save Changes',
+            onPressed: saveEnabled ? _saveProfile : null,
+            backgroundColor: saveColor,
+          ),
+        if (_isEditing) const SizedBox(width: 10),
+
+        // Edit/Cancel Button
+        _buildActionButton(
+          icon: _isEditing ? Icons.close : Icons.edit,
+          tooltip: _isEditing ? 'Cancel Editing' : 'Edit Profile',
+          onPressed: _toggleEditMode,
+          backgroundColor: cancelColor,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback? onPressed,
+    required Color backgroundColor,
+  }) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        shape: BoxShape.circle,
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+        ],
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white, size: 24),
+        onPressed: onPressed,
+        tooltip: tooltip,
       ),
     );
   }
@@ -477,29 +561,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
     TextInputType keyboardType = TextInputType.text,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20.0),
+      padding: const EdgeInsets.only(bottom: 15.0),
       child: TextField(
         controller: controller,
-        obscureText: isPassword,
+        readOnly: !_isEditing,
+        obscureText: isPassword && !_isPasswordVisible,
         keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.black87),
+        style: TextStyle(color: _isEditing ? Colors.black87 : Colors.black54),
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: const Icon(Icons.lock_outline, color: _primaryBlue),
+          prefixIcon: Icon(
+            icon,
+            color: _isEditing ? _primaryBlue : Colors.grey,
+          ),
+          suffixIcon: isPassword && _isEditing
+              ? IconButton(
+                  icon: Icon(
+                    _isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                    color: _primaryBlue,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                )
+              : null,
+
+          // FIX: Explicitly set the color for the label when it floats (focused/has text)
+          floatingLabelStyle: _isEditing
+              ? const TextStyle(
+                  color: _primaryBlue,
+                  fontWeight: FontWeight.normal,
+                )
+              : TextStyle(
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.normal,
+                ),
+
+          // FIX: Set the default label style explicitly to a gray tone when inside the field
+          labelStyle: TextStyle(
+            color: _isEditing ? Colors.grey : Colors.grey.shade600,
+            fontWeight: FontWeight.normal,
+          ),
+
+          fillColor: _isEditing ? Colors.white : Colors.grey.shade100,
+          filled: true,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Colors.grey),
+            borderSide: const BorderSide(color: Colors.grey, width: 2.0),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: Colors.grey[400]!),
+            borderSide: BorderSide(
+              color: _isEditing ? Colors.grey.shade400 : Colors.grey.shade300,
+              width: 2.0,
+            ),
           ),
+          // Ensure the border is primary blue on focus
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: _primaryBlue, width: 2.0),
+            borderSide: const BorderSide(color: _primaryBlue, width: 3.0),
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide(
+              color: _isEditing ? Colors.grey.shade300 : Colors.grey.shade300,
+              width: 2.0,
+            ),
           ),
           contentPadding: const EdgeInsets.symmetric(
-            vertical: 15,
+            vertical: _fieldVerticalPadding,
             horizontal: 10,
           ),
         ),
