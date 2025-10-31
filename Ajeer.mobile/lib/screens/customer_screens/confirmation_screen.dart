@@ -33,21 +33,22 @@ class _ConfirmationConstants {
   static const Color lightBlue = Color(0xFF8CCBFF);
   static const Color primaryBlue = Color(0xFF1976D2);
   static const Color confirmGreen = Color(0xFF4CAF50);
-  static const Color darkGreen = Color(0xFF2E7D32);
-  static const Color lightGreen = Color(0xFF81C784);
-  static const Color darkRed = Color(0xFFD32F2F);
-  static const Color lightRed = Color(0xFFE57373);
   static const Color lightGrayText = Color(0xFFA0A0A0);
   static const Color mediumGrayBorder = Color(0xFFDCDCDC);
   static const double logoHeight = 105.0;
   static const double overlapAdjustment = 10.0;
   static const double navBarTotalHeight = 56.0 + 20.0 + 10.0;
   static const double horizontalPadding = 20.0;
+  static const double iconPositionAdjustment = 18.0;
+  static const double detailItemBottomPadding = 10.0;
+  static const double detailItemVerticalPadding = 8.0;
+  static const double detailItemHorizontalPadding = 12.0;
+  static const double detailItemBorderRadius = 10.0;
 }
 
 class _ConfirmationScreenState extends State<ConfirmationScreen> {
   int _selectedIndex = 3;
-  String _currentMediaView = 'Images';
+  String _currentMediaView = 'Photo';
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -82,11 +83,11 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     super.initState();
 
     if (_photoFiles.isNotEmpty) {
-      _currentMediaView = 'Images';
+      _currentMediaView = 'Photo';
     } else if (_videoFiles.isNotEmpty) {
       _currentMediaView = 'Video';
     } else {
-      _currentMediaView = 'Images';
+      _currentMediaView = 'Photo';
     }
   }
 
@@ -106,222 +107,11 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   }
 
   void _onConfirmTap() {
-    _showPaymentDialog();
-  }
-
-  void _showPaymentDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          contentPadding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.0),
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          content: Container(
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20.0),
-              gradient: const LinearGradient(
-                colors: [
-                  _ConfirmationConstants.darkGreen,
-                  _ConfirmationConstants.lightGreen,
-                ],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.payment, color: Colors.white, size: 28),
-                    SizedBox(width: 12),
-                    Text(
-                      'Confirm Booking',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                const Text(
-                  'Continue to payment?',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextButton(
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.of(dialogContext).pop();
-                        _showCancelDialog();
-                      },
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: _ConfirmationConstants.confirmGreen,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                      ),
-                      child: const Text(
-                        'Continue',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.of(dialogContext).pop();
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Booking for ${widget.serviceName} confirmed!',
-                            ),
-                            backgroundColor:
-                                _ConfirmationConstants.confirmGreen,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showCancelDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          contentPadding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.0),
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          content: Container(
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20.0),
-              gradient: const LinearGradient(
-                colors: [
-                  _ConfirmationConstants.darkRed,
-                  _ConfirmationConstants.lightRed,
-                ],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                    SizedBox(width: 12),
-                    Text(
-                      'Cancel Booking',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                const Text(
-                  'Are you sure you want to cancel this booking?',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextButton(
-                      child: const Text(
-                        'No',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.of(dialogContext).pop();
-                      },
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                      ),
-                      child: const Text(
-                        'Yes, Cancel',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.of(dialogContext).pop();
-                        Navigator.popUntil(context, (route) => route.isFirst);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Booking for ${widget.serviceName} confirmed!'),
+        backgroundColor: _ConfirmationConstants.confirmGreen,
+      ),
     );
   }
 
@@ -350,7 +140,13 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     final double iconTopPosition =
         headerHeight +
         (availableHeight / 2) -
-        _ConfirmationConstants.logoHeight / 2;
+        _ConfirmationConstants.logoHeight / 2 -
+        _ConfirmationConstants.iconPositionAdjustment;
+
+    const Color primaryColor = _ConfirmationConstants.confirmGreen;
+    final Color secondaryColor = _ConfirmationConstants.confirmGreen
+        .withOpacity(0.8);
+    const Color glowColor = _ConfirmationConstants.confirmGreen;
 
     return Positioned(
       top: iconTopPosition,
@@ -363,21 +159,18 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
-              colors: [
-                _ConfirmationConstants.confirmGreen.withOpacity(0.8),
-                _ConfirmationConstants.confirmGreen,
-              ],
+              colors: [secondaryColor, primaryColor],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             boxShadow: [
-              BoxShadow(
+              const BoxShadow(
                 blurRadius: 5.0,
                 color: Colors.black38,
-                offset: const Offset(2.0, 2.0),
+                offset: Offset(2.0, 2.0),
               ),
               BoxShadow(
-                color: _ConfirmationConstants.confirmGreen.withOpacity(1.0),
+                color: glowColor.withOpacity(1.0),
                 blurRadius: 70.0,
                 spreadRadius: 20.0,
                 offset: const Offset(0, 0),
@@ -458,7 +251,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
             title: 'Khalid. S',
             subtitle: '0796753640',
           ),
-          const SizedBox(height: 20.0),
+          const SizedBox(height: 15.0),
           _MediaSummary(
             photoCount: _photoFiles.length,
             videoCount: _videoFiles.length,
@@ -482,7 +275,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     IconData placeholderIcon = Icons.clear;
     String placeholderText = '';
 
-    if (_currentMediaView == 'Images') {
+    if (_currentMediaView == 'Photo') {
       currentFiles = _photoFiles;
       placeholderIcon = Icons.image_not_supported_outlined;
       placeholderText = 'No images uploaded.';
@@ -537,7 +330,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         itemCount: currentFiles.length,
         itemBuilder: (context, index) {
           final file = currentFiles[index];
-          final isImage = _currentMediaView == 'Images';
+          final isImage = _currentMediaView == 'Photo';
 
           return Padding(
             padding: const EdgeInsets.all(8.0),
@@ -716,12 +509,14 @@ class _DetailItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15.0),
+      padding: const EdgeInsets.only(
+        bottom: _ConfirmationConstants.detailItemBottomPadding,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 10.0, right: 15.0),
+            padding: const EdgeInsets.only(top: 8.0, right: 15.0),
             child: Icon(
               icon,
               color: _ConfirmationConstants.primaryBlue,
@@ -731,12 +526,14 @@ class _DetailItem extends StatelessWidget {
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: 15.0,
-                vertical: 12.0,
+                horizontal: _ConfirmationConstants.detailItemHorizontalPadding,
+                vertical: _ConfirmationConstants.detailItemVerticalPadding,
               ),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(15.0),
+                borderRadius: BorderRadius.circular(
+                  _ConfirmationConstants.detailItemBorderRadius,
+                ),
                 border: Border.all(
                   color: _ConfirmationConstants.mediumGrayBorder,
                   width: 2.0,
@@ -755,7 +552,7 @@ class _DetailItem extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 17,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -764,7 +561,7 @@ class _DetailItem extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.normal,
                       color: Colors.grey[700],
                     ),
@@ -809,31 +606,28 @@ class _MediaSummary extends StatelessWidget {
         ),
         const SizedBox(height: 10.0),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            Expanded(
-              child: _buildMediaTab(
-                label: 'Images',
-                type: 'Images',
-                icon: Icons.image_outlined,
-                count: photoCount,
-              ),
+            _buildMediaTab(
+              label: 'Photo',
+              type: 'Photo',
+              icon: Icons.image_outlined,
+              count: photoCount,
+              context: context,
             ),
-            Expanded(
-              child: _buildMediaTab(
-                label: 'Video',
-                type: 'Video',
-                icon: Icons.videocam_outlined,
-                count: videoCount,
-              ),
+            _buildMediaTab(
+              label: 'Video',
+              type: 'Video',
+              icon: Icons.videocam_outlined,
+              count: videoCount,
+              context: context,
             ),
-            Expanded(
-              child: _buildMediaTab(
-                label: 'Audio',
-                type: 'Audio',
-                icon: Icons.mic_none,
-                count: audioCount,
-              ),
+            _buildMediaTab(
+              label: 'Audio',
+              type: 'Audio',
+              icon: Icons.mic_none,
+              count: audioCount,
+              context: context,
             ),
           ],
         ),
@@ -846,80 +640,43 @@ class _MediaSummary extends StatelessWidget {
     required String type,
     required IconData icon,
     required int count,
+    required BuildContext context,
   }) {
     final bool isSelected = currentView == type;
     return GestureDetector(
       onTap: () => onViewChange(type),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4.0),
-        padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 10.0),
+        width: MediaQuery.of(context).size.width / 4.2,
+        padding: const EdgeInsets.symmetric(vertical: 10.0),
         decoration: BoxDecoration(
-          color: isSelected
-              ? _ConfirmationConstants.primaryBlue
-              : Colors.grey[100],
-          borderRadius: BorderRadius.circular(18.0),
+          color: isSelected ? _ConfirmationConstants.primaryBlue : Colors.white,
+          borderRadius: BorderRadius.circular(20.0),
           border: Border.all(
             color: isSelected
                 ? _ConfirmationConstants.primaryBlue
-                : Colors.grey.shade400,
+                : Colors.grey.shade300,
             width: 1.5,
           ),
         ),
-        child: Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  color: isSelected
-                      ? Colors.white
-                      : _ConfirmationConstants.primaryBlue,
-                  size: 24,
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black87,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+            Icon(
+              icon,
+              color: isSelected
+                  ? Colors.white
+                  : _ConfirmationConstants.primaryBlue,
+              size: 24,
             ),
-            if (count > 0)
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Container(
-                    margin: const EdgeInsets.only(left: 35.0, bottom: 25.0),
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 22,
-                      minHeight: 22,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '$count',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
               ),
+            ),
           ],
         ),
       ),
@@ -948,6 +705,7 @@ class _DescriptionDisplay extends StatelessWidget {
         const SizedBox(height: 10.0),
         Container(
           width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 50.0),
           padding: const EdgeInsets.all(15.0),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -964,12 +722,15 @@ class _DescriptionDisplay extends StatelessWidget {
               ),
             ],
           ),
-          child: Text(
-            description,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.black87,
-              height: 1.4,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: Text(
+              description,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+                height: 1.4,
+              ),
             ),
           ),
         ),
