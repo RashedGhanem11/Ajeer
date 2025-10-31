@@ -23,6 +23,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const double _profileAvatarHeight = 100.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
   static const double _fieldVerticalPadding = 16.0;
+  static const double _whiteContainerHeightRatio = 0.3;
+  static const double _profileTextGapReduction = 10.0;
 
   int _selectedIndex = 0;
   bool _isPasswordVisible = false;
@@ -54,7 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _email = 'ahmad.k@example.com';
   String _password = '********';
   File? _profileImage;
-  File? _originalProfileImage; // Stores image before editing started
+  File? _originalProfileImage;
   bool _dataHasChanged = false;
 
   late TextEditingController _firstNameController;
@@ -175,18 +177,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _toggleEditMode() {
     if (!_isEditing) {
-      // ENTERING Edit Mode
-      _originalProfileImage = _profileImage; // Save current image
+      _originalProfileImage = _profileImage;
     } else {
-      // EXITING Edit Mode (Cancel)
       if (_dataHasChanged) {
-        // Revert all fields to original state
         _firstNameController.text = _firstName;
         _lastNameController.text = _lastName;
         _mobileController.text = _mobileNumber;
         _emailController.text = _email;
         _passwordController.text = '********';
-        _profileImage = _originalProfileImage; // Revert profile image
+        _profileImage = _originalProfileImage;
         _dataHasChanged = false;
       }
     }
@@ -235,7 +234,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15.0),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 12.0),
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
                   ),
                   onPressed: () {
                     Navigator.of(ctx).pop();
@@ -245,7 +244,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       'Switch',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16.0,
+                        fontSize: 14.0,
                       ),
                     ),
                   ),
@@ -268,7 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
-    final double whiteContainerTop = screenHeight * 0.25;
+    final double whiteContainerTop = screenHeight * _whiteContainerHeightRatio;
     final double avatarTopPosition =
         whiteContainerTop - (_profileAvatarHeight / 2);
     final double bottomNavClearance =
@@ -280,7 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           _buildBackgroundGradient(whiteContainerTop),
           _buildAjeerTitle(context),
-          _buildSwitchModeButton(context),
+          _buildSwitchModeButton(context, whiteContainerTop),
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
@@ -337,14 +336,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSwitchModeButton(BuildContext context) {
+  Widget _buildSwitchModeButton(
+    BuildContext context,
+    double whiteContainerTop,
+  ) {
+    final double buttonTop = MediaQuery.of(context).padding.top + 70;
+
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 5,
-      right: 15,
-      child: IconButton(
-        icon: const Icon(Icons.swap_horiz, color: Colors.white, size: 30),
-        onPressed: _showSwitchModeDialog,
-        tooltip: 'Switch Mode',
+      top: buttonTop,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: ElevatedButton.icon(
+          onPressed: _showSwitchModeDialog,
+          icon: const Icon(Icons.handyman, size: 20),
+          label: const Text(
+            'Switch to Provider Mode',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: _primaryBlue,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30.0),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            elevation: 8,
+          ),
+        ),
       ),
     );
   }
@@ -440,7 +459,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             20.0,
-            (_profileAvatarHeight / 2) + 20.0,
+            (_profileAvatarHeight / 2) + 20.0 - _profileTextGapReduction,
             20.0,
             bottomNavClearance + 20.0,
           ),
@@ -498,17 +517,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildEditSaveButtons() {
-    // Determine the color and whether the save button is enabled
     final Color saveColor = _dataHasChanged ? _saveGreen : Colors.grey;
     final bool saveEnabled = _dataHasChanged;
 
-    // FIX: The Cancel button is now RED in all cases when in edit mode.
     final Color cancelColor = _isEditing ? _cancelRed : _primaryBlue;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Save Button (only visible in edit mode)
         if (_isEditing)
           _buildActionButton(
             icon: Icons.check,
@@ -518,7 +534,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         if (_isEditing) const SizedBox(width: 10),
 
-        // Edit/Cancel Button
         _buildActionButton(
           icon: _isEditing ? Icons.close : Icons.edit,
           tooltip: _isEditing ? 'Cancel Editing' : 'Edit Profile',
@@ -590,7 +605,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 )
               : null,
 
-          // FIX: Explicitly set the color for the label when it floats (focused/has text)
           floatingLabelStyle: _isEditing
               ? const TextStyle(
                   color: _primaryBlue,
@@ -601,7 +615,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   fontWeight: FontWeight.normal,
                 ),
 
-          // FIX: Set the default label style explicitly to a gray tone when inside the field
           labelStyle: TextStyle(
             color: _isEditing ? Colors.grey : Colors.grey.shade600,
             fontWeight: FontWeight.normal,
@@ -620,7 +633,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: 2.0,
             ),
           ),
-          // Ensure the border is primary blue on focus
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: const BorderSide(color: _primaryBlue, width: 3.0),
