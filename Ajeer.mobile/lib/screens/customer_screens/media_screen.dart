@@ -12,6 +12,8 @@ class MediaScreen extends StatefulWidget {
   final DateTime selectedDate;
   final TimeOfDay selectedTime;
   final String selectionMode;
+  final int totalTimeMinutes;
+  final double totalPrice;
 
   const MediaScreen({
     super.key,
@@ -20,6 +22,8 @@ class MediaScreen extends StatefulWidget {
     required this.selectedDate,
     required this.selectedTime,
     required this.selectionMode,
+    required this.totalTimeMinutes,
+    required this.totalPrice,
   });
 
   @override
@@ -47,9 +51,9 @@ class _MediaScreenState extends State<MediaScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
-  List<File> _photoFiles = [];
-  List<File> _videoFiles = [];
-  List<File> _audioFiles = [];
+  final List<File> _photoFiles = [];
+  final List<File> _videoFiles = [];
+  final List<File> _audioFiles = [];
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -142,6 +146,8 @@ class _MediaScreenState extends State<MediaScreen> {
           selectionMode: widget.selectionMode,
           userDescription: _userDescription,
           pickedMediaFiles: allPickedFiles,
+          totalTimeMinutes: widget.totalTimeMinutes,
+          totalPrice: widget.totalPrice,
         ),
       ),
     );
@@ -171,16 +177,10 @@ class _MediaScreenState extends State<MediaScreen> {
         pickedFiles.add(videoFile);
       }
     } else if (_selectedMediaType == 'Audio') {
-      // Audio cannot be picked or recorded directly using ImagePicker.
-      // We will only allow recording, but implementation is outside this package.
       if (source == ImageSource.gallery) {
-        print('Error: Customer is not allowed to upload existing audio files.');
         Navigator.of(context).pop();
         return;
       } else if (source == ImageSource.camera) {
-        print(
-          'Note: Native audio recording requires a separate plugin (e.g., `record`). Implementation skipped.',
-        );
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -195,18 +195,27 @@ class _MediaScreenState extends State<MediaScreen> {
 
     if (pickedFiles.isNotEmpty) {
       setState(() {
-        _currentMediaFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
+        if (_selectedMediaType == 'Photo') {
+          _photoFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
+        } else if (_selectedMediaType == 'Video') {
+          _videoFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
+        } else if (_selectedMediaType == 'Audio') {
+          _audioFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
+        }
       });
-      print('${pickedFiles.length} files selected.');
-    } else {
-      print('No media selected.');
     }
     Navigator.of(context).pop();
   }
 
   void _removeMediaFile(int index) {
     setState(() {
-      _currentMediaFiles.removeAt(index);
+      if (_selectedMediaType == 'Photo') {
+        _photoFiles.removeAt(index);
+      } else if (_selectedMediaType == 'Video') {
+        _videoFiles.removeAt(index);
+      } else if (_selectedMediaType == 'Audio') {
+        _audioFiles.removeAt(index);
+      }
     });
   }
 
@@ -218,7 +227,6 @@ class _MediaScreenState extends State<MediaScreen> {
         ? 'video'
         : 'audio recording';
 
-    // Check if the current tab is Audio
     bool isAudio = mediaType == 'Audio';
 
     showModalBottomSheet(
@@ -246,7 +254,6 @@ class _MediaScreenState extends State<MediaScreen> {
                 ),
               ),
               const SizedBox(height: 15.0),
-              // Option 1: Select from Gallery/Files (Disabled for Audio)
               if (!isAudio)
                 ListTile(
                   leading: const Icon(Icons.photo_library, color: _primaryBlue),
@@ -256,7 +263,6 @@ class _MediaScreenState extends State<MediaScreen> {
                   ),
                   onTap: () => _pickMedia(ImageSource.gallery),
                 ),
-              // Option 2: Take/Record (Camera Source)
               ListTile(
                 leading: isAudio
                     ? const Icon(Icons.mic, color: _primaryBlue)
@@ -409,7 +415,7 @@ class _MediaScreenState extends State<MediaScreen> {
               color: Colors.black26,
               spreadRadius: 1,
               blurRadius: 10,
-              offset: Offset(0, -3),
+              offset: const Offset(0, -3),
             ),
           ],
         ),
@@ -425,21 +431,6 @@ class _MediaScreenState extends State<MediaScreen> {
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 20.0,
-                top: 4.0,
-                bottom: 10.0,
-              ),
-              child: Text(
-                '${widget.serviceName} - ${widget.unitType}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey,
                 ),
               ),
             ),
@@ -581,9 +572,11 @@ class _MediaScreenState extends State<MediaScreen> {
                   color: isPhoto ? Colors.grey.shade200 : Colors.black,
                   child: isPhoto
                       ? Image.file(file, fit: BoxFit.cover)
-                      : const Center(
+                      : Center(
                           child: Icon(
-                            Icons.play_circle_outline,
+                            _selectedMediaType == 'Audio'
+                                ? Icons.mic_rounded
+                                : Icons.play_circle_outline,
                             color: Colors.white,
                             size: 40,
                           ),
@@ -799,7 +792,7 @@ class _NavigationHeader extends StatelessWidget {
           Shadow(
             blurRadius: 2.0,
             color: Colors.black26,
-            offset: Offset(1.0, 1.0),
+            offset: const Offset(1.0, 1.0),
           ),
         ],
       ),

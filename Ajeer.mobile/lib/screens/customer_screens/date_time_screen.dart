@@ -8,11 +8,15 @@ import 'location_screen.dart';
 class DateTimeScreen extends StatefulWidget {
   final String serviceName;
   final String unitType;
+  final int totalTimeMinutes;
+  final double totalPrice;
 
   const DateTimeScreen({
     super.key,
     required this.serviceName,
     required this.unitType,
+    required this.totalTimeMinutes,
+    required this.totalPrice,
   });
 
   @override
@@ -105,7 +109,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(foregroundColor: _primaryBlue),
             ),
-            // Corrected: Use DatePickerThemeData
             datePickerTheme: DatePickerThemeData(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(_dialogBorderRadius),
@@ -137,7 +140,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(foregroundColor: _primaryBlue),
             ),
-            // Corrected: Use TimePickerThemeData
             timePickerTheme: TimePickerThemeData(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(_dialogBorderRadius),
@@ -166,6 +168,8 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           selectedDate: _selectedDate,
           selectedTime: _selectedTime,
           selectionMode: _selectionMode,
+          totalTimeMinutes: widget.totalTimeMinutes,
+          totalPrice: widget.totalPrice,
         ),
       ),
     );
@@ -319,26 +323,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
             Padding(
               padding: const EdgeInsets.only(left: 20.0, top: 20.0),
               child: Text(
-                'Select Date & Time',
+                'Select date & time',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 20.0,
-                top: 4.0,
-                bottom: 10.0,
-              ),
-              child: Text(
-                '${widget.serviceName} - ${widget.unitType}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey,
                 ),
               ),
             ),

@@ -13,6 +13,8 @@ class ConfirmationScreen extends StatefulWidget {
   final String selectionMode;
   final String? userDescription;
   final List<File> pickedMediaFiles;
+  final int totalTimeMinutes;
+  final double totalPrice;
 
   const ConfirmationScreen({
     super.key,
@@ -23,6 +25,8 @@ class ConfirmationScreen extends StatefulWidget {
     required this.selectionMode,
     this.userDescription,
     required this.pickedMediaFiles,
+    required this.totalTimeMinutes,
+    required this.totalPrice,
   });
 
   @override
@@ -32,6 +36,8 @@ class ConfirmationScreen extends StatefulWidget {
 class _ConfirmationConstants {
   static const Color lightBlue = Color(0xFF8CCBFF);
   static const Color primaryBlue = Color(0xFF1976D2);
+  static const Color secondaryLightBlue = Color(0xFFc2e3ff);
+  static const Color secondaryBlue = Color(0xFF57b2ff);
   static const Color confirmGreen = Color(0xFF4CAF50);
   static const Color lightGrayText = Color(0xFFA0A0A0);
   static const Color mediumGrayBorder = Color(0xFFDCDCDC);
@@ -49,6 +55,7 @@ class _ConfirmationConstants {
 class _ConfirmationScreenState extends State<ConfirmationScreen> {
   int _selectedIndex = 3;
   String _currentMediaView = 'Photo';
+  bool _isConfirmButtonPressed = false;
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -107,9 +114,14 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   }
 
   void _onConfirmTap() {
+    setState(() {
+      _isConfirmButtonPressed = true;
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Booking for ${widget.serviceName} confirmed!'),
+        content: Text(
+          'Booking for ${widget.serviceName} confirmed! Estimated cost: JOD ${widget.totalPrice.toStringAsFixed(2)}',
+        ),
         backgroundColor: _ConfirmationConstants.confirmGreen,
       ),
     );
@@ -143,15 +155,23 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         _ConfirmationConstants.logoHeight / 2 -
         _ConfirmationConstants.iconPositionAdjustment;
 
-    const Color primaryColor = _ConfirmationConstants.confirmGreen;
-    final Color secondaryColor = _ConfirmationConstants.confirmGreen
-        .withOpacity(0.8);
-    const Color glowColor = _ConfirmationConstants.confirmGreen;
+    Color primaryColor = _isConfirmButtonPressed
+        ? _ConfirmationConstants.confirmGreen
+        : _ConfirmationConstants.secondaryBlue;
+    Color secondaryColor = _isConfirmButtonPressed
+        ? _ConfirmationConstants.confirmGreen
+        : _ConfirmationConstants.secondaryLightBlue;
+    Color glowColor = _isConfirmButtonPressed
+        ? _ConfirmationConstants.confirmGreen
+        : _ConfirmationConstants.lightBlue;
 
     return Positioned(
       top: iconTopPosition,
       right: 25.0,
       child: GestureDetector(
+        onTapDown: (_) => setState(() => _isConfirmButtonPressed = true),
+        onTapUp: (_) => setState(() => _isConfirmButtonPressed = false),
+        onTapCancel: () => setState(() => _isConfirmButtonPressed = false),
         onTap: _onConfirmTap,
         child: Container(
           width: 100.0,
@@ -170,10 +190,15 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                 offset: Offset(2.0, 2.0),
               ),
               BoxShadow(
-                color: glowColor.withOpacity(1.0),
-                blurRadius: 70.0,
-                spreadRadius: 20.0,
+                color: glowColor.withOpacity(0.7),
+                blurRadius: _isConfirmButtonPressed ? 70.0 : 40.0,
+                spreadRadius: _isConfirmButtonPressed ? 20.0 : 10.0,
                 offset: const Offset(0, 0),
+              ),
+              const BoxShadow(
+                blurRadius: 5.0,
+                color: Colors.black38,
+                offset: Offset(2.0, 2.0),
               ),
             ],
             border: Border.all(
@@ -229,6 +254,11 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _PriceAndDurationDisplay(
+            totalPrice: widget.totalPrice,
+            totalTimeMinutes: widget.totalTimeMinutes,
+          ),
+          const SizedBox(height: 15.0),
           _DetailItem(
             icon: serviceIcon,
             title: widget.serviceName,
@@ -441,6 +471,116 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         items: _navItems,
         selectedIndex: _selectedIndex,
         onIndexChanged: _onNavItemTapped,
+      ),
+    );
+  }
+}
+
+class _PriceAndDurationDisplay extends StatelessWidget {
+  final double totalPrice;
+  final int totalTimeMinutes;
+
+  const _PriceAndDurationDisplay({
+    required this.totalPrice,
+    required this.totalTimeMinutes,
+  });
+
+  String _formatDuration(int minutes) {
+    if (minutes < 60) {
+      return '$minutes min';
+    }
+    final int hours = minutes ~/ 60;
+    final int remainingMinutes = minutes % 60;
+
+    if (remainingMinutes == 0) {
+      return '$hours hr';
+    }
+    return '$hours hr $remainingMinutes min';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(15.0),
+      decoration: BoxDecoration(
+        color: _ConfirmationConstants.primaryBlue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(
+          _ConfirmationConstants.detailItemBorderRadius,
+        ),
+        border: Border.all(
+          color: _ConfirmationConstants.primaryBlue.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.monetization_on_outlined,
+                color: _ConfirmationConstants.primaryBlue,
+                size: 30,
+              ),
+              const SizedBox(width: 8.0),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Estimated Cost',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _ConfirmationConstants.primaryBlue,
+                    ),
+                  ),
+                  Text(
+                    'JOD ${totalPrice.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Container(
+            height: 40,
+            width: 1.0,
+            color: _ConfirmationConstants.primaryBlue.withOpacity(0.5),
+          ),
+          Row(
+            children: [
+              const Icon(
+                Icons.access_time,
+                color: _ConfirmationConstants.primaryBlue,
+                size: 30,
+              ),
+              const SizedBox(width: 8.0),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Est. Duration',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _ConfirmationConstants.primaryBlue,
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(totalTimeMinutes),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

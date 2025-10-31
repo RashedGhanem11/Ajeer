@@ -21,13 +21,30 @@ class UnitTypeScreen extends StatefulWidget {
 class _UnitTypeScreenState extends State<UnitTypeScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 3;
-  String? _selectedUnitType;
+  final Set<String> _selectedUnitTypes = {};
 
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
+
+  // UPDATED: Unit data with more reasonable prices (25.0 JOD to 60.0 JOD)
+  static const Map<String, Map<String, dynamic>> _unitData = {
+    'Deep Cleaning': {'time': 180, 'price': 55.0},
+    'House Keeping': {'time': 120, 'price': 35.0},
+    'Office Cleaning': {'time': 150, 'price': 40.0},
+    'Move In/Out Cleaning': {'time': 240, 'price': 60.0},
+    'Carpet Cleaning': {'time': 90, 'price': 25.0},
+  };
+
+  final List<String> _unitTypeKeys = const [
+    'Deep Cleaning',
+    'House Keeping',
+    'Office Cleaning',
+    'Move In/Out Cleaning',
+    'Carpet Cleaning',
+  ];
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -49,14 +66,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  final List<String> _unitTypes = const [
-    'Deep Cleaning',
-    'House Keeping',
-    'Office Cleaning',
-    'move in/out cleaning',
-    'carpet cleaning',
-  ];
-
   void _onNavItemTapped(int index) {
     if (index == 3) {
       Navigator.popUntil(context, (route) => route.isFirst);
@@ -74,29 +83,42 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
 
   void _onUnitTypeTapped(String unitType) {
     setState(() {
-      if (_selectedUnitType == unitType) {
-        _selectedUnitType = null;
+      if (_selectedUnitTypes.contains(unitType)) {
+        _selectedUnitTypes.remove(unitType);
       } else {
-        _selectedUnitType = unitType;
+        _selectedUnitTypes.add(unitType);
       }
     });
   }
 
   void _onNextTap() {
-    if (_selectedUnitType != null) {
+    if (_selectedUnitTypes.isNotEmpty) {
+      double totalCost = 0.0;
+      int totalMinutes = 0;
+
+      for (var unitType in _selectedUnitTypes) {
+        final data = _unitData[unitType];
+        if (data != null) {
+          totalCost += data['price'] as double;
+          totalMinutes += data['time'] as int;
+        }
+      }
+
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => DateTimeScreen(
             serviceName: widget.serviceName,
-            unitType: _selectedUnitType!,
+            unitType: _selectedUnitTypes.join(', '),
+            totalTimeMinutes: totalMinutes,
+            totalPrice: totalCost,
           ),
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a unit type first.'),
+          content: Text('Please select at least one unit type first.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -138,7 +160,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
               Navigator.pop(context);
             },
             onNextTap: _onNextTap,
-            isNextEnabled: _selectedUnitType != null,
+            isNextEnabled: _selectedUnitTypes.isNotEmpty,
           ),
         ],
       ),
@@ -244,9 +266,13 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
           children: [
             const SizedBox(height: 15.0),
             Padding(
-              padding: const EdgeInsets.only(left: 20.0, top: 20.0),
+              padding: const EdgeInsets.only(
+                left: 20.0,
+                top: 20.0,
+                bottom: 10.0,
+              ),
               child: Text(
-                widget.serviceName,
+                'Select unit type(s)',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -254,21 +280,11 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
                 ),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.only(left: 20.0, top: 4.0, bottom: 10.0),
-              child: Text(
-                'Select unit type(s)',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey,
-                ),
-              ),
-            ),
             Expanded(
               child: _UnitTypeListView(
-                unitTypes: _unitTypes,
-                selectedUnitType: _selectedUnitType,
+                unitTypes: _unitTypeKeys,
+                unitData: _unitData,
+                selectedUnitTypes: _selectedUnitTypes,
                 onUnitTypeTap: _onUnitTypeTapped,
                 bottomPadding: bottomNavClearance,
               ),
@@ -340,15 +356,17 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
 
 class _UnitTypeListView extends StatelessWidget {
   final List<String> unitTypes;
-  final String? selectedUnitType;
+  final Set<String> selectedUnitTypes;
   final ValueChanged<String> onUnitTypeTap;
   final double bottomPadding;
+  final Map<String, Map<String, dynamic>> unitData;
 
   const _UnitTypeListView({
     required this.unitTypes,
-    required this.selectedUnitType,
+    required this.selectedUnitTypes,
     required this.onUnitTypeTap,
     required this.bottomPadding,
+    required this.unitData,
   });
 
   @override
@@ -363,10 +381,13 @@ class _UnitTypeListView extends StatelessWidget {
       itemCount: unitTypes.length,
       itemBuilder: (context, index) {
         final unitName = unitTypes[index];
-        final bool isSelected = (selectedUnitType == unitName);
+        final bool isSelected = selectedUnitTypes.contains(unitName);
+        final data = unitData[unitName];
 
         return _SelectableUnitItem(
           name: unitName,
+          estimatedTime: data?['time'] ?? 0,
+          price: data?['price'] ?? 0.0,
           isSelected: isSelected,
           onTap: () {
             onUnitTypeTap(unitName);
@@ -379,11 +400,15 @@ class _UnitTypeListView extends StatelessWidget {
 
 class _SelectableUnitItem extends StatelessWidget {
   final String name;
+  final int estimatedTime;
+  final double price;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _SelectableUnitItem({
     required this.name,
+    required this.estimatedTime,
+    required this.price,
     required this.isSelected,
     required this.onTap,
   });
@@ -392,6 +417,14 @@ class _SelectableUnitItem extends StatelessWidget {
   static final Color _fillColor = Colors.grey[100]!;
   static const double _borderRadius = 15.0;
   static const double _borderWidth = 2.0;
+
+  String get _formattedTime {
+    if (estimatedTime < 60) return '$estimatedTime mins';
+    final hours = estimatedTime ~/ 60;
+    final minutes = estimatedTime % 60;
+    if (minutes == 0) return '$hours hrs';
+    return '$hours hrs $minutes mins';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -426,19 +459,47 @@ class _SelectableUnitItem extends StatelessWidget {
                 ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              name,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? _primaryBlue : Colors.grey[700],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w600,
+                      color: isSelected ? _primaryBlue : Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 4.0),
+                  Text(
+                    'Est. Time: $_formattedTime',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  ),
+                ],
               ),
             ),
-            Icon(
-              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: isSelected ? Colors.green : Colors.grey[400],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'JOD ${price.toStringAsFixed(1)}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _primaryBlue,
+                  ),
+                ),
+                Icon(
+                  isSelected
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
+                  color: isSelected ? Colors.green : Colors.grey[400],
+                ),
+              ],
             ),
           ],
         ),

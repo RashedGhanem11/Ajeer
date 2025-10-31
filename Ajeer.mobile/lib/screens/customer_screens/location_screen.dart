@@ -1,10 +1,7 @@
-// location_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
-// 1. IMPORT: Import the next screen for navigation
 import 'media_screen.dart';
 
 class LocationScreen extends StatefulWidget {
@@ -13,6 +10,8 @@ class LocationScreen extends StatefulWidget {
   final DateTime selectedDate;
   final TimeOfDay selectedTime;
   final String selectionMode;
+  final int totalTimeMinutes;
+  final double totalPrice;
 
   const LocationScreen({
     super.key,
@@ -21,6 +20,8 @@ class LocationScreen extends StatefulWidget {
     required this.selectedDate,
     required this.selectedTime,
     required this.selectionMode,
+    required this.totalTimeMinutes,
+    required this.totalPrice,
   });
 
   @override
@@ -30,14 +31,12 @@ class LocationScreen extends StatefulWidget {
 class _LocationScreenState extends State<LocationScreen> {
   int _selectedIndex = 3;
 
-  // --- Constants and Theme Definitions ---
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
   static const Color _secondaryBlue = Color(0xFF57b2ff);
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
-  // Estimated height of the CustomBottomNavBar + padding
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
   static const double _mapBorderRadius = 25.0;
   static const double _horizontalPadding = 20.0;
@@ -62,14 +61,10 @@ class _LocationScreenState extends State<LocationScreen> {
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  // --- Navigation and State Management ---
-
   void _onNavItemTapped(int index) {
     if (index == 3) {
-      // Home
       Navigator.popUntil(context, (route) => route.isFirst);
     } else if (index == 2) {
-      // Bookings
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const BookingsScreen()),
@@ -85,7 +80,6 @@ class _LocationScreenState extends State<LocationScreen> {
     Navigator.pop(context);
   }
 
-  // 2. NAVIGATION: Navigate to the MediaScreen
   void _onNextTap() {
     Navigator.push(
       context,
@@ -96,6 +90,8 @@ class _LocationScreenState extends State<LocationScreen> {
           selectedDate: widget.selectedDate,
           selectedTime: widget.selectedTime,
           selectionMode: widget.selectionMode,
+          totalTimeMinutes: widget.totalTimeMinutes,
+          totalPrice: widget.totalPrice,
         ),
       ),
     );
@@ -121,7 +117,6 @@ class _LocationScreenState extends State<LocationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Set system status bar style once
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
@@ -130,7 +125,6 @@ class _LocationScreenState extends State<LocationScreen> {
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
-    // Calculate layout positions
     final double whiteContainerTop = screenHeight * 0.30;
     final double logoTopPosition =
         whiteContainerTop - _logoHeight + _overlapAdjustment;
@@ -161,8 +155,6 @@ class _LocationScreenState extends State<LocationScreen> {
       ),
     );
   }
-
-  // --- Widget Builders ---
 
   Widget _buildBackgroundGradient(double containerTop) {
     return Align(
@@ -223,7 +215,7 @@ class _LocationScreenState extends State<LocationScreen> {
       right: 0,
       child: Center(
         child: Image.asset(
-          'assets/image/home.png', // Ensure this path is correct
+          'assets/image/home.png',
           width: 140,
           height: _logoHeight,
           fit: BoxFit.contain,
@@ -275,21 +267,6 @@ class _LocationScreenState extends State<LocationScreen> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(
-                left: _horizontalPadding,
-                top: 4.0,
-                bottom: 10.0,
-              ),
-              child: Text(
-                '${widget.serviceName} - ${widget.unitType}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey,
-                ),
-              ),
-            ),
             Expanded(child: _buildMapPlaceholder(bottomNavClearance)),
           ],
         ),
@@ -301,7 +278,7 @@ class _LocationScreenState extends State<LocationScreen> {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         _horizontalPadding,
-        0.0,
+        10.0,
         _horizontalPadding,
         bottomNavClearance - _horizontalPadding,
       ),
@@ -344,8 +321,6 @@ class _LocationScreenState extends State<LocationScreen> {
     );
   }
 }
-
-// --- Independent Widgets ---
 
 class _MaximizedMapDialog extends StatelessWidget {
   final double mapBorderRadius;
