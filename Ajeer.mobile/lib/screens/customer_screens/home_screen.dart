@@ -1,8 +1,11 @@
+// lib/screens/customer_screens/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'unit_type_screen.dart';
 import 'bookings_screen.dart';
+import '../../services/services.dart'; // Import corrected path
 
 class ServiceScreen extends StatefulWidget {
   const ServiceScreen({super.key});
@@ -15,17 +18,8 @@ class _ServiceScreenState extends State<ServiceScreen> {
   int _selectedIndex = 3;
   String _searchQuery = '';
 
-  final List<Map<String, dynamic>> services = const [
-    {'name': 'Cleaning', 'icon': Icons.cleaning_services},
-    {'name': 'Plumbing', 'icon': Icons.plumbing},
-    {'name': 'Electrical', 'icon': Icons.electrical_services},
-    {'name': 'Gardening', 'icon': Icons.grass},
-    {'name': 'Assembly', 'icon': Icons.handyman},
-    {'name': 'Painting', 'icon': Icons.format_paint},
-    {'name': 'Pest Control', 'icon': Icons.pest_control},
-    {'name': 'AC Repair', 'icon': Icons.ac_unit},
-    {'name': 'Carpentry', 'icon': Icons.carpenter},
-  ];
+  // Use the external service list
+  final List<Service> services = kAvailableServices;
 
   final List<Map<String, dynamic>> navItems = const [
     {
@@ -296,7 +290,8 @@ class SearchHeader extends StatelessWidget {
 }
 
 class ServiceGridView extends StatelessWidget {
-  final List<Map<String, dynamic>> services;
+  // Use the Service model
+  final List<Service> services;
   final String searchQuery;
   final double bottomPadding;
 
@@ -310,6 +305,12 @@ class ServiceGridView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String normalizedQuery = searchQuery.trim().toLowerCase();
+
+    // Filter services based on search query
+    final filteredServices = services.where((service) {
+      return service.name.toLowerCase().contains(normalizedQuery);
+    }).toList();
+
     bool shouldHighlight(String serviceName) {
       return normalizedQuery.isNotEmpty &&
           serviceName.toLowerCase().contains(normalizedQuery);
@@ -325,10 +326,11 @@ class ServiceGridView extends StatelessWidget {
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
         ),
-        itemCount: services.length,
+        itemCount: filteredServices.length, // Use filtered list
         itemBuilder: (context, index) {
-          final serviceName = services[index]['name'];
-          final serviceIcon = services[index]['icon'];
+          final service = filteredServices[index]; // Use Service object
+          final serviceName = service.name;
+          final serviceIcon = service.icon;
 
           return ServiceGridItem(
             icon: serviceIcon,
@@ -337,14 +339,23 @@ class ServiceGridView extends StatelessWidget {
             onTap: () {
               debugPrint('Service tapped: $serviceName');
 
-              if (serviceName == 'Cleaning') {
+              // Navigate only if the service has unit types configured
+              if (service.unitTypes.isNotEmpty) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => UnitTypeScreen(
-                      serviceName: serviceName,
-                      serviceIcon: serviceIcon,
+                      service: service, // Pass the Service object
                     ),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '$serviceName service is not fully set up yet.',
+                    ),
+                    backgroundColor: Colors.orange,
                   ),
                 );
               }

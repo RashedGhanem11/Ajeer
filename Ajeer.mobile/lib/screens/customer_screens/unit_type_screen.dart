@@ -1,18 +1,17 @@
+// lib/screens/customer_screens/unit_type_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 import 'date_time_screen.dart';
 import 'bookings_screen.dart';
+import '../../services/services.dart'; // Import corrected path
 
 class UnitTypeScreen extends StatefulWidget {
-  final String serviceName;
-  final IconData serviceIcon;
+  // Now takes the full Service object
+  final Service service;
 
-  const UnitTypeScreen({
-    super.key,
-    required this.serviceName,
-    required this.serviceIcon,
-  });
+  const UnitTypeScreen({super.key, required this.service});
 
   @override
   State<UnitTypeScreen> createState() => _UnitTypeScreenState();
@@ -28,23 +27,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
-
-  // UPDATED: Unit data with more reasonable prices (25.0 JOD to 60.0 JOD)
-  static const Map<String, Map<String, dynamic>> _unitData = {
-    'Deep Cleaning': {'time': 180, 'price': 55.0},
-    'House Keeping': {'time': 120, 'price': 35.0},
-    'Office Cleaning': {'time': 150, 'price': 40.0},
-    'Move In/Out Cleaning': {'time': 240, 'price': 60.0},
-    'Carpet Cleaning': {'time': 90, 'price': 25.0},
-  };
-
-  final List<String> _unitTypeKeys = const [
-    'Deep Cleaning',
-    'House Keeping',
-    'Office Cleaning',
-    'Move In/Out Cleaning',
-    'Carpet Cleaning',
-  ];
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -68,6 +50,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
 
   void _onNavItemTapped(int index) {
     if (index == 3) {
+      // Pop to the first route (ServiceScreen/HomeScreen)
       Navigator.popUntil(context, (route) => route.isFirst);
     } else if (index == 2) {
       Navigator.push(
@@ -96,11 +79,13 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
       double totalCost = 0.0;
       int totalMinutes = 0;
 
-      for (var unitType in _selectedUnitTypes) {
-        final data = _unitData[unitType];
+      final unitData = widget.service.unitTypes;
+
+      for (var unitTypeKey in _selectedUnitTypes) {
+        final data = unitData[unitTypeKey];
         if (data != null) {
-          totalCost += data['price'] as double;
-          totalMinutes += data['time'] as int;
+          totalCost += data.priceJOD;
+          totalMinutes += data.estimatedTimeMinutes;
         }
       }
 
@@ -108,7 +93,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
         context,
         MaterialPageRoute(
           builder: (context) => DateTimeScreen(
-            serviceName: widget.serviceName,
+            serviceName: widget.service.name,
             unitType: _selectedUnitTypes.join(', '),
             totalTimeMinutes: totalMinutes,
             totalPrice: totalCost,
@@ -141,6 +126,9 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     final double bottomNavClearance =
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
+    // Use the keys from the service's unit types to build the list in order
+    final unitTypeKeys = widget.service.unitTypes.keys.toList();
+
     return Scaffold(
       extendBody: true,
       body: Stack(
@@ -153,6 +141,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
+            unitTypeKeys: unitTypeKeys, // Pass the keys
           ),
           _buildHomeImage(logoTopPosition),
           _UnitTypeNavigationHeader(
@@ -215,7 +204,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
           ],
           border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
         ),
-        child: Icon(widget.serviceIcon, size: 60.0, color: Colors.white),
+        child: Icon(widget.service.icon, size: 60.0, color: Colors.white),
       ),
     );
   }
@@ -239,6 +228,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
   Widget _buildWhiteContainer({
     required double containerTop,
     required double bottomNavClearance,
+    required List<String> unitTypeKeys,
   }) {
     return Positioned(
       top: containerTop,
@@ -282,8 +272,8 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
             ),
             Expanded(
               child: _UnitTypeListView(
-                unitTypes: _unitTypeKeys,
-                unitData: _unitData,
+                unitTypes: unitTypeKeys,
+                unitData: widget.service.unitTypes, // Pass the UnitType map
                 selectedUnitTypes: _selectedUnitTypes,
                 onUnitTypeTap: _onUnitTypeTapped,
                 bottomPadding: bottomNavClearance,
@@ -355,11 +345,12 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
 }
 
 class _UnitTypeListView extends StatelessWidget {
+  // Use UnitType model for the data map
+  final Map<String, UnitType> unitData;
   final List<String> unitTypes;
   final Set<String> selectedUnitTypes;
   final ValueChanged<String> onUnitTypeTap;
   final double bottomPadding;
-  final Map<String, Map<String, dynamic>> unitData;
 
   const _UnitTypeListView({
     required this.unitTypes,
@@ -386,8 +377,9 @@ class _UnitTypeListView extends StatelessWidget {
 
         return _SelectableUnitItem(
           name: unitName,
-          estimatedTime: data?['time'] ?? 0,
-          price: data?['price'] ?? 0.0,
+          // Safely access data using the UnitType model properties
+          estimatedTime: data?.estimatedTimeMinutes ?? 0,
+          price: data?.priceJOD ?? 0.0,
           isSelected: isSelected,
           onTap: () {
             onUnitTypeTap(unitName);
