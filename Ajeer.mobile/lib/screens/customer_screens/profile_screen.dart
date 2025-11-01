@@ -527,7 +527,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.only(bottom: bottomNavClearance + 20.0),
+                  padding: EdgeInsets.only(
+                    top: 10.0,
+                    bottom: bottomNavClearance + 20.0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -677,7 +680,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 )
               : null,
-
           floatingLabelStyle: _isEditing
               ? const TextStyle(
                   color: _primaryBlue,
@@ -689,12 +691,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : Colors.grey.shade600,
                   fontWeight: FontWeight.normal,
                 ),
-
           labelStyle: TextStyle(
             color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
             fontWeight: FontWeight.normal,
           ),
-
           fillColor: fieldFillColor,
           filled: true,
           border: OutlineInputBorder(

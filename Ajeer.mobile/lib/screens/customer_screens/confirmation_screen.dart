@@ -40,7 +40,6 @@ class ConfirmationScreen extends StatefulWidget {
 class _ConfirmationConstants {
   static const Color lightBlue = Color(0xFF8CCBFF);
   static const Color primaryBlue = Color(0xFF1976D2);
-  static const Color secondaryLightBlue = Color(0xFFc2e3ff);
   static const Color secondaryBlue = Color(0xFF57b2ff);
   static const Color confirmGreen = Color(0xFF4CAF50);
 
@@ -189,7 +188,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         : _ConfirmationConstants.secondaryBlue;
     Color secondaryColor = _isConfirmButtonPressed
         ? _ConfirmationConstants.confirmGreen
-        : _ConfirmationConstants.secondaryLightBlue;
+        : _ConfirmationConstants.lightBlue;
     Color glowColor = _isConfirmButtonPressed
         ? _ConfirmationConstants.confirmGreen
         : _ConfirmationConstants.lightBlue;
@@ -363,11 +362,9 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     final Color containerColor = isDarkMode
         ? _ConfirmationConstants.subtleLighterDark
         : Colors.white;
-    // FIX: Re-added '!' for bracket access, as it returns Color?
     final Color placeholderBg = isDarkMode
         ? _ConfirmationConstants.subtleDark
         : Colors.grey[100]!;
-    // FIX: Re-added '!' for bracket access, as it returns Color?
     final Color borderColor = isDarkMode
         ? _ConfirmationConstants.darkBorder
         : Colors.grey[300]!;
@@ -588,70 +585,79 @@ class _PriceAndDurationDisplay extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.monetization_on_outlined,
-                color: _ConfirmationConstants.primaryBlue,
-                size: 30,
-              ),
-              const SizedBox(width: 8.0),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Estimated Cost',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: _ConfirmationConstants.primaryBlue,
-                    ),
+          Expanded(
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.monetization_on_outlined,
+                  color: _ConfirmationConstants.primaryBlue,
+                  size: 30,
+                ),
+                const SizedBox(width: 8.0),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Estimated Cost',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color.fromARGB(255, 70, 162, 255),
+                        ),
+                      ),
+                      Text(
+                        'JOD ${totalPrice.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    'JOD ${totalPrice.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
           Container(
             height: 40,
             width: 1.0,
             color: _ConfirmationConstants.primaryBlue.withOpacity(0.5),
+            margin: const EdgeInsets.symmetric(horizontal: 5.0),
           ),
-          Row(
-            children: [
-              const Icon(
-                Icons.access_time,
-                color: _ConfirmationConstants.primaryBlue,
-                size: 30,
-              ),
-              const SizedBox(width: 8.0),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Est. Duration',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: _ConfirmationConstants.primaryBlue,
-                    ),
+          Expanded(
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.access_time,
+                  color: _ConfirmationConstants.primaryBlue,
+                  size: 30,
+                ),
+                const SizedBox(width: 8.0),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Est. Duration',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color.fromARGB(255, 70, 162, 255),
+                        ),
+                      ),
+                      Text(
+                        _formatDuration(totalTimeMinutes),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    _formatDuration(totalTimeMinutes),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -726,7 +732,6 @@ class _DetailItem extends StatelessWidget {
     final Color containerColor = isDarkMode
         ? _ConfirmationConstants.subtleLighterDark
         : Colors.white;
-    // FIX: Re-added '!' for bracket access, as it returns Color?
     final Color borderColor = isDarkMode
         ? _ConfirmationConstants.darkBorder
         : Colors.grey[300]!;
@@ -887,7 +892,6 @@ class _MediaSummary extends StatelessWidget {
         : isDarkMode
         ? Colors.grey.shade400
         : Colors.grey.shade700;
-    // FIX: Re-added '!' for bracket access, as it returns Color?
     final Color borderColor = isSelected
         ? _ConfirmationConstants.primaryBlue
         : isDarkMode
@@ -945,7 +949,6 @@ class _DescriptionDisplay extends StatelessWidget {
     final Color containerColor = isDarkMode
         ? _ConfirmationConstants.subtleLighterDark
         : Colors.white;
-    // FIX: Re-added '!' for bracket access, as it returns Color?
     final Color borderColor = isDarkMode
         ? _ConfirmationConstants.darkBorder
         : Colors.grey[300]!;
