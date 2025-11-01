@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import 'home_screen.dart';
+import '../../main.dart'; // Accesses the global themeNotifier
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final OutlineInputBorder _errorBorder = OutlineInputBorder(
     borderRadius: BorderRadius.circular(12.0),
-    borderSide: BorderSide(color: Colors.red, width: 2.5),
+    borderSide: const BorderSide(color: Colors.red, width: 2.5),
   );
 
   @override
@@ -38,9 +39,13 @@ class _LoginScreenState extends State<LoginScreen> {
   void _validateAndLogin() {
     debugPrint("Validation bypassed for testing! Navigating to Home Screen...");
 
+    // FIX: Navigate to the correct class (HomeScreen) and pass the required themeNotifier instance.
+    // NOTE: Because themeNotifier is a variable, you CANNOT use `const` here.
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const ServiceScreen()),
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+      ),
     );
   }
 

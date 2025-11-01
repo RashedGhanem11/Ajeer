@@ -6,6 +6,7 @@ import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'home_screen.dart';
 import 'chat_screen.dart';
+import '../../main.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -17,6 +18,9 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _lightBlue = Color(0xFF8CCBFF);
+  static const Color _darkBlue = Color(0xFF0D47A1);
+  static const Color _subtleDark = Color(0xFF1E1E1E);
+  static const Color _subtleLighterDark = Color(0xFF2C2C2C);
   static const Color _saveGreen = Color(0xFF4CAF50);
   static const Color _cancelRed = Color(0xFFF44336);
   static const double _borderRadius = 50.0;
@@ -131,7 +135,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case 3:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ServiceScreen()),
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
     }
@@ -196,10 +202,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showSwitchModeDialog() {
+    final bool isDarkMode = themeNotifier.isDarkMode;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? _subtleDark : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(25.0),
         ),
@@ -208,9 +216,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(color: _primaryBlue, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
-        content: const Text(
+        content: Text(
           'Do you want to switch from Customer mode to Service Provider mode?',
           textAlign: TextAlign.center,
+          style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black),
         ),
         actionsPadding: const EdgeInsets.all(10.0),
         actions: [
@@ -220,9 +229,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Flexible(
                 flex: 3,
                 child: TextButton(
-                  child: const Text(
+                  child: Text(
                     'Cancel',
-                    style: TextStyle(color: Colors.grey, fontSize: 16.0),
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.grey : Colors.grey.shade700,
+                      fontSize: 16.0,
+                    ),
                   ),
                   onPressed: () => Navigator.of(ctx).pop(),
                 ),
@@ -262,11 +274,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkMode = themeNotifier.isDarkMode;
+
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle.dark.copyWith(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-      ),
+      isDarkMode
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+            ),
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
@@ -278,16 +297,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       extendBody: true,
+      backgroundColor: isDarkMode ? Colors.black : Colors.white,
       body: Stack(
         children: [
-          _buildBackgroundGradient(whiteContainerTop),
+          _buildBackgroundGradient(whiteContainerTop, isDarkMode),
           _buildAjeerTitle(context),
-          _buildSwitchModeButton(context, whiteContainerTop),
+          _buildSwitchModeButton(context, isDarkMode),
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
+            isDarkMode: isDarkMode,
           ),
-          _buildProfileAvatar(avatarTopPosition),
+          _buildProfileAvatar(avatarTopPosition, isDarkMode),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -298,14 +319,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildBackgroundGradient(double containerTop) {
+  Widget _buildBackgroundGradient(double containerTop, bool isDarkMode) {
+    final Color endColor = _primaryBlue;
+    final Color startColor = _lightBlue;
+
     return Align(
       alignment: Alignment.topCenter,
       child: Container(
         height: containerTop + 50,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [_lightBlue, _primaryBlue],
+            colors: [startColor, endColor],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -339,11 +363,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSwitchModeButton(
-    BuildContext context,
-    double whiteContainerTop,
-  ) {
+  Widget _buildSwitchModeButton(BuildContext context, bool isDarkMode) {
     final double buttonTop = MediaQuery.of(context).padding.top + 70;
+
+    final Color bgColor = isDarkMode ? _subtleDark : Colors.grey.shade300;
+    final Color fgColor = isDarkMode ? Colors.white : _primaryBlue;
 
     return Positioned(
       top: buttonTop,
@@ -360,8 +384,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: _primaryBlue,
+              backgroundColor: bgColor,
+              foregroundColor: fgColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30.0),
               ),
@@ -374,10 +398,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileAvatar(double avatarTopPosition) {
+  Widget _buildProfileAvatar(double avatarTopPosition, bool isDarkMode) {
     final String initial = _firstName.isNotEmpty
         ? _firstName[0].toUpperCase()
         : '?';
+
+    final Color avatarBgColor = isDarkMode ? _darkBlue : _lightBlue;
+    final Color avatarFgColor = isDarkMode ? _lightBlue : _primaryBlue;
+    final Color editIconBg = isDarkMode ? _subtleDark : Colors.white;
 
     return Positioned(
       top: avatarTopPosition,
@@ -392,21 +420,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4.0),
+                  border: Border.all(
+                    color: isDarkMode ? _subtleDark : Colors.white,
+                    width: 4.0,
+                  ),
                 ),
                 child: CircleAvatar(
                   radius: _profileAvatarHeight / 2,
-                  backgroundColor: _lightBlue,
+                  backgroundColor: avatarBgColor,
                   backgroundImage: _profileImage != null
                       ? FileImage(_profileImage!)
                       : null,
                   child: _profileImage == null
                       ? Text(
                           initial,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 40,
                             fontWeight: FontWeight.bold,
-                            color: _primaryBlue,
+                            color: avatarFgColor,
                           ),
                         )
                       : null,
@@ -419,7 +450,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: editIconBg,
                       shape: BoxShape.circle,
                       border: Border.all(color: _primaryBlue, width: 2),
                     ),
@@ -440,25 +471,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildWhiteContainer({
     required double containerTop,
     required double bottomNavClearance,
+    required bool isDarkMode,
   }) {
+    final Color containerColor = isDarkMode ? _subtleDark : Colors.white;
+    final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
+
     return Positioned(
       top: containerTop,
       left: 0,
       right: 0,
       bottom: 0,
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: containerColor,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(_borderRadius),
             topRight: Radius.circular(_borderRadius),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26,
+              color: isDarkMode ? Colors.black54 : Colors.black26,
               spreadRadius: 1,
               blurRadius: 10,
-              offset: Offset(0, -3),
+              offset: const Offset(0, -3),
             ),
           ],
         ),
@@ -483,7 +518,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ?.copyWith(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: titleColor,
                           ),
                     ),
                     _buildEditSaveButtons(),
@@ -500,29 +535,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         controller: _firstNameController,
                         label: 'First Name',
                         icon: Icons.person_outline,
+                        isDarkMode: isDarkMode,
                       ),
                       _buildInfoField(
                         controller: _lastNameController,
                         label: 'Last Name',
                         icon: Icons.person_outline,
+                        isDarkMode: isDarkMode,
                       ),
                       _buildInfoField(
                         controller: _mobileController,
                         label: 'Mobile Number',
                         icon: Icons.call_outlined,
                         keyboardType: TextInputType.phone,
+                        isDarkMode: isDarkMode,
                       ),
                       _buildInfoField(
                         controller: _emailController,
                         label: 'Email',
                         icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
+                        isDarkMode: isDarkMode,
                       ),
                       _buildInfoField(
                         controller: _passwordController,
                         label: 'Password',
                         icon: Icons.lock_outline,
                         isPassword: true,
+                        isDarkMode: isDarkMode,
                       ),
                     ],
                   ),
@@ -593,7 +633,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required IconData icon,
     bool isPassword = false,
     TextInputType keyboardType = TextInputType.text,
+    required bool isDarkMode,
   }) {
+    final Color fieldTextColor = _isEditing
+        ? (isDarkMode ? Colors.white : Colors.black87)
+        : Colors.grey.shade400;
+    final Color fieldFillColor = _isEditing
+        ? (isDarkMode ? _subtleLighterDark : Colors.white)
+        : (isDarkMode ? _subtleDark : Colors.grey.shade100);
+    final Color fieldBorderColor = isDarkMode
+        ? Colors.grey.shade600
+        : Colors.grey.shade300;
+    final Color disabledBorderColor = isDarkMode
+        ? Colors.grey.shade700
+        : Colors.grey.shade300;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 15.0),
       child: TextField(
@@ -601,7 +655,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         readOnly: !_isEditing,
         obscureText: isPassword && !_isPasswordVisible,
         keyboardType: keyboardType,
-        style: TextStyle(color: _isEditing ? Colors.black87 : Colors.black54),
+        style: TextStyle(color: fieldTextColor),
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(
@@ -630,25 +684,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   fontWeight: FontWeight.normal,
                 )
               : TextStyle(
-                  color: Colors.grey.shade600,
+                  color: isDarkMode
+                      ? Colors.grey.shade400
+                      : Colors.grey.shade600,
                   fontWeight: FontWeight.normal,
                 ),
 
           labelStyle: TextStyle(
-            color: _isEditing ? Colors.grey : Colors.grey.shade600,
+            color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
             fontWeight: FontWeight.normal,
           ),
 
-          fillColor: _isEditing ? Colors.white : Colors.grey.shade100,
+          fillColor: fieldFillColor,
           filled: true,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Colors.grey, width: 2.0),
+            borderSide: BorderSide(color: fieldBorderColor, width: 2.0),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide(
-              color: _isEditing ? Colors.grey.shade400 : Colors.grey.shade300,
+              color: _isEditing ? Colors.grey.shade400 : fieldBorderColor,
               width: 2.0,
             ),
           ),
@@ -658,10 +714,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           disabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(
-              color: _isEditing ? Colors.grey.shade300 : Colors.grey.shade300,
-              width: 2.0,
-            ),
+            borderSide: BorderSide(color: disabledBorderColor, width: 2.0),
           ),
           contentPadding: const EdgeInsets.symmetric(
             vertical: _fieldVerticalPadding,

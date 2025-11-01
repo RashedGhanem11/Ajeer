@@ -6,15 +6,17 @@ import 'bookings_screen.dart';
 import '../../services/services.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
+import '../../themes/theme_notifier.dart';
 
-class ServiceScreen extends StatefulWidget {
-  const ServiceScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  final ThemeNotifier themeNotifier;
+  const HomeScreen({super.key, required this.themeNotifier});
 
   @override
-  State<ServiceScreen> createState() => _ServiceScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _ServiceScreenState extends State<ServiceScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 3;
   String _searchQuery = '';
 
@@ -69,17 +71,31 @@ class _ServiceScreenState extends State<ServiceScreen> {
         );
         break;
       case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                HomeScreen(themeNotifier: widget.themeNotifier),
+          ),
+        );
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkMode = widget.themeNotifier.isDarkMode;
+
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle.dark.copyWith(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
+      isDarkMode
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+            ),
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
@@ -99,15 +115,17 @@ class _ServiceScreenState extends State<ServiceScreen> {
 
     return Scaffold(
       extendBody: true,
+      drawer: _buildAppDrawer(),
       body: Stack(
         children: [
-          _buildBackgroundGradient(whiteContainerTop),
+          _buildBackgroundGradient(whiteContainerTop, isDarkMode),
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
+            isDarkMode: isDarkMode,
           ),
           SearchHeader(onChanged: _onSearchChanged),
-          _buildHomeImage(logoTopPosition, logoHeight),
+          _buildHomeImage(logoTopPosition, logoHeight, isDarkMode),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -118,7 +136,78 @@ class _ServiceScreenState extends State<ServiceScreen> {
     );
   }
 
-  Widget _buildBackgroundGradient(double containerTop) {
+  Widget _buildAppDrawer() {
+    final bool isDarkMode = widget.themeNotifier.isDarkMode;
+    const Color primaryBlue = Color(0xFF1976D2);
+    const Color lightBlue = Color(0xFF8CCBFF);
+    final Color textColor = isDarkMode ? Colors.white70 : Colors.black87;
+
+    return Drawer(
+      backgroundColor: isDarkMode ? Theme.of(context).cardColor : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(50),
+          bottomRight: Radius.circular(50),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [lightBlue, primaryBlue],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            padding: const EdgeInsets.only(top: 80.0, bottom: 40.0),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.settings, color: Colors.white, size: 40),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Ajeer Settings',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      shadows: [
+                        Shadow(
+                          blurRadius: 2.0,
+                          color: Colors.black26,
+                          offset: Offset(1.0, 1.0),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SwitchListTile(
+            title: Text('Enable Dark Mode', style: TextStyle(color: textColor)),
+            secondary: Icon(
+              widget.themeNotifier.isDarkMode
+                  ? Icons.nightlight_round
+                  : Icons.wb_sunny,
+              color: widget.themeNotifier.isDarkMode
+                  ? Colors.white70
+                  : Colors.black54,
+            ),
+            value: widget.themeNotifier.isDarkMode,
+            onChanged: (bool value) {
+              widget.themeNotifier.toggleTheme();
+            },
+            activeColor: Theme.of(context).primaryColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackgroundGradient(double containerTop, bool isDarkMode) {
     return Align(
       alignment: Alignment.topCenter,
       child: Container(
@@ -134,14 +223,22 @@ class _ServiceScreenState extends State<ServiceScreen> {
     );
   }
 
-  Widget _buildHomeImage(double logoTopPosition, double logoHeight) {
+  Widget _buildHomeImage(
+    double logoTopPosition,
+    double logoHeight,
+    bool isDarkMode,
+  ) {
+    final String imagePath = isDarkMode
+        ? 'assets/image/home_dark.png'
+        : 'assets/image/home.png';
+
     return Positioned(
       top: logoTopPosition,
       left: 0,
       right: 0,
       child: Center(
         child: Image.asset(
-          'assets/image/home.png',
+          imagePath,
           width: 140,
           height: logoHeight,
           fit: BoxFit.contain,
@@ -153,6 +250,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
   Widget _buildWhiteContainer({
     required double containerTop,
     required double bottomNavClearance,
+    required bool isDarkMode,
   }) {
     return Positioned(
       top: containerTop,
@@ -160,18 +258,18 @@ class _ServiceScreenState extends State<ServiceScreen> {
       right: 0,
       bottom: 0,
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(50.0),
             topRight: Radius.circular(50.0),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26,
+              color: isDarkMode ? Colors.black45 : Colors.black26,
               spreadRadius: 1,
               blurRadius: 10,
-              offset: Offset(0, -3),
+              offset: const Offset(0, -3),
             ),
           ],
         ),
@@ -186,7 +284,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
             ),
@@ -195,6 +293,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
                 services: services,
                 searchQuery: _searchQuery,
                 bottomPadding: bottomNavClearance,
+                isDarkMode: isDarkMode,
               ),
             ),
           ],
@@ -209,7 +308,7 @@ class SearchHeader extends StatelessWidget {
 
   const SearchHeader({super.key, required this.onChanged});
 
-  Widget _buildAjeerTitle() {
+  Widget _buildAjeerTitle(BuildContext context) {
     return const Text(
       'Ajeer',
       style: TextStyle(
@@ -229,6 +328,8 @@ class SearchHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const gradientColors = [Color(0xFF8CCBFF), Color(0xFF1976D2)];
+
     return Positioned(
       top: MediaQuery.of(context).padding.top,
       left: 12,
@@ -238,7 +339,7 @@ class SearchHeader extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
-            child: _buildAjeerTitle(),
+            child: _buildAjeerTitle(context),
           ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -247,7 +348,7 @@ class SearchHeader extends StatelessWidget {
                 iconSize: 30.0,
                 icon: const Icon(Icons.menu, color: Colors.white),
                 onPressed: () {
-                  debugPrint('Menu icon tapped!');
+                  Scaffold.of(context).openDrawer();
                 },
               ),
               const SizedBox(width: 4.0),
@@ -257,7 +358,7 @@ class SearchHeader extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30.0),
                     border: Border.all(color: Colors.white, width: 1.5),
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF8CCBFF), Color(0xFF1976D2)],
+                      colors: gradientColors,
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -306,12 +407,14 @@ class ServiceGridView extends StatelessWidget {
   final List<Service> services;
   final String searchQuery;
   final double bottomPadding;
+  final bool isDarkMode;
 
   const ServiceGridView({
     super.key,
     required this.services,
     required this.searchQuery,
     required this.bottomPadding,
+    required this.isDarkMode,
   });
 
   @override
@@ -347,6 +450,7 @@ class ServiceGridView extends StatelessWidget {
             icon: serviceIcon,
             name: serviceName,
             isHighlighted: shouldHighlight(serviceName),
+            isDarkMode: isDarkMode,
             onTap: () {
               debugPrint('Service tapped: $serviceName');
 
@@ -380,6 +484,7 @@ class ServiceGridItem extends StatelessWidget {
   final String name;
   final bool isHighlighted;
   final VoidCallback onTap;
+  final bool isDarkMode;
 
   const ServiceGridItem({
     super.key,
@@ -387,11 +492,14 @@ class ServiceGridItem extends StatelessWidget {
     required this.name,
     this.isHighlighted = false,
     required this.onTap,
+    required this.isDarkMode,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryColor = isHighlighted ? Colors.green : Colors.blue;
+    final Color primaryColor = isHighlighted
+        ? Colors.green
+        : (isDarkMode ? Theme.of(context).primaryColor : Colors.blue);
     final Color backgroundColor = primaryColor.withOpacity(0.08);
     final Color borderColor = primaryColor.withOpacity(0.1);
 
@@ -429,7 +537,9 @@ class ServiceGridItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: isHighlighted ? primaryColor : Colors.black87,
+                color: isHighlighted
+                    ? primaryColor
+                    : (isDarkMode ? Colors.white70 : Colors.black87),
               ),
               textAlign: TextAlign.center,
               maxLines: 2,

@@ -14,24 +14,46 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // A very subtle dark grey, slightly lighter than the previous shade (0xFF1F1F1F)
+    const Color subtleLighterDarkGrey = const Color(0xFF40403f);
+
+    final Color backgroundColor = isDarkMode
+        ? subtleLighterDarkGrey
+        : Colors.white;
+    final Color defaultIconTextColor = isDarkMode
+        ? Colors.grey[400]!
+        : Colors.grey;
+    final Color selectedColor = isDarkMode
+        ? Theme.of(context).primaryColor
+        : Colors.blue;
+    final Color shadowColor = isDarkMode
+        ? Colors.black.withOpacity(0.5)
+        : Colors.black.withOpacity(0.25);
+
     const double verticalPadding = 6.0;
     const double horizontalPadding = 17.0;
+    const double outerBottomMargin = 25.0;
+    const double iconSize = 28.0;
+    const double labelFontSize = 12.0;
+    const double notificationSize = 8.0;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: const EdgeInsets.fromLTRB(
         horizontalPadding,
         0,
         horizontalPadding,
-        25.0,
+        outerBottomMargin,
       ),
       child: Container(
         height: kBottomNavigationBarHeight + verticalPadding * 2,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(50.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.25),
+              color: shadowColor,
               spreadRadius: 2,
               blurRadius: 7,
               offset: const Offset(0, 5),
@@ -42,17 +64,17 @@ class CustomBottomNavBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: items.asMap().entries.map((entry) {
-            int index = entry.key;
-            Map<String, dynamic> item = entry.value;
-            bool isSelected = index == selectedIndex;
-
-            bool hasNotification = (item['notificationCount'] ?? 0) > 0;
+            final int index = entry.key;
+            final Map<String, dynamic> item = entry.value;
+            final bool isSelected = index == selectedIndex;
+            final bool hasNotification = (item['notificationCount'] ?? 0) > 0;
+            final Color itemColor = isSelected
+                ? selectedColor
+                : defaultIconTextColor;
 
             return Expanded(
               child: GestureDetector(
-                onTap: () {
-                  onIndexChanged(index);
-                },
+                onTap: () => onIndexChanged(index),
                 behavior: HitTestBehavior.translucent,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 5.0),
@@ -64,16 +86,16 @@ class CustomBottomNavBar extends StatelessWidget {
                         children: [
                           Icon(
                             isSelected ? item['activeIcon'] : item['icon'],
-                            size: 28.0,
-                            color: isSelected ? Colors.blue : Colors.grey,
+                            size: iconSize,
+                            color: itemColor,
                           ),
                           if (hasNotification)
                             Positioned(
                               top: -2,
                               right: -4,
                               child: Container(
-                                width: 8,
-                                height: 8,
+                                width: notificationSize,
+                                height: notificationSize,
                                 decoration: const BoxDecoration(
                                   color: Colors.red,
                                   shape: BoxShape.circle,
@@ -86,8 +108,8 @@ class CustomBottomNavBar extends StatelessWidget {
                       Text(
                         item['label'],
                         style: TextStyle(
-                          fontSize: 12,
-                          color: isSelected ? Colors.blue : Colors.grey,
+                          fontSize: labelFontSize,
+                          color: itemColor,
                         ),
                       ),
                     ],

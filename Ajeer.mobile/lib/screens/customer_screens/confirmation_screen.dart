@@ -6,7 +6,8 @@ import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
-import 'home_screen.dart'; // Contains ServiceScreen
+import 'home_screen.dart';
+import '../../main.dart';
 
 class ConfirmationScreen extends StatefulWidget {
   final String serviceName;
@@ -42,8 +43,11 @@ class _ConfirmationConstants {
   static const Color secondaryLightBlue = Color(0xFFc2e3ff);
   static const Color secondaryBlue = Color(0xFF57b2ff);
   static const Color confirmGreen = Color(0xFF4CAF50);
-  static const Color lightGrayText = Color(0xFFA0A0A0);
-  static const Color mediumGrayBorder = Color(0xFFDCDCDC);
+
+  static const Color subtleDark = Color(0xFF1E1E1E);
+  static const Color subtleLighterDark = Color(0xFF2C2C2C);
+  static const Color darkBorder = Color(0xFF3A3A3A);
+
   static const double logoHeight = 105.0;
   static const double overlapAdjustment = 10.0;
   static const double navBarTotalHeight = 56.0 + 20.0 + 10.0;
@@ -81,7 +85,11 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   ];
 
   List<File> get _photoFiles => widget.pickedMediaFiles
-      .where((file) => !file.path.toLowerCase().endsWith('.mp4'))
+      .where(
+        (file) =>
+            !file.path.toLowerCase().endsWith('.mp4') &&
+            !file.path.toLowerCase().endsWith('.m4a'),
+      )
       .toList();
 
   List<File> get _videoFiles => widget.pickedMediaFiles
@@ -126,7 +134,9 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       case 3:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ServiceScreen()),
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
     }
@@ -231,14 +241,17 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     );
   }
 
-  Widget _buildHomeImage(double logoTopPosition) {
+  Widget _buildHomeImage(double logoTopPosition, bool isDarkMode) {
+    final String imagePath = isDarkMode
+        ? 'assets/image/home_dark.png'
+        : 'assets/image/home.png';
     return Positioned(
       top: logoTopPosition,
       left: 0,
       right: 0,
       child: Center(
         child: Image.asset(
-          'assets/image/home.png',
+          imagePath,
           width: 140,
           height: _ConfirmationConstants.logoHeight,
           fit: BoxFit.contain,
@@ -247,7 +260,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     );
   }
 
-  Widget _buildConfirmationDetails(double bottomNavClearance) {
+  Widget _buildConfirmationDetails(double bottomNavClearance, bool isDarkMode) {
     IconData serviceIcon;
     switch (widget.serviceName) {
       case 'Cleaning':
@@ -276,12 +289,14 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
           _PriceAndDurationDisplay(
             totalPrice: widget.totalPrice,
             totalTimeMinutes: widget.totalTimeMinutes,
+            isDarkMode: isDarkMode,
           ),
           const SizedBox(height: 15.0),
           _DetailItem(
             icon: serviceIcon,
             title: widget.serviceName,
             subtitle: widget.unitType,
+            isDarkMode: isDarkMode,
           ),
           _DetailItem(
             icon: Icons.calendar_today_outlined,
@@ -289,16 +304,19 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
             subtitle: widget.selectionMode == 'Custom'
                 ? widget.selectedTime.format(context)
                 : 'Instant Booking',
+            isDarkMode: isDarkMode,
           ),
-          const _DetailItem(
+          _DetailItem(
             icon: Icons.location_on_outlined,
             title: 'Amman',
             subtitle: 'Khalda',
+            isDarkMode: isDarkMode,
           ),
-          const _DetailItem(
+          _DetailItem(
             icon: Icons.person_outline,
             title: 'Khalid. S',
             subtitle: '0796753640',
+            isDarkMode: isDarkMode,
           ),
           const SizedBox(height: 15.0),
           _MediaSummary(
@@ -307,19 +325,23 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
             audioCount: 0,
             currentView: _currentMediaView,
             onViewChange: (view) => setState(() => _currentMediaView = view),
+            isDarkMode: isDarkMode,
           ),
           const SizedBox(height: 10.0),
-          _buildMediaContent(),
+          _buildMediaContent(isDarkMode),
           const SizedBox(height: 20.0),
           if (widget.userDescription != null &&
               widget.userDescription!.trim().isNotEmpty)
-            _DescriptionDisplay(description: widget.userDescription!),
+            _DescriptionDisplay(
+              description: widget.userDescription!,
+              isDarkMode: isDarkMode,
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildMediaContent() {
+  Widget _buildMediaContent(bool isDarkMode) {
     List<File> currentFiles = [];
     IconData placeholderIcon = Icons.clear;
     String placeholderText = '';
@@ -338,28 +360,39 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       placeholderText = 'No audio uploaded.';
     }
 
+    final Color containerColor = isDarkMode
+        ? _ConfirmationConstants.subtleLighterDark
+        : Colors.white;
+    // FIX: Re-added '!' for bracket access, as it returns Color?
+    final Color placeholderBg = isDarkMode
+        ? _ConfirmationConstants.subtleDark
+        : Colors.grey[100]!;
+    // FIX: Re-added '!' for bracket access, as it returns Color?
+    final Color borderColor = isDarkMode
+        ? _ConfirmationConstants.darkBorder
+        : Colors.grey[300]!;
+    final Color placeholderTextColor = isDarkMode
+        ? Colors.grey.shade500
+        : Colors.grey.shade600;
+
     if (currentFiles.isEmpty) {
       return Container(
         height: 120,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: placeholderBg,
           borderRadius: BorderRadius.circular(15.0),
-          border: Border.all(color: Colors.grey[300]!, width: 2.0),
+          border: Border.all(color: borderColor, width: 2.0),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                placeholderIcon,
-                size: 30,
-                color: _ConfirmationConstants.lightGrayText,
-              ),
+              Icon(placeholderIcon, size: 30, color: placeholderTextColor),
               const SizedBox(height: 5),
               Text(
                 placeholderText,
-                style: TextStyle(color: _ConfirmationConstants.lightGrayText),
+                style: TextStyle(color: placeholderTextColor),
               ),
             ],
           ),
@@ -370,9 +403,9 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     return Container(
       height: 120,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: containerColor,
         borderRadius: BorderRadius.circular(15.0),
-        border: Border.all(color: Colors.grey[300]!, width: 2.0),
+        border: Border.all(color: borderColor, width: 2.0),
       ),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -387,7 +420,9 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
               borderRadius: BorderRadius.circular(10.0),
               child: Container(
                 width: 100,
-                color: isImage ? Colors.grey.shade200 : Colors.black,
+                color: isImage
+                    ? Colors.grey.shade200
+                    : _ConfirmationConstants.subtleDark,
                 child: isImage
                     ? Image.file(file, fit: BoxFit.cover)
                     : const Center(
@@ -407,11 +442,18 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkMode = themeNotifier.isDarkMode;
+
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle.dark.copyWith(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
+      isDarkMode
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+            ),
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
@@ -427,6 +469,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 
     return Scaffold(
       extendBody: true,
+      backgroundColor: isDarkMode ? Colors.black : Colors.white,
       body: Stack(
         children: [
           _buildBackgroundGradient(whiteContainerTop),
@@ -437,18 +480,18 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
             right: 0,
             bottom: 0,
             child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(50.0),
                   topRight: Radius.circular(50.0),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black26,
+                    color: isDarkMode ? Colors.black45 : Colors.black26,
                     spreadRadius: 1,
                     blurRadius: 10,
-                    offset: Offset(0, -3),
+                    offset: const Offset(0, -3),
                   ),
                 ],
               ),
@@ -468,18 +511,21 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                           ?.copyWith(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: isDarkMode ? Colors.white : Colors.black87,
                           ),
                     ),
                   ),
                   Expanded(
-                    child: _buildConfirmationDetails(bottomNavClearance),
+                    child: _buildConfirmationDetails(
+                      bottomNavClearance,
+                      isDarkMode,
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          _buildHomeImage(logoTopPosition),
+          _buildHomeImage(logoTopPosition, isDarkMode),
           _ConfirmationNavigationHeader(
             onBackTap: () => Navigator.pop(context),
             onConfirmTap: _onConfirmTap,
@@ -498,10 +544,12 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 class _PriceAndDurationDisplay extends StatelessWidget {
   final double totalPrice;
   final int totalTimeMinutes;
+  final bool isDarkMode;
 
   const _PriceAndDurationDisplay({
     required this.totalPrice,
     required this.totalTimeMinutes,
+    required this.isDarkMode,
   });
 
   String _formatDuration(int minutes) {
@@ -519,15 +567,21 @@ class _PriceAndDurationDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+
     return Container(
       padding: const EdgeInsets.all(15.0),
       decoration: BoxDecoration(
-        color: _ConfirmationConstants.primaryBlue.withOpacity(0.1),
+        color: isDarkMode
+            ? _ConfirmationConstants.subtleLighterDark
+            : _ConfirmationConstants.primaryBlue.withOpacity(0.1),
         borderRadius: BorderRadius.circular(
           _ConfirmationConstants.detailItemBorderRadius,
         ),
         border: Border.all(
-          color: _ConfirmationConstants.primaryBlue.withOpacity(0.3),
+          color: isDarkMode
+              ? _ConfirmationConstants.darkBorder
+              : _ConfirmationConstants.primaryBlue.withOpacity(0.3),
           width: 1.5,
         ),
       ),
@@ -554,10 +608,10 @@ class _PriceAndDurationDisplay extends StatelessWidget {
                   ),
                   Text(
                     'JOD ${totalPrice.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: textColor,
                     ),
                   ),
                 ],
@@ -589,10 +643,10 @@ class _PriceAndDurationDisplay extends StatelessWidget {
                   ),
                   Text(
                     _formatDuration(totalTimeMinutes),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: textColor,
                     ),
                   ),
                 ],
@@ -658,15 +712,29 @@ class _DetailItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final bool isDarkMode;
 
   const _DetailItem({
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.isDarkMode,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color containerColor = isDarkMode
+        ? _ConfirmationConstants.subtleLighterDark
+        : Colors.white;
+    // FIX: Re-added '!' for bracket access, as it returns Color?
+    final Color borderColor = isDarkMode
+        ? _ConfirmationConstants.darkBorder
+        : Colors.grey[300]!;
+    final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
+    final Color subtitleColor = isDarkMode
+        ? Colors.grey.shade400
+        : Colors.grey.shade700;
+
     return Padding(
       padding: const EdgeInsets.only(
         bottom: _ConfirmationConstants.detailItemBottomPadding,
@@ -689,17 +757,16 @@ class _DetailItem extends StatelessWidget {
                 vertical: _ConfirmationConstants.detailItemVerticalPadding,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: containerColor,
                 borderRadius: BorderRadius.circular(
                   _ConfirmationConstants.detailItemBorderRadius,
                 ),
-                border: Border.all(
-                  color: _ConfirmationConstants.mediumGrayBorder,
-                  width: 2.0,
-                ),
+                border: Border.all(color: borderColor, width: 2.0),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: isDarkMode
+                        ? Colors.black.withOpacity(0.5)
+                        : Colors.black.withOpacity(0.05),
                     blurRadius: 5,
                     offset: const Offset(0, 3),
                   ),
@@ -710,10 +777,10 @@ class _DetailItem extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: titleColor,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -722,7 +789,7 @@ class _DetailItem extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.normal,
-                      color: Colors.grey[700],
+                      color: subtitleColor,
                     ),
                   ),
                 ],
@@ -741,6 +808,7 @@ class _MediaSummary extends StatelessWidget {
   final int audioCount;
   final String currentView;
   final ValueChanged<String> onViewChange;
+  final bool isDarkMode;
 
   const _MediaSummary({
     required this.photoCount,
@@ -748,19 +816,22 @@ class _MediaSummary extends StatelessWidget {
     required this.audioCount,
     required this.currentView,
     required this.onViewChange,
+    required this.isDarkMode,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Uploaded Media',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: titleColor,
           ),
         ),
         const SizedBox(height: 10.0),
@@ -772,6 +843,7 @@ class _MediaSummary extends StatelessWidget {
               type: 'Photo',
               icon: Icons.image_outlined,
               count: photoCount,
+              isDarkMode: isDarkMode,
               context: context,
             ),
             _buildMediaTab(
@@ -779,6 +851,7 @@ class _MediaSummary extends StatelessWidget {
               type: 'Video',
               icon: Icons.videocam_outlined,
               count: videoCount,
+              isDarkMode: isDarkMode,
               context: context,
             ),
             _buildMediaTab(
@@ -786,6 +859,7 @@ class _MediaSummary extends StatelessWidget {
               type: 'Audio',
               icon: Icons.mic_none,
               count: audioCount,
+              isDarkMode: isDarkMode,
               context: context,
             ),
           ],
@@ -799,23 +873,36 @@ class _MediaSummary extends StatelessWidget {
     required String type,
     required IconData icon,
     required int count,
+    required bool isDarkMode,
     required BuildContext context,
   }) {
     final bool isSelected = currentView == type;
+    final Color containerColor = isSelected
+        ? _ConfirmationConstants.primaryBlue
+        : isDarkMode
+        ? _ConfirmationConstants.subtleLighterDark
+        : Colors.white;
+    final Color textColor = isSelected
+        ? Colors.white
+        : isDarkMode
+        ? Colors.grey.shade400
+        : Colors.grey.shade700;
+    // FIX: Re-added '!' for bracket access, as it returns Color?
+    final Color borderColor = isSelected
+        ? _ConfirmationConstants.primaryBlue
+        : isDarkMode
+        ? _ConfirmationConstants.darkBorder
+        : Colors.grey[300]!;
+
     return GestureDetector(
       onTap: () => onViewChange(type),
       child: Container(
         width: MediaQuery.of(context).size.width / 4.2,
         padding: const EdgeInsets.symmetric(vertical: 10.0),
         decoration: BoxDecoration(
-          color: isSelected ? _ConfirmationConstants.primaryBlue : Colors.white,
+          color: containerColor,
           borderRadius: BorderRadius.circular(20.0),
-          border: Border.all(
-            color: isSelected
-                ? _ConfirmationConstants.primaryBlue
-                : Colors.grey.shade300,
-            width: 1.5,
-          ),
+          border: Border.all(color: borderColor, width: 1.5),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -831,7 +918,7 @@ class _MediaSummary extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade700,
+                color: textColor,
                 fontWeight: FontWeight.w500,
                 fontSize: 13,
               ),
@@ -845,20 +932,36 @@ class _MediaSummary extends StatelessWidget {
 
 class _DescriptionDisplay extends StatelessWidget {
   final String description;
+  final bool isDarkMode;
 
-  const _DescriptionDisplay({required this.description});
+  const _DescriptionDisplay({
+    required this.description,
+    required this.isDarkMode,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
+    final Color containerColor = isDarkMode
+        ? _ConfirmationConstants.subtleLighterDark
+        : Colors.white;
+    // FIX: Re-added '!' for bracket access, as it returns Color?
+    final Color borderColor = isDarkMode
+        ? _ConfirmationConstants.darkBorder
+        : Colors.grey[300]!;
+    final Color descriptionColor = isDarkMode
+        ? Colors.grey.shade300
+        : Colors.black87;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Customer Note',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: titleColor,
           ),
         ),
         const SizedBox(height: 10.0),
@@ -867,15 +970,14 @@ class _DescriptionDisplay extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 50.0),
           padding: const EdgeInsets.all(15.0),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: containerColor,
             borderRadius: BorderRadius.circular(15.0),
-            border: Border.all(
-              color: _ConfirmationConstants.mediumGrayBorder,
-              width: 2.0,
-            ),
+            border: Border.all(color: borderColor, width: 2.0),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: isDarkMode
+                    ? Colors.black.withOpacity(0.5)
+                    : Colors.black.withOpacity(0.05),
                 blurRadius: 5,
                 offset: const Offset(0, 3),
               ),
@@ -885,9 +987,9 @@ class _DescriptionDisplay extends StatelessWidget {
             alignment: Alignment.topLeft,
             child: Text(
               description,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
-                color: Colors.black87,
+                color: descriptionColor,
                 height: 1.4,
               ),
             ),

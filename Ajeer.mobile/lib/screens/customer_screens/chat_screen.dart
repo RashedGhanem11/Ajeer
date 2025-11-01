@@ -3,6 +3,7 @@ import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'home_screen.dart';
 import 'profile_screen.dart';
+import '../../main.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -53,7 +54,9 @@ class _ChatScreenState extends State<ChatScreen> {
       case 3:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ServiceScreen()),
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
     }

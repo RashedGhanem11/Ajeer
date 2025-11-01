@@ -5,8 +5,9 @@ import 'date_time_screen.dart';
 import 'bookings_screen.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
-import 'home_screen.dart'; // Import to access ServiceScreen
+import 'home_screen.dart';
 import '../../services/services.dart';
+import '../../main.dart';
 
 class UnitTypeScreen extends StatefulWidget {
   final Service service;
@@ -71,10 +72,11 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
         );
         break;
       case 3:
-        // FIX: Use pushReplacement to ServiceScreen for consistent bottom nav behavior
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ServiceScreen()),
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
     }
@@ -95,13 +97,15 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
       double totalCost = 0.0;
       int totalMinutes = 0;
 
-      final unitData = widget.service.unitTypes;
+      final Map<String, dynamic> serviceUnitTypes =
+          widget.service.unitTypes as Map<String, dynamic>;
 
       for (var unitTypeKey in _selectedUnitTypes) {
-        final data = unitData[unitTypeKey];
+        final data = serviceUnitTypes[unitTypeKey];
         if (data != null) {
           totalCost += data.priceJOD;
-          totalMinutes += data.estimatedTimeMinutes;
+          // FIX: Explicitly cast the value to int to resolve the 'num' to 'int' assignment error.
+          totalMinutes += (data.estimatedTimeMinutes as int);
         }
       }
 
@@ -128,11 +132,18 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkMode = themeNotifier.isDarkMode;
+
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle.dark.copyWith(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
+      isDarkMode
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+            ),
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
@@ -142,7 +153,9 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     final double bottomNavClearance =
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
-    final unitTypeKeys = widget.service.unitTypes.keys.toList();
+    final unitTypesMap = widget.service.unitTypes;
+    final unitTypeKeys =
+        (unitTypesMap as Map<String, dynamic>?)?.keys.toList() ?? <String>[];
 
     return Scaffold(
       extendBody: true,
@@ -157,8 +170,9 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
             unitTypeKeys: unitTypeKeys,
+            isDarkMode: isDarkMode,
           ),
-          _buildHomeImage(logoTopPosition),
+          _buildHomeImage(logoTopPosition, isDarkMode),
           _UnitTypeNavigationHeader(
             onBackTap: () {
               Navigator.pop(context);
@@ -224,14 +238,18 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     );
   }
 
-  Widget _buildHomeImage(double logoTopPosition) {
+  Widget _buildHomeImage(double logoTopPosition, bool isDarkMode) {
+    final String imagePath = isDarkMode
+        ? 'assets/image/home_dark.png'
+        : 'assets/image/home.png';
+
     return Positioned(
       top: logoTopPosition,
       left: 0,
       right: 0,
       child: Center(
         child: Image.asset(
-          'assets/image/home.png',
+          imagePath,
           width: 140,
           height: _logoHeight,
           fit: BoxFit.contain,
@@ -244,6 +262,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     required double containerTop,
     required double bottomNavClearance,
     required List<String> unitTypeKeys,
+    required bool isDarkMode,
   }) {
     return Positioned(
       top: containerTop,
@@ -251,18 +270,18 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
       right: 0,
       bottom: 0,
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(50.0),
             topRight: Radius.circular(50.0),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26,
+              color: isDarkMode ? Colors.black45 : Colors.black26,
               spreadRadius: 1,
               blurRadius: 10,
-              offset: Offset(0, -3),
+              offset: const Offset(0, -3),
             ),
           ],
         ),
@@ -281,17 +300,18 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
             ),
             Expanded(
               child: _UnitTypeListView(
                 unitTypes: unitTypeKeys,
-                unitData: widget.service.unitTypes,
+                unitData: widget.service.unitTypes as Map<String, dynamic>,
                 selectedUnitTypes: _selectedUnitTypes,
                 onUnitTypeTap: _onUnitTypeTapped,
                 bottomPadding: bottomNavClearance,
+                isDarkMode: isDarkMode,
               ),
             ),
           ],
@@ -360,11 +380,12 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
 }
 
 class _UnitTypeListView extends StatelessWidget {
-  final Map<String, UnitType> unitData;
+  final Map<String, dynamic> unitData;
   final List<String> unitTypes;
   final Set<String> selectedUnitTypes;
   final ValueChanged<String> onUnitTypeTap;
   final double bottomPadding;
+  final bool isDarkMode;
 
   const _UnitTypeListView({
     required this.unitTypes,
@@ -372,6 +393,7 @@ class _UnitTypeListView extends StatelessWidget {
     required this.onUnitTypeTap,
     required this.bottomPadding,
     required this.unitData,
+    required this.isDarkMode,
   });
 
   @override
@@ -389,14 +411,18 @@ class _UnitTypeListView extends StatelessWidget {
         final bool isSelected = selectedUnitTypes.contains(unitName);
         final data = unitData[unitName];
 
+        final int estimatedTime = data?.estimatedTimeMinutes ?? 0;
+        final double price = data?.priceJOD ?? 0.0;
+
         return _SelectableUnitItem(
           name: unitName,
-          estimatedTime: data?.estimatedTimeMinutes ?? 0,
-          price: data?.priceJOD ?? 0.0,
+          estimatedTime: estimatedTime,
+          price: price,
           isSelected: isSelected,
           onTap: () {
             onUnitTypeTap(unitName);
           },
+          isDarkMode: isDarkMode,
         );
       },
     );
@@ -409,6 +435,7 @@ class _SelectableUnitItem extends StatelessWidget {
   final double price;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool isDarkMode;
 
   const _SelectableUnitItem({
     required this.name,
@@ -416,12 +443,13 @@ class _SelectableUnitItem extends StatelessWidget {
     required this.price,
     required this.isSelected,
     required this.onTap,
+    required this.isDarkMode,
   });
 
   static const Color _primaryBlue = Color(0xFF1976D2);
-  static final Color _fillColor = Colors.grey[100]!;
   static const double _borderRadius = 15.0;
   static const double _borderWidth = 2.0;
+  static const Color _subtleLighterDarkGrey = Color(0xFF242424);
 
   String get _formattedTime {
     if (estimatedTime < 60) return '$estimatedTime mins';
@@ -433,22 +461,35 @@ class _SelectableUnitItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color fillColor = isDarkMode
+        ? _subtleLighterDarkGrey
+        : Colors.grey[100]!;
+    final Color unselectedBorderColor = isDarkMode
+        ? Colors.grey[600]!
+        : Colors.grey[400]!;
+    final Color unselectedTitleColor = isDarkMode
+        ? Colors.white70
+        : Colors.grey[700]!;
+    final Color timeTextColor = isDarkMode
+        ? Colors.grey[400]!
+        : Colors.grey[600]!;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6.0),
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         decoration: BoxDecoration(
-          color: _fillColor,
+          color: fillColor,
           borderRadius: BorderRadius.circular(_borderRadius),
           border: Border.all(
-            color: isSelected ? _primaryBlue : Colors.grey[400]!,
+            color: isSelected ? _primaryBlue : unselectedBorderColor,
             width: _borderWidth,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: _primaryBlue.withOpacity(0.2),
+                    color: _primaryBlue.withOpacity(isDarkMode ? 0.4 : 0.2),
                     blurRadius: 5,
                     spreadRadius: 1,
                     offset: const Offset(0, 3),
@@ -456,7 +497,7 @@ class _SelectableUnitItem extends StatelessWidget {
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
+                    color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.02),
                     blurRadius: 5,
                     spreadRadius: 1,
                     offset: const Offset(0, 2),
@@ -476,13 +517,13 @@ class _SelectableUnitItem extends StatelessWidget {
                       fontWeight: isSelected
                           ? FontWeight.bold
                           : FontWeight.w600,
-                      color: isSelected ? _primaryBlue : Colors.grey[700],
+                      color: isSelected ? _primaryBlue : unselectedTitleColor,
                     ),
                   ),
                   const SizedBox(height: 4.0),
                   Text(
                     'Est. Time: $_formattedTime',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 14, color: timeTextColor),
                   ),
                 ],
               ),

@@ -5,7 +5,8 @@ import 'bookings_screen.dart';
 import 'media_screen.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
-import 'home_screen.dart'; // Import to access ServiceScreen
+import 'home_screen.dart';
+import '../../main.dart';
 
 class LocationScreen extends StatefulWidget {
   final String serviceName;
@@ -38,6 +39,9 @@ class _LocationScreenState extends State<LocationScreen> {
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
   static const Color _secondaryBlue = Color(0xFF57b2ff);
+  static const Color _subtleLighterDark = Color(
+    0xFF2C2C2C,
+  ); // Added for map container background
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
@@ -87,10 +91,11 @@ class _LocationScreenState extends State<LocationScreen> {
         );
         break;
       case 3:
-        // FIX: Use pushReplacement to ServiceScreen for consistent bottom nav behavior
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ServiceScreen()),
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
     }
@@ -117,16 +122,17 @@ class _LocationScreenState extends State<LocationScreen> {
     );
   }
 
-  void _showMaximizedMap(BuildContext context) {
+  void _showMaximizedMap(BuildContext context, bool isDarkMode) {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Close Map',
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, a1, a2) {
-        return const _MaximizedMapDialog(
+        return _MaximizedMapDialog(
           mapBorderRadius: _mapBorderRadius,
           primaryColor: _primaryBlue,
+          isDarkMode: isDarkMode,
         );
       },
       transitionBuilder: (context, a1, a2, child) {
@@ -137,11 +143,18 @@ class _LocationScreenState extends State<LocationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkMode = themeNotifier.isDarkMode;
+
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle.dark.copyWith(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
+      isDarkMode
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+            ),
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
@@ -153,6 +166,7 @@ class _LocationScreenState extends State<LocationScreen> {
 
     return Scaffold(
       extendBody: true,
+      backgroundColor: isDarkMode ? Colors.black : Colors.white,
       body: Stack(
         children: [
           _buildBackgroundGradient(whiteContainerTop),
@@ -163,8 +177,9 @@ class _LocationScreenState extends State<LocationScreen> {
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
+            isDarkMode: isDarkMode,
           ),
-          _buildHomeImage(logoTopPosition),
+          _buildHomeImage(logoTopPosition, isDarkMode),
           _NavigationHeader(onBackTap: _onBackTap, onNextTap: _onNextTap),
         ],
       ),
@@ -228,14 +243,17 @@ class _LocationScreenState extends State<LocationScreen> {
     );
   }
 
-  Widget _buildHomeImage(double logoTopPosition) {
+  Widget _buildHomeImage(double logoTopPosition, bool isDarkMode) {
+    final String imagePath = isDarkMode
+        ? 'assets/image/home_dark.png'
+        : 'assets/image/home.png';
     return Positioned(
       top: logoTopPosition,
       left: 0,
       right: 0,
       child: Center(
         child: Image.asset(
-          'assets/image/home.png',
+          imagePath,
           width: 140,
           height: _logoHeight,
           fit: BoxFit.contain,
@@ -247,6 +265,7 @@ class _LocationScreenState extends State<LocationScreen> {
   Widget _buildWhiteContainer({
     required double containerTop,
     required double bottomNavClearance,
+    required bool isDarkMode,
   }) {
     return Positioned(
       top: containerTop,
@@ -254,18 +273,18 @@ class _LocationScreenState extends State<LocationScreen> {
       right: 0,
       bottom: 0,
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(50.0),
             topRight: Radius.circular(50.0),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26,
+              color: isDarkMode ? Colors.black45 : Colors.black26,
               spreadRadius: 1,
               blurRadius: 10,
-              offset: Offset(0, -3),
+              offset: const Offset(0, -3),
             ),
           ],
         ),
@@ -283,18 +302,31 @@ class _LocationScreenState extends State<LocationScreen> {
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
             ),
-            Expanded(child: _buildMapPlaceholder(bottomNavClearance)),
+            Expanded(
+              child: _buildMapPlaceholder(bottomNavClearance, isDarkMode),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMapPlaceholder(double bottomNavClearance) {
+  Widget _buildMapPlaceholder(double bottomNavClearance, bool isDarkMode) {
+    // UPDATED: Use Colors.grey[100] in light mode and _subtleLighterDark in dark mode
+    final Color mapBgColor = isDarkMode
+        ? _subtleLighterDark
+        : Colors.grey[100]!;
+    final Color mapBorderColor = isDarkMode
+        ? Colors.grey[700]!
+        : Colors.grey[400]!;
+    final Color mapIconColor = isDarkMode
+        ? Colors.red.shade300
+        : Colors.red.shade100;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         _horizontalPadding,
@@ -306,12 +338,14 @@ class _LocationScreenState extends State<LocationScreen> {
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: mapBgColor,
             borderRadius: BorderRadius.circular(_mapBorderRadius),
-            border: Border.all(color: Colors.grey[400]!, width: 2.0),
+            border: Border.all(color: mapBorderColor, width: 2.0),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: isDarkMode
+                    ? Colors.black.withOpacity(0.5)
+                    : Colors.black.withOpacity(0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),
@@ -322,14 +356,14 @@ class _LocationScreenState extends State<LocationScreen> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Icon(Icons.location_on, size: 150, color: Colors.red.shade100),
+                Icon(Icons.location_on, size: 150, color: mapIconColor),
                 Positioned(
                   top: 15,
                   right: 15,
                   child: FloatingActionButton(
                     mini: true,
                     backgroundColor: _primaryBlue,
-                    onPressed: () => _showMaximizedMap(context),
+                    onPressed: () => _showMaximizedMap(context, isDarkMode),
                     child: const Icon(Icons.open_in_full, color: Colors.white),
                   ),
                 ),
@@ -345,26 +379,31 @@ class _LocationScreenState extends State<LocationScreen> {
 class _MaximizedMapDialog extends StatelessWidget {
   final double mapBorderRadius;
   final Color primaryColor;
+  final bool isDarkMode;
 
   const _MaximizedMapDialog({
     required this.mapBorderRadius,
     required this.primaryColor,
+    required this.isDarkMode,
   });
+
+  static const Color _subtleDark = Color(0xFF1E1E1E);
 
   @override
   Widget build(BuildContext context) {
+    final Color backgroundColor = isDarkMode ? _subtleDark : Colors.white;
+    final Color mapIconColor = isDarkMode
+        ? Colors.red.shade300
+        : Colors.red.shade100;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       body: Stack(
         children: [
           Container(
             padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
             child: Center(
-              child: Icon(
-                Icons.location_on,
-                size: 200,
-                color: Colors.red.shade100,
-              ),
+              child: Icon(Icons.location_on, size: 200, color: mapIconColor),
             ),
           ),
           Positioned(

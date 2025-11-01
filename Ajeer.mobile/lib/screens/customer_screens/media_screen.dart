@@ -7,7 +7,8 @@ import 'bookings_screen.dart';
 import 'confirmation_screen.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
-import 'home_screen.dart'; // Import to access ServiceScreen
+import 'home_screen.dart';
+import '../../main.dart';
 
 class MediaScreen extends StatefulWidget {
   final String serviceName;
@@ -38,8 +39,7 @@ class _MediaScreenState extends State<MediaScreen> {
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
   static const Color _secondaryBlue = Color(0xFF57b2ff);
-  static const Color _lightGrayText = Color(0xFFA0A0A0);
-  static const Color _mediumGrayBorder = Color(0xFFDCDCDC);
+  static const Color _subtleLighterDark = Color(0xFF2C2C2C);
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
@@ -135,10 +135,11 @@ class _MediaScreenState extends State<MediaScreen> {
         );
         break;
       case 3:
-        // FIX: Use pushReplacement to ServiceScreen for consistent bottom nav behavior
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ServiceScreen()),
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
     }
@@ -239,7 +240,7 @@ class _MediaScreenState extends State<MediaScreen> {
     });
   }
 
-  void _showMediaUploadDialog(BuildContext context) {
+  void _showMediaUploadDialog(BuildContext context, bool isDarkMode) {
     String mediaType = _selectedMediaType;
     String action = mediaType == 'Photo'
         ? 'images'
@@ -254,9 +255,9 @@ class _MediaScreenState extends State<MediaScreen> {
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(25.0),
               topRight: Radius.circular(25.0),
             ),
@@ -267,10 +268,10 @@ class _MediaScreenState extends State<MediaScreen> {
             children: <Widget>[
               Text(
                 'Add ${mediaType == 'Photo' ? 'multiple photos' : action}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20.0,
-                  color: Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 15.0),
@@ -279,7 +280,9 @@ class _MediaScreenState extends State<MediaScreen> {
                   leading: const Icon(Icons.photo_library, color: _primaryBlue),
                   title: Text(
                     'Select from Gallery / Files',
-                    style: TextStyle(color: Colors.grey.shade700),
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
+                    ),
                   ),
                   onTap: () => _pickMedia(ImageSource.gallery),
                 ),
@@ -293,7 +296,9 @@ class _MediaScreenState extends State<MediaScreen> {
                       : mediaType == 'Video'
                       ? 'Record Video'
                       : 'Record Audio',
-                  style: TextStyle(color: Colors.grey.shade700),
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
+                  ),
                 ),
                 onTap: () => _pickMedia(ImageSource.camera),
               ),
@@ -307,11 +312,18 @@ class _MediaScreenState extends State<MediaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkMode = themeNotifier.isDarkMode;
+
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle.dark.copyWith(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
+      isDarkMode
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+            ),
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
@@ -323,6 +335,7 @@ class _MediaScreenState extends State<MediaScreen> {
 
     return Scaffold(
       extendBody: true,
+      backgroundColor: isDarkMode ? Colors.black : Colors.white,
       body: Stack(
         children: [
           _buildBackgroundGradient(whiteContainerTop),
@@ -333,8 +346,9 @@ class _MediaScreenState extends State<MediaScreen> {
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
+            isDarkMode: isDarkMode,
           ),
-          _buildHomeImage(logoTopPosition),
+          _buildHomeImage(logoTopPosition, isDarkMode),
           _NavigationHeader(onBackTap: _onBackTap, onNextTap: _onNextTap),
         ],
       ),
@@ -398,14 +412,17 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-  Widget _buildHomeImage(double logoTopPosition) {
+  Widget _buildHomeImage(double logoTopPosition, bool isDarkMode) {
+    final String imagePath = isDarkMode
+        ? 'assets/image/home_dark.png'
+        : 'assets/image/home.png';
     return Positioned(
       top: logoTopPosition,
       left: 0,
       right: 0,
       child: Center(
         child: Image.asset(
-          'assets/image/home.png',
+          imagePath,
           width: 140,
           height: _logoHeight,
           fit: BoxFit.contain,
@@ -417,6 +434,7 @@ class _MediaScreenState extends State<MediaScreen> {
   Widget _buildWhiteContainer({
     required double containerTop,
     required double bottomNavClearance,
+    required bool isDarkMode,
   }) {
     return Positioned(
       top: containerTop,
@@ -424,18 +442,18 @@ class _MediaScreenState extends State<MediaScreen> {
       right: 0,
       bottom: 0,
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(50.0),
             topRight: Radius.circular(50.0),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26,
+              color: isDarkMode ? Colors.black45 : Colors.black26,
               spreadRadius: 1,
               blurRadius: 10,
-              offset: Offset(0, -3),
+              offset: const Offset(0, -3),
             ),
           ],
         ),
@@ -450,7 +468,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
             ),
@@ -462,7 +480,7 @@ class _MediaScreenState extends State<MediaScreen> {
                   _horizontalPadding,
                   bottomNavClearance - _horizontalPadding,
                 ),
-                child: _buildMediaContent(),
+                child: _buildMediaContent(isDarkMode),
               ),
             ),
           ],
@@ -471,90 +489,99 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-  Widget _buildMediaContent() {
+  Widget _buildMediaContent(bool isDarkMode) {
+    final Color textColor = isDarkMode ? Colors.white70 : Colors.black87;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Add a photo, video, or audio recording describing your problem',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: _lightGrayText,
+            color: isDarkMode ? Colors.grey : Colors.grey.shade600,
             fontSize: 16.0,
             fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 25.0),
-        _buildMediaTabs(),
+        _buildMediaTabs(isDarkMode),
         const SizedBox(height: 25.0),
-        _buildUploadRectangle(),
+        _buildUploadRectangle(isDarkMode),
         const SizedBox(height: 15.0),
-        _buildDescriptionRectangle(),
+        _buildDescriptionRectangle(isDarkMode, textColor),
         const SizedBox(height: 20.0),
       ],
     );
   }
 
-  Widget _buildMediaTabs() {
+  Widget _buildMediaTabs(bool isDarkMode) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         _TabButton(
           type: 'Photo',
           icon: Icons.image_outlined,
-          color: _secondaryBlue,
           onTap: () => setState(() {
             _selectedMediaType = 'Photo';
           }),
           isSelected: _selectedMediaType == 'Photo',
+          isDarkMode: isDarkMode,
         ),
         _TabButton(
           type: 'Video',
           icon: Icons.videocam_outlined,
-          color: _secondaryBlue,
           onTap: () => setState(() {
             _selectedMediaType = 'Video';
           }),
           isSelected: _selectedMediaType == 'Video',
+          isDarkMode: isDarkMode,
         ),
         _TabButton(
           type: 'Audio',
           icon: Icons.mic_none,
-          color: _secondaryBlue,
           onTap: () => setState(() {
             _selectedMediaType = 'Audio';
           }),
           isSelected: _selectedMediaType == 'Audio',
+          isDarkMode: isDarkMode,
         ),
       ],
     );
   }
 
-  Widget _buildUploadRectangle() {
+  Widget _buildUploadRectangle(bool isDarkMode) {
+    final Color containerColor = isDarkMode ? _subtleLighterDark : Colors.white;
+    final Color borderColor = isDarkMode
+        ? Colors.grey.shade700
+        : Colors.grey.shade300;
+
     return Container(
       height: _containerHeight,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: containerColor,
         borderRadius: BorderRadius.circular(_borderRadiusLarge),
-        border: Border.all(color: Colors.grey.shade300, width: 2.0),
+        border: Border.all(color: borderColor, width: 2.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: isDarkMode
+                ? Colors.black.withOpacity(0.5)
+                : Colors.black.withOpacity(0.05),
             blurRadius: 5,
             offset: const Offset(0, 3),
           ),
         ],
       ),
       child: _currentMediaFiles.isEmpty
-          ? _buildAddButton()
+          ? _buildAddButton(isDarkMode)
           : _buildMediaGallery(),
     );
   }
 
-  Widget _buildAddButton() {
+  Widget _buildAddButton(bool isDarkMode) {
     return Center(
       child: GestureDetector(
-        onTap: () => _showMediaUploadDialog(context),
+        onTap: () => _showMediaUploadDialog(context, isDarkMode),
         child: Container(
           padding: const EdgeInsets.all(10.0),
           decoration: BoxDecoration(
@@ -629,10 +656,18 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-  Widget _buildDescriptionRectangle() {
-    final Color textColor = _isDescriptionSaved
-        ? _lightGrayText
-        : Colors.black87;
+  Widget _buildDescriptionRectangle(bool isDarkMode, Color textColor) {
+    final Color containerColor = isDarkMode ? _subtleLighterDark : Colors.white;
+    final Color borderColor = isDarkMode
+        ? Colors.grey.shade700
+        : Colors.grey.shade300;
+    final Color hintColor = isDarkMode
+        ? Colors.grey.shade500
+        : Colors.grey.shade600;
+
+    final Color effectiveTextColor = _isDescriptionSaved
+        ? hintColor
+        : textColor;
     final bool enableEditing = !_isDescriptionSaved;
 
     return Stack(
@@ -641,12 +676,14 @@ class _MediaScreenState extends State<MediaScreen> {
           height: _containerHeight,
           padding: const EdgeInsets.all(10.0),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: containerColor,
             borderRadius: BorderRadius.circular(_borderRadiusLarge),
-            border: Border.all(color: Colors.grey.shade300, width: 2.0),
+            border: Border.all(color: borderColor, width: 2.0),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: isDarkMode
+                    ? Colors.black.withOpacity(0.5)
+                    : Colors.black.withOpacity(0.05),
                 blurRadius: 5,
                 offset: const Offset(0, 3),
               ),
@@ -667,18 +704,15 @@ class _MediaScreenState extends State<MediaScreen> {
                     keyboardType: TextInputType.multiline,
                     enabled: enableEditing,
                     cursorColor: _primaryBlue,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText:
                           'Write a description of your problem (Optional)',
-                      hintStyle: TextStyle(
-                        color: _lightGrayText,
-                        fontSize: 16.0,
-                      ),
+                      hintStyle: TextStyle(color: hintColor, fontSize: 16.0),
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
                     ),
-                    style: TextStyle(color: textColor, fontSize: 16.0),
+                    style: TextStyle(color: effectiveTextColor, fontSize: 16.0),
                   ),
                 ),
               ),
@@ -699,7 +733,9 @@ class _MediaScreenState extends State<MediaScreen> {
                         horizontal: 20,
                         vertical: 10,
                       ),
-                      disabledBackgroundColor: Colors.grey.shade400,
+                      disabledBackgroundColor: isDarkMode
+                          ? Colors.grey.shade700
+                          : Colors.grey.shade400,
                     ),
                     child: const Text(
                       'Save',
@@ -711,8 +747,8 @@ class _MediaScreenState extends State<MediaScreen> {
                   ),
                 ),
               if (_isDescriptionSaved)
-                const Padding(
-                  padding: EdgeInsets.only(right: 10.0, bottom: 5.0),
+                Padding(
+                  padding: const EdgeInsets.only(right: 10.0, bottom: 5.0),
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Text(
@@ -744,22 +780,31 @@ class _MediaScreenState extends State<MediaScreen> {
 class _TabButton extends StatelessWidget {
   final String type;
   final IconData icon;
-  final Color color;
   final VoidCallback onTap;
   final bool isSelected;
+  final bool isDarkMode;
 
   const _TabButton({
     required this.type,
     required this.icon,
-    required this.color,
     required this.onTap,
     required this.isSelected,
+    required this.isDarkMode,
   });
+
+  static const Color primaryBlue = _MediaScreenState._primaryBlue;
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryBlue = _MediaScreenState._primaryBlue;
-    const Color mediumGrayBorder = _MediaScreenState._mediumGrayBorder;
+    final Color borderColor = isDarkMode
+        ? Colors.grey.shade700
+        : Colors.grey.shade300;
+    final Color unselectedTextColor = isDarkMode
+        ? Colors.grey.shade500
+        : Colors.grey.shade600;
+    final Color unselectedIconBg = isDarkMode
+        ? _MediaScreenState._subtleLighterDark
+        : Colors.transparent;
 
     return GestureDetector(
       onTap: onTap,
@@ -768,10 +813,10 @@ class _TabButton extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12.0),
             decoration: BoxDecoration(
-              color: isSelected ? primaryBlue : Colors.transparent,
+              color: isSelected ? primaryBlue : unselectedIconBg,
               borderRadius: BorderRadius.circular(15.0),
               border: Border.all(
-                color: isSelected ? primaryBlue : mediumGrayBorder,
+                color: isSelected ? primaryBlue : borderColor,
                 width: 2.0,
               ),
             ),
@@ -785,7 +830,7 @@ class _TabButton extends StatelessWidget {
           Text(
             type,
             style: TextStyle(
-              color: isSelected ? primaryBlue : Colors.grey.shade600,
+              color: isSelected ? primaryBlue : unselectedTextColor,
               fontWeight: FontWeight.w600,
             ),
           ),
