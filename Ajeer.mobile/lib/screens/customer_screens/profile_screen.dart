@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../widgets/custom_bottom_nav_bar.dart';
+import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'home_screen.dart';
 import 'chat_screen.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import '../../widgets/custom_bottom_nav_bar.dart';
+import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'location_screen.dart';
 import 'profile_screen.dart';
