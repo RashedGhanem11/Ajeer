@@ -115,7 +115,10 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       case 0:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          MaterialPageRoute(
+            // FIX: Pass the required 'themeNotifier' to ProfileScreen
+            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
       case 1:

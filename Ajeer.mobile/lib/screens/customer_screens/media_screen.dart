@@ -8,7 +8,7 @@ import 'confirmation_screen.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
-import '../../main.dart';
+import '../../main.dart'; // Imports themeNotifier
 
 class MediaScreen extends StatefulWidget {
   final String serviceName;
@@ -119,7 +119,10 @@ class _MediaScreenState extends State<MediaScreen> {
       case 0:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          MaterialPageRoute(
+            // FIX: Pass the required 'themeNotifier' to ProfileScreen
+            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
       case 1:
@@ -169,6 +172,8 @@ class _MediaScreenState extends State<MediaScreen> {
           pickedMediaFiles: allPickedFiles,
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
+          // FIX: Removed 'themeNotifier' as ConfirmationScreen's constructor
+          // defined in the previous step did not include it.
         ),
       ),
     );
@@ -199,9 +204,18 @@ class _MediaScreenState extends State<MediaScreen> {
       }
     } else if (_selectedMediaType == 'Audio') {
       if (source == ImageSource.gallery) {
+        // Simulating failure for audio from gallery/files
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Selecting audio from files is not fully implemented in this simulation.',
+            ),
+          ),
+        );
         Navigator.of(context).pop();
         return;
       } else if (source == ImageSource.camera) {
+        // Simulating failure for audio recording (camera source)
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -221,6 +235,8 @@ class _MediaScreenState extends State<MediaScreen> {
         } else if (_selectedMediaType == 'Video') {
           _videoFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
         } else if (_selectedMediaType == 'Audio') {
+          // No actual audio files are picked, so this branch is currently unreachable
+          // and relies on the simulated failure above.
           _audioFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
         }
       });

@@ -6,10 +6,13 @@ import '../../widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'home_screen.dart';
 import 'chat_screen.dart';
-import '../../main.dart';
+import '../../themes/theme_notifier.dart';
+import '../customer_screens/login_screen.dart';
+import '../../widgets/customer_widgets/settings_menu.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final ThemeNotifier themeNotifier;
+  const ProfileScreen({super.key, required this.themeNotifier});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -34,6 +37,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _selectedIndex = 0;
   bool _isPasswordVisible = false;
   bool _isEditing = false;
+
+  Set<int> _selectedNotifications = {};
+  bool _isDeleting = false;
+  List<Map<String, dynamic>> _notifications = [
+    {
+      'title': 'New Booking Confirmation',
+      'subtitle': 'Your booking #1023 is confirmed.',
+      'icon': Icons.calendar_today,
+      'color': Colors.green,
+    },
+    {
+      'title': 'Provider Assigned',
+      'subtitle': 'John Doe has been assigned to your service.',
+      'icon': Icons.people_alt,
+      'color': Colors.blue,
+    },
+    {
+      'title': 'Payment Reminder',
+      'subtitle': 'A service fee is due tomorrow.',
+      'icon': Icons.payments,
+      'color': Colors.orange,
+    },
+    {
+      'title': 'Ajeer Update',
+      'subtitle': 'Check out the new app features!',
+      'icon': Icons.notifications_active,
+      'color': Colors.purple,
+    },
+    {
+      'title': 'System Maintenance',
+      'subtitle': 'Scheduled downtime this Friday at 2 AM.',
+      'icon': Icons.build,
+      'color': Colors.grey,
+    },
+  ];
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -136,7 +174,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+            builder: (context) =>
+                HomeScreen(themeNotifier: widget.themeNotifier),
           ),
         );
         break;
@@ -201,8 +240,138 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  void _toggleNotificationSelection(int index) {
+    setState(() {
+      if (_selectedNotifications.contains(index)) {
+        _selectedNotifications.remove(index);
+      } else {
+        _selectedNotifications.add(index);
+      }
+      _isDeleting = _selectedNotifications.isNotEmpty;
+    });
+  }
+
+  void _deleteSelectedNotifications() {
+    setState(() {
+      final List<Map<String, dynamic>> toKeep = [];
+      for (int i = 0; i < _notifications.length; i++) {
+        if (!_selectedNotifications.contains(i)) {
+          toKeep.add(_notifications[i]);
+        }
+      }
+      _notifications = toKeep;
+      _selectedNotifications.clear();
+      _isDeleting = false;
+    });
+  }
+
+  void _showInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(30.0)),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.info_outline, color: Color(0xFF1976D2)),
+              SizedBox(width: 10),
+              Text('Ajeer Info'),
+            ],
+          ),
+          content: const SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(
+                  'Ajeer is your dedicated platform for booking and managing home services. '
+                  'We connect two main user types: customers who need reliable services, and '
+                  'service providers (professionals) who offer them, ensuring a seamless experience for all.',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSignOutDialog() {
+    final Color contentTextColor = Theme.of(
+      context,
+    ).textTheme.bodyLarge!.color!;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(30.0)),
+          ),
+          title: Text(
+            'Sign Out',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.red.shade700,
+            ),
+          ),
+          content: const Text(
+            'Would you like to sign out?',
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: <Widget>[
+            TextButton(
+              child: Text('No', style: TextStyle(color: contentTextColor)),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+              ),
+              child: const Text(
+                'SIGN OUT',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (Route<dynamic> route) => false,
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showSwitchModeDialog() {
-    final bool isDarkMode = themeNotifier.isDarkMode;
+    final bool isDarkMode = widget.themeNotifier.isDarkMode;
 
     showDialog(
       context: context,
@@ -274,7 +443,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = themeNotifier.isDarkMode;
+    final bool isDarkMode = widget.themeNotifier.isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
@@ -298,6 +467,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       extendBody: true,
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
+      drawer: SettingsMenu(
+        themeNotifier: widget.themeNotifier,
+        onInfoTap: _showInfoDialog,
+        onSignOutTap: _showSignOutDialog,
+        notifications: _notifications,
+        selectedNotifications: _selectedNotifications,
+        isDeleting: _isDeleting,
+        onToggleNotificationSelection: _toggleNotificationSelection,
+        onDeleteSelectedNotifications: _deleteSelectedNotifications,
+      ),
       body: Stack(
         children: [
           _buildBackgroundGradient(whiteContainerTop, isDarkMode),
@@ -521,7 +700,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: titleColor,
                           ),
                     ),
-                    _buildEditSaveButtons(),
+                    // FIX: Wrap the call to _buildEditSaveButtons in a Builder
+                    // to ensure a correct context for Scaffold.of(context).openDrawer()
+                    Builder(
+                      builder: (context) {
+                        return _buildEditSaveButtons(context);
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -578,7 +763,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildEditSaveButtons() {
+  // FIX: Accept BuildContext as an argument
+  Widget _buildEditSaveButtons(BuildContext context) {
     final Color saveColor = _dataHasChanged ? _saveGreen : Colors.grey;
     final bool saveEnabled = _dataHasChanged;
 
@@ -601,6 +787,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           tooltip: _isEditing ? 'Cancel Editing' : 'Edit Profile',
           onPressed: _toggleEditMode,
           backgroundColor: cancelColor,
+        ),
+        const SizedBox(width: 10),
+        _buildActionButton(
+          icon: Icons.settings,
+          tooltip: 'Settings',
+          // FIX: The context now reliably finds the Scaffold
+          onPressed: () => Scaffold.of(context).openDrawer(),
+          backgroundColor: _primaryBlue,
         ),
       ],
     );

@@ -78,7 +78,10 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       case 0:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          MaterialPageRoute(
+            // FIX: Pass the required 'themeNotifier' and remove 'const'
+            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
       case 1:
@@ -218,6 +221,8 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           selectionMode: _selectionMode,
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
+          // Assuming LocationScreen will need themeNotifier as well
+          // themeNotifier: themeNotifier,
         ),
       ),
     );

@@ -42,7 +42,10 @@ class _ChatScreenState extends State<ChatScreen> {
       case 0:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          MaterialPageRoute(
+            // FIX: Pass themeNotifier to ProfileScreen
+            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
       case 2:

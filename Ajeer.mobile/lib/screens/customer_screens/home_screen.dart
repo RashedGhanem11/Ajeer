@@ -7,7 +7,6 @@ import '../../services/services.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
 import '../../themes/theme_notifier.dart';
-import '../customer_screens/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -20,41 +19,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 3;
   String _searchQuery = '';
-  Set<int> _selectedNotifications = {};
-  bool _isDeleting = false;
-
-  List<Map<String, dynamic>> _notifications = [
-    {
-      'title': 'New Booking Confirmation',
-      'subtitle': 'Your booking #1023 is confirmed.',
-      'icon': Icons.calendar_today,
-      'color': Colors.green,
-    },
-    {
-      'title': 'Provider Assigned',
-      'subtitle': 'John Doe has been assigned to your service.',
-      'icon': Icons.people_alt,
-      'color': Colors.blue,
-    },
-    {
-      'title': 'Payment Reminder',
-      'subtitle': 'A service fee is due tomorrow.',
-      'icon': Icons.payments,
-      'color': Colors.orange,
-    },
-    {
-      'title': 'Ajeer Update',
-      'subtitle': 'Check out the new app features!',
-      'icon': Icons.notifications_active,
-      'color': Colors.purple,
-    },
-    {
-      'title': 'System Maintenance',
-      'subtitle': 'Scheduled downtime this Friday at 2 AM.',
-      'icon': Icons.build,
-      'color': Colors.grey,
-    },
-  ];
 
   final List<Service> services = kAvailableServices;
 
@@ -91,7 +55,10 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          MaterialPageRoute(
+            builder: (context) =>
+                ProfileScreen(themeNotifier: widget.themeNotifier),
+          ),
         );
         break;
       case 1:
@@ -116,136 +83,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         break;
     }
-  }
-
-  void _toggleNotificationSelection(int index) {
-    setState(() {
-      if (_selectedNotifications.contains(index)) {
-        _selectedNotifications.remove(index);
-      } else {
-        _selectedNotifications.add(index);
-      }
-      _isDeleting = _selectedNotifications.isNotEmpty;
-    });
-  }
-
-  void _deleteSelectedNotifications() {
-    setState(() {
-      final List<Map<String, dynamic>> toKeep = [];
-      for (int i = 0; i < _notifications.length; i++) {
-        if (!_selectedNotifications.contains(i)) {
-          toKeep.add(_notifications[i]);
-        }
-      }
-      _notifications = toKeep;
-      _selectedNotifications.clear();
-      _isDeleting = false;
-    });
-  }
-
-  void _showSignOutDialog() {
-    final Color contentTextColor = Theme.of(
-      context,
-    ).textTheme.bodyLarge!.color!;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(30.0)),
-          ),
-          title: Text(
-            'Sign Out',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.red.shade700,
-            ),
-          ),
-          content: const Text(
-            'Would you like to sign out?',
-            textAlign: TextAlign.center,
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: <Widget>[
-            TextButton(
-              child: Text('No', style: TextStyle(color: contentTextColor)),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade700,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-              ),
-              child: const Text(
-                'SIGN OUT',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (Route<dynamic> route) => false,
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showInfoDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(30.0)),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.info_outline, color: Color(0xFF1976D2)),
-              SizedBox(width: 10),
-              Text('Ajeer Info'),
-            ],
-          ),
-          content: const SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(
-                  'Ajeer is your dedicated platform for booking and managing home services. '
-                  'We connect two main user types: customers who need reliable services, and '
-                  'service providers (professionals) who offer them, ensuring a seamless experience for all.',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Close'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -281,7 +118,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       extendBody: true,
-      drawer: _buildAppDrawer(),
       body: Stack(
         children: [
           _buildBackgroundGradient(whiteContainerTop, isDarkMode),
@@ -298,331 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
         items: navItems,
         selectedIndex: _selectedIndex,
         onIndexChanged: _onNavItemTapped,
-      ),
-    );
-  }
-
-  Widget _buildAppDrawer() {
-    final bool isDarkMode = widget.themeNotifier.isDarkMode;
-    const Color primaryBlue = Color(0xFF1976D2);
-    const Color lightBlue = Color(0xFF8CCBFF);
-    final Color textColor = isDarkMode ? Colors.white70 : Colors.black87;
-    final Color containerColor = isDarkMode
-        ? Colors.grey.shade800
-        : Colors.grey.shade200;
-
-    return Drawer(
-      backgroundColor: isDarkMode ? Theme.of(context).cardColor : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(50),
-          bottomRight: Radius.circular(50),
-        ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [lightBlue, primaryBlue],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            padding: const EdgeInsets.only(top: 80.0, bottom: 40.0),
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.settings, color: Colors.white, size: 40),
-                  SizedBox(height: 8),
-                  Text(
-                    'Ajeer Settings',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 2.0,
-                          color: Colors.black26,
-                          offset: Offset(1.0, 1.0),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SwitchListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 6.0,
-            ),
-            visualDensity: const VisualDensity(vertical: -2),
-            title: Text('Enable Dark Mode', style: TextStyle(color: textColor)),
-            secondary: Icon(
-              widget.themeNotifier.isDarkMode
-                  ? Icons.nightlight_round
-                  : Icons.wb_sunny,
-              color: widget.themeNotifier.isDarkMode
-                  ? Colors.white70
-                  : Colors.black54,
-            ),
-            value: widget.themeNotifier.isDarkMode,
-            onChanged: (bool value) {
-              widget.themeNotifier.toggleTheme();
-            },
-            activeColor: Theme.of(context).primaryColor,
-          ),
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 2.0,
-            ),
-            visualDensity: const VisualDensity(vertical: -4),
-            leading: Icon(
-              Icons.info_outline,
-              color: widget.themeNotifier.isDarkMode
-                  ? Colors.white70
-                  : Colors.black54,
-            ),
-            title: Text('Ajeer Info', style: TextStyle(color: textColor)),
-            onTap: _showInfoDialog,
-          ),
-          Flexible(
-            child: Padding(
-              padding: const EdgeInsets.only(
-                left: 16.0,
-                right: 16.0,
-                top: 8.0,
-                bottom: 0,
-              ),
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: containerColor,
-                  borderRadius: BorderRadius.circular(20.0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    top: 15.0,
-                    left: 15.0,
-                    right: 15.0,
-                    bottom: 0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.notifications_none, color: textColor),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Notifications',
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          if (_notifications.isNotEmpty)
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                '${_notifications.length}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const Divider(height: 20, thickness: 1),
-                      Expanded(
-                        child: _notifications.isEmpty
-                            ? Center(
-                                child: Text(
-                                  'No new notifications.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: textColor.withOpacity(0.7),
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              )
-                            : Stack(
-                                children: [
-                                  ListView.builder(
-                                    padding: EdgeInsets.zero,
-                                    itemCount: _notifications.length,
-                                    itemBuilder: (context, index) {
-                                      final notification =
-                                          _notifications[index];
-                                      final isSelected = _selectedNotifications
-                                          .contains(index);
-
-                                      return GestureDetector(
-                                        onLongPress: () =>
-                                            _toggleNotificationSelection(index),
-                                        onTap: () {
-                                          if (_isDeleting) {
-                                            _toggleNotificationSelection(index);
-                                          }
-                                        },
-                                        child: Container(
-                                          margin: const EdgeInsets.only(
-                                            bottom: 12.0,
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 4,
-                                            vertical: 8,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? Colors.red.withOpacity(0.2)
-                                                : Colors.transparent,
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              if (_isDeleting)
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                        right: 8.0,
-                                                        top: 4.0,
-                                                      ),
-                                                  child: Icon(
-                                                    isSelected
-                                                        ? Icons.check_circle
-                                                        : Icons.circle_outlined,
-                                                    color: isSelected
-                                                        ? Colors.red
-                                                        : textColor.withOpacity(
-                                                            0.5,
-                                                          ),
-                                                    size: 20,
-                                                  ),
-                                                ),
-                                              Icon(
-                                                notification['icon']
-                                                    as IconData,
-                                                color:
-                                                    notification['color']
-                                                        as Color,
-                                                size: 20,
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      notification['title']
-                                                          as String,
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 14,
-                                                        color: textColor,
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      notification['subtitle']
-                                                          as String,
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        color: textColor
-                                                            .withOpacity(0.7),
-                                                      ),
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  if (_isDeleting)
-                                    Positioned(
-                                      bottom: 10,
-                                      right: 10,
-                                      child: FloatingActionButton(
-                                        onPressed: _deleteSelectedNotifications,
-                                        backgroundColor: Colors.red,
-                                        mini: true,
-                                        child: const Icon(
-                                          Icons.delete,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(
-              left: 60.0,
-              right: 60.0,
-              top: 15.0,
-              bottom: 10.0,
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.red.shade700,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12.0),
-                ),
-                onPressed: _showSignOutDialog,
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.logout, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Sign Out',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom > 0 ? 0 : 10),
-        ],
       ),
     );
   }
@@ -734,8 +245,8 @@ class SearchHeader extends StatelessWidget {
 
     return Positioned(
       top: MediaQuery.of(context).padding.top,
-      left: 12,
-      right: 20,
+      left: 0, // Set to 0
+      right: 0, // Set to 0
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -757,61 +268,54 @@ class SearchHeader extends StatelessWidget {
               ),
             ),
           ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              IconButton(
-                iconSize: 30.0,
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () {
-                  Scaffold.of(context).openDrawer();
-                },
-              ),
-              const SizedBox(width: 4.0),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30.0),
-                    border: Border.all(color: Colors.white, width: 1.5),
-                    gradient: const LinearGradient(
-                      colors: gradientColors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
+          // Search bar is now centered and has a limited width
+          Center(
+            child: SizedBox(
+              width:
+                  MediaQuery.of(context).size.width *
+                  0.85, // Adjust width as needed
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30.0),
+                  border: Border.all(color: Colors.white, width: 1.5),
+                  gradient: const LinearGradient(
+                    colors: gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: TextField(
-                    onChanged: onChanged,
-                    textAlignVertical: TextAlignVertical.center,
-                    style: const TextStyle(color: Colors.white, fontSize: 16.0),
-                    decoration: InputDecoration(
-                      hintText: 'Search for a service',
-                      hintStyle: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.0,
-                      ),
-                      prefixIcon: IconButton(
-                        icon: const Icon(Icons.search, color: Colors.white),
-                        onPressed: () {},
-                      ),
-                      border: InputBorder.none,
-                      filled: false,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  onChanged: onChanged,
+                  textAlignVertical: TextAlignVertical.center,
+                  style: const TextStyle(color: Colors.white, fontSize: 16.0),
+                  decoration: InputDecoration(
+                    hintText: 'Search for a service',
+                    hintStyle: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16.0,
+                    ),
+                    prefixIcon: IconButton(
+                      icon: const Icon(Icons.search, color: Colors.white),
+                      onPressed: () {},
+                    ),
+                    border: InputBorder.none,
+                    filled: false,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
                     ),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),

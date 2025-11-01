@@ -4,7 +4,7 @@ import '../../widgets/custom_bottom_nav_bar.dart';
 import 'home_screen.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
-import '../../main.dart';
+import '../../main.dart'; // Imports themeNotifier
 
 enum _BookingStatus { active, pending, closed }
 
@@ -112,7 +112,10 @@ class _BookingsScreenState extends State<BookingsScreen>
       case 0:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          MaterialPageRoute(
+            // FIX: Pass the required 'themeNotifier' to ProfileScreen
+            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
       case 1:

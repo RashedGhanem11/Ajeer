@@ -7,7 +7,7 @@ import 'profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
 import '../../services/services.dart';
-import '../../main.dart';
+import '../../main.dart'; // Imports themeNotifier
 
 class UnitTypeScreen extends StatefulWidget {
   final Service service;
@@ -56,7 +56,10 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
       case 0:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          MaterialPageRoute(
+            // FIX: Pass the required 'themeNotifier' and remove 'const'
+            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
+          ),
         );
         break;
       case 1:
