@@ -19,15 +19,15 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _emailError;
   String? _passwordError;
 
-  final OutlineInputBorder _inputBorder = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(12.0),
-    borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
-  );
+  // Primary Colors (from app_themes.dart)
+  static const Color _primaryBlue = Color(0xFF1976D2);
+  static const Color _lightBlue = Color(0xFF8CCBFF);
+  // Dark mode specific colors (from app_themes.dart)
+  static const Color _darkScaffoldBackground = Color(0xFF121212);
+  static const Color _darkCardColor = Color(0xFF1E1E1E);
 
-  final OutlineInputBorder _errorBorder = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(12.0),
-    borderSide: const BorderSide(color: Colors.red, width: 2.5),
-  );
+  // Helper method to determine if dark mode is active
+  bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
 
   @override
   void dispose() {
@@ -40,7 +40,6 @@ class _LoginScreenState extends State<LoginScreen> {
     debugPrint("Validation bypassed for testing! Navigating to Home Screen...");
 
     // FIX: Navigate to the correct class (HomeScreen) and pass the required themeNotifier instance.
-    // NOTE: Because themeNotifier is a variable, you CANNOT use `const` here.
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -57,7 +56,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final double logoTopPosition = formTopPosition - logoHeight;
 
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      // Apply theme-aware background color
+      backgroundColor: _isDarkMode ? _darkScaffoldBackground : Colors.grey[200],
       body: Stack(
         children: [
           _buildHeaderGradient(screenHeight),
@@ -74,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
       height: screenHeight * 0.35,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF1976D2), Color(0xFF8CCBFF)],
+          colors: [_primaryBlue, _lightBlue],
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
         ),
@@ -109,15 +109,26 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLogo(double logoTopPosition, double logoHeight) {
+    // Using a conditional path for the image based on theme
+    final String imagePath = _isDarkMode
+        ? 'assets/image/home_dark.png' // Assuming a dark version exists
+        : 'assets/image/home.png';
+
     return Positioned(
       top: logoTopPosition,
       left: 0,
       right: 0,
-      child: Image.asset('assets/image/home.png', height: logoHeight),
+      child: Image.asset(imagePath, height: logoHeight),
     );
   }
 
   Widget _buildLoginForm(double formTopPosition) {
+    final Color containerColor = _isDarkMode ? _darkCardColor : Colors.white;
+    final Color titleColor = _isDarkMode ? Colors.white : Colors.black;
+    final Color shadowColor = _isDarkMode
+        ? Colors.black.withOpacity(0.5)
+        : Colors.black.withOpacity(0.1);
+
     return Positioned(
       top: formTopPosition,
       left: 0,
@@ -125,14 +136,14 @@ class _LoginScreenState extends State<LoginScreen> {
       bottom: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: containerColor,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(50.0),
             topRight: Radius.circular(50.0),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: shadowColor,
               spreadRadius: 1,
               blurRadius: 10,
               offset: const Offset(0, -3),
@@ -145,12 +156,12 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Login",
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: titleColor,
                   ),
                 ),
                 const SizedBox(height: 25.0),
@@ -180,20 +191,46 @@ class _LoginScreenState extends State<LoginScreen> {
     Widget? suffixIcon,
     String? error,
   }) {
+    // Colors are correctly non-nullable now
+    final Color inputFillColor = _isDarkMode
+        ? Colors.grey[800]!
+        : Colors.grey[100]!;
+    final Color hintTextColor = _isDarkMode
+        ? Colors.grey[500]!
+        : Colors.grey[400]!;
+    final Color iconColor = _isDarkMode ? Colors.grey[400]! : Colors.grey[500]!;
+    final Color borderColor = _isDarkMode
+        ? Colors.grey[700]!
+        : Colors.grey[300]!;
+    final Color focusBorderColor = _isDarkMode ? _lightBlue : _primaryBlue;
+
+    // FIX: Removed 'const' to allow BorderRadius.circular(12.0)
+    final OutlineInputBorder errorBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12.0),
+      borderSide: const BorderSide(color: Colors.red, width: 2.5),
+    );
+
+    final OutlineInputBorder inputBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12.0),
+      borderSide: BorderSide(color: borderColor, width: 2.5),
+    );
+
+    final OutlineInputBorder focusedBorder = inputBorder.copyWith(
+      borderSide: BorderSide(color: focusBorderColor, width: 2.5),
+    );
+
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: Colors.grey[400]),
-      prefixIcon: Icon(icon, color: Colors.grey[500]),
+      hintStyle: TextStyle(color: hintTextColor),
+      prefixIcon: Icon(icon, color: iconColor),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: Colors.grey[100],
+      fillColor: inputFillColor,
       errorText: error,
-      enabledBorder: _inputBorder,
-      focusedBorder: _inputBorder.copyWith(
-        borderSide: BorderSide(color: Colors.grey[500]!, width: 2.5),
-      ),
-      errorBorder: _errorBorder,
-      focusedErrorBorder: _errorBorder,
+      enabledBorder: inputBorder,
+      focusedBorder: focusedBorder,
+      errorBorder: errorBorder,
+      focusedErrorBorder: errorBorder,
     );
   }
 
@@ -201,6 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return TextField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
+      style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
       decoration: _createInputDecoration(
         hint: "Email or phone number",
         icon: Icons.email_outlined,
@@ -213,6 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return TextField(
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
+      style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
       decoration: _createInputDecoration(
         hint: "Password",
         icon: Icons.lock_outline,
@@ -222,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
             _isPasswordVisible
                 ? Icons.visibility_outlined
                 : Icons.visibility_off_outlined,
-            color: Colors.grey[500],
+            color: _isDarkMode ? Colors.grey[400]! : Colors.grey[500]!,
           ),
           onPressed: () {
             setState(() {
@@ -241,27 +280,29 @@ class _LoginScreenState extends State<LoginScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const ForgotPasswordScreen(),
-            ),
+            // FIX: Removed 'const'
+            MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
           );
         },
         child: const Text(
           "Forgot?",
-          style: TextStyle(color: Colors.blue, fontSize: 14.0),
+          style: TextStyle(color: _primaryBlue, fontSize: 14.0),
         ),
       ),
     );
   }
 
   Widget _buildLoginButton() {
+    final Color shadowColor = _primaryBlue.withOpacity(_isDarkMode ? 0.8 : 0.5);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 80.0),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
+          // Gradient remains constant as a design element
           gradient: const LinearGradient(
-            colors: [Color(0xFF1976D2), Color(0xFF8CCBFF)],
+            colors: [_primaryBlue, _lightBlue],
             begin: Alignment.topRight,
             end: Alignment.bottomLeft,
           ),
@@ -269,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen> {
           borderRadius: BorderRadius.circular(30.0),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1976D2).withOpacity(0.5),
+              color: shadowColor,
               spreadRadius: 2,
               blurRadius: 20,
               offset: const Offset(0, 0),
@@ -301,18 +342,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildSignUpLink() {
+    final Color linkTextColor = _isDarkMode
+        ? Colors.grey[400]!
+        : Colors.grey[600]!;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          "Don't have an account? ",
-          style: TextStyle(color: Colors.grey[600]),
-        ),
+        Text("Don't have an account? ", style: TextStyle(color: linkTextColor)),
         TextButton(
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const SignUpScreen()),
+              // FIX: Removed 'const'
+              MaterialPageRoute(builder: (context) => SignUpScreen()),
             );
           },
           style: TextButton.styleFrom(
@@ -322,7 +365,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           child: const Text(
             "Sign up",
-            style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+            style: TextStyle(color: _primaryBlue, fontWeight: FontWeight.bold),
           ),
         ),
       ],
@@ -330,20 +373,30 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildGoogleSignUpButton() {
+    final Color buttonBackgroundColor = _isDarkMode
+        ? Colors.grey[800]!
+        : Colors.white;
+    final Color buttonBorderColor = _isDarkMode
+        ? Colors.grey[700]!
+        : Colors.grey[300]!;
+    final Color buttonLabelColor = _isDarkMode
+        ? Colors.white70
+        : Colors.black54;
+
     return OutlinedButton.icon(
       onPressed: () {},
       style: OutlinedButton.styleFrom(
-        backgroundColor: Colors.white,
+        backgroundColor: buttonBackgroundColor,
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30.0),
         ),
-        side: BorderSide(color: Colors.grey[300]!, width: 2.5),
+        side: BorderSide(color: buttonBorderColor, width: 2.5),
       ),
       icon: Image.asset('assets/image/google.png', height: 22.0),
-      label: const Text(
+      label: Text(
         "Sign up using Google",
-        style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w600),
+        style: TextStyle(color: buttonLabelColor, fontWeight: FontWeight.w600),
       ),
     );
   }

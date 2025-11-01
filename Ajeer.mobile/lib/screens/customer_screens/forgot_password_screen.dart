@@ -15,6 +15,9 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordConstants {
   static const Color primaryBlue = Color(0xFF1976D2);
   static const Color lightBlue = Color(0xFF8CCBFF);
+  // Dark mode specific colors
+  static const Color darkScaffoldBackground = Color(0xFF121212);
+  static const Color darkCardColor = Color(0xFF1E1E1E);
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
@@ -34,6 +37,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool _isNewPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
 
+  // Helper method to determine if dark mode is active
+  bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
+
   @override
   void dispose() {
     _emailPhoneController.dispose();
@@ -47,24 +53,41 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     String hint,
     IconData icon, [
     String? errorText,
+    Widget? suffixIcon,
   ]) {
     const BorderRadius borderRadius = BorderRadius.all(Radius.circular(12.0));
     const Color primaryColor = _ForgotPasswordConstants.primaryBlue;
 
+    // Theme-aware colors
+    final Color inputFillColor = _isDarkMode
+        ? Colors.grey[800]!
+        : Colors.grey[100]!;
+    final Color hintTextColor = _isDarkMode
+        ? Colors.grey[500]!
+        : Colors.grey[400]!;
+    final Color iconColor = _isDarkMode ? Colors.grey[400]! : Colors.grey[500]!;
+    final Color borderColor = _isDarkMode
+        ? Colors.grey[700]!
+        : Colors.grey[300]!;
+    final Color focusBorderColor = _isDarkMode
+        ? _ForgotPasswordConstants.lightBlue
+        : primaryColor;
+
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: Colors.grey[400]),
-      prefixIcon: Icon(icon, color: Colors.grey[500]),
+      hintStyle: TextStyle(color: hintTextColor),
+      prefixIcon: Icon(icon, color: iconColor),
+      suffixIcon: suffixIcon,
       filled: true,
-      fillColor: Colors.grey[100],
+      fillColor: inputFillColor,
       errorText: errorText,
       enabledBorder: OutlineInputBorder(
         borderRadius: borderRadius,
-        borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
+        borderSide: BorderSide(color: borderColor, width: 2.5),
       ),
-      focusedBorder: const OutlineInputBorder(
+      focusedBorder: OutlineInputBorder(
         borderRadius: borderRadius,
-        borderSide: BorderSide(color: primaryColor, width: 2.5),
+        borderSide: BorderSide(color: focusBorderColor, width: 2.5),
       ),
       errorBorder: const OutlineInputBorder(
         borderRadius: borderRadius,
@@ -78,7 +101,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // --- Validation and Navigation Handlers ---
+  // --- Validation and Navigation Handlers (Unchanged) ---
   void _validateAndReset() {
     setState(() {
       _newPasswordError = null;
@@ -92,7 +115,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         return;
       }
 
-      // Simple password strength check (optional)
       if (newPassword.length < 6) {
         _newPasswordError = 'Password must be at least 6 characters long.';
         return;
@@ -104,9 +126,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       }
 
       if (newPassword == confirmPassword) {
-        // Success Logic: Password reset confirmed, potentially navigate to login
         debugPrint('Passwords match! Resetting password...');
-        // Example: Navigator.popUntil(context, (route) => route.isFirst);
       } else {
         debugPrint('Passwords do not match.');
         _confirmPasswordError = 'Passwords do not match.';
@@ -125,14 +145,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         return;
       }
 
-      // Basic input validation (can be enhanced)
       if (_selectedMethod == ResetMethod.email && !input.contains('@')) {
         _emailPhoneError = 'Please enter a valid email address.';
         return;
       }
 
       debugPrint('Sending reset code to: $input');
-      // On successful validation (and assumed code sent):
       _currentStep = ResetStep.resetPassword;
     });
   }
@@ -172,24 +190,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Widget _buildSelectMethod() {
     const Color primaryColor = _ForgotPasswordConstants.primaryBlue;
+    final Color headingColor = _isDarkMode ? Colors.white : Colors.black;
+    final Color subtitleColor = _isDarkMode
+        ? Colors.grey[400]!
+        : Colors.grey[600]!;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const Text(
+        Text(
           'Reset Password',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: headingColor,
           ),
         ),
         const SizedBox(height: 10),
         Text(
           'How would you like to reset your password?',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 16, color: subtitleColor),
         ),
         const SizedBox(height: 30),
         SizedBox(
@@ -206,7 +228,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               foregroundColor: primaryColor,
-              side: const BorderSide(color: primaryColor, width: 2),
+              // FIX: Removed 'const' from BorderSide
+              side: BorderSide(color: primaryColor, width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12.0),
               ),
@@ -228,7 +251,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               foregroundColor: primaryColor,
-              side: const BorderSide(color: primaryColor, width: 2),
+              // FIX: Removed 'const' from BorderSide
+              side: BorderSide(color: primaryColor, width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12.0),
               ),
@@ -242,6 +266,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Widget _buildEnterDetails() {
     bool isEmail = _selectedMethod == ResetMethod.email;
+    final Color headingColor = _isDarkMode ? Colors.white : Colors.black;
+    final Color fieldTextColor = _isDarkMode ? Colors.white : Colors.black87;
+    final Color buttonTextColor = _isDarkMode
+        ? Colors.grey[400]!
+        : Colors.grey[700]!;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -249,10 +278,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       children: [
         Text(
           isEmail ? 'Enter Email' : 'Enter Phone Number',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: headingColor,
           ),
         ),
         const SizedBox(height: 20),
@@ -262,6 +291,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ? TextInputType.emailAddress
               : TextInputType.phone,
           textInputAction: TextInputAction.done,
+          style: TextStyle(color: fieldTextColor),
           decoration: _buildInputDecoration(
             isEmail ? 'your-email@example.com' : '+962 7XXXXXXXX',
             isEmail ? Icons.email_outlined : Icons.phone_outlined,
@@ -277,7 +307,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               onPressed: _handleCancel,
               child: Text(
                 'Cancel',
-                style: TextStyle(color: Colors.grey[700], fontSize: 16),
+                style: TextStyle(color: buttonTextColor, fontSize: 16),
               ),
             ),
             const SizedBox(width: 10),
@@ -289,16 +319,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildResetPassword() {
+    final Color headingColor = _isDarkMode ? Colors.white : Colors.black;
+    final Color fieldTextColor = _isDarkMode ? Colors.white : Colors.black87;
+    final Color iconColor = _isDarkMode ? Colors.grey[400]! : Colors.grey[500]!;
+    final Color buttonTextColor = _isDarkMode
+        ? Colors.grey[400]!
+        : Colors.grey[700]!;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Reset Password',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: headingColor,
           ),
         ),
         const SizedBox(height: 30),
@@ -306,52 +343,50 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         TextField(
           controller: _newPasswordController,
           obscureText: _isNewPasswordObscured,
-          decoration:
-              _buildInputDecoration(
-                'New Password',
-                Icons.lock_outline,
-                _newPasswordError,
-              ).copyWith(
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isNewPasswordObscured
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                    color: Colors.grey[500],
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isNewPasswordObscured = !_isNewPasswordObscured;
-                    });
-                  },
-                ),
+          style: TextStyle(color: fieldTextColor),
+          decoration: _buildInputDecoration(
+            'New Password',
+            Icons.lock_outline,
+            _newPasswordError,
+            IconButton(
+              icon: Icon(
+                _isNewPasswordObscured
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+                color: iconColor,
               ),
+              onPressed: () {
+                setState(() {
+                  _isNewPasswordObscured = !_isNewPasswordObscured;
+                });
+              },
+            ),
+          ),
         ),
         const SizedBox(height: 20),
         // Confirm Password Field
         TextField(
           controller: _confirmPasswordController,
           obscureText: _isConfirmPasswordObscured,
-          decoration:
-              _buildInputDecoration(
-                'Confirm New Password',
-                Icons.lock_outline,
-                _confirmPasswordError,
-              ).copyWith(
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isConfirmPasswordObscured
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                    color: Colors.grey[500],
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isConfirmPasswordObscured = !_isConfirmPasswordObscured;
-                    });
-                  },
-                ),
+          style: TextStyle(color: fieldTextColor),
+          decoration: _buildInputDecoration(
+            'Confirm New Password',
+            Icons.lock_outline,
+            _confirmPasswordError,
+            IconButton(
+              icon: Icon(
+                _isConfirmPasswordObscured
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+                color: iconColor,
               ),
+              onPressed: () {
+                setState(() {
+                  _isConfirmPasswordObscured = !_isConfirmPasswordObscured;
+                });
+              },
+            ),
+          ),
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _validateAndReset(),
         ),
@@ -363,7 +398,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               onPressed: _handleCancel,
               child: Text(
                 'Cancel',
-                style: TextStyle(color: Colors.grey[700], fontSize: 16),
+                style: TextStyle(color: buttonTextColor, fontSize: 16),
               ),
             ),
             const SizedBox(width: 10),
@@ -376,15 +411,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Widget _buildContinueButton({required VoidCallback onPressed}) {
     const Color primaryColor = _ForgotPasswordConstants.primaryBlue;
+    final Color buttonShadowColor = primaryColor.withOpacity(
+      _isDarkMode ? 0.8 : 0.5,
+    );
 
     return Container(
       decoration: BoxDecoration(
-        color: primaryColor,
+        gradient: const LinearGradient(
+          colors: [primaryColor, _ForgotPasswordConstants.lightBlue],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
         border: Border.all(
           color: _ForgotPasswordConstants.lightBlue,
           width: 2.0,
         ),
         borderRadius: BorderRadius.circular(27),
+        boxShadow: [
+          BoxShadow(
+            color: buttonShadowColor,
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 0),
+          ),
+        ],
       ),
       child: ElevatedButton(
         onPressed: onPressed,
@@ -422,8 +472,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   // --- Main Build Method ---
   @override
   Widget build(BuildContext context) {
+    final Color cardColor = _isDarkMode
+        ? _ForgotPasswordConstants.darkCardColor
+        : Colors.white;
+
+    const Color primaryColor = _ForgotPasswordConstants.primaryBlue;
+
     return Scaffold(
-      // Removed transparent background from Scaffold, as it's defined in the body
+      backgroundColor: _isDarkMode
+          ? _ForgotPasswordConstants.darkScaffoldBackground
+          : Colors.white,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -467,10 +525,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         alignment: Alignment.topCenter,
                         clipBehavior: Clip.none,
                         children: [
-                          // White Card
+                          // Card (Theme-aware)
                           Card(
                             elevation: 8,
-                            color: Colors.white,
+                            color: cardColor,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(50.0),
                             ),
@@ -494,8 +552,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             child: Container(
                               decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
-                                // Gradient replaced with solid color
-                                color: _ForgotPasswordConstants.primaryBlue,
+                                color: primaryColor,
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black38,

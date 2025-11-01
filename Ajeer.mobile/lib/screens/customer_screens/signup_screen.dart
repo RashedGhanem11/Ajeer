@@ -20,15 +20,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
-  final OutlineInputBorder _inputBorder = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(12.0),
-    borderSide: BorderSide(color: Colors.grey[300]!, width: 2.5),
-  );
+  // Primary Colors (from app_themes.dart)
+  static const Color _primaryBlue = Color(0xFF1976D2);
+  static const Color _lightBlue = Color(0xFF8CCBFF);
+  // Dark mode specific colors (from app_themes.dart)
+  static const Color _darkScaffoldBackground = Color(0xFF121212);
+  static const Color _darkCardColor = Color(0xFF1E1E1E);
 
-  final OutlineInputBorder _errorBorder = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(12.0),
-    borderSide: BorderSide(color: Colors.red, width: 2.5),
-  );
+  // Helper method to determine if dark mode is active
+  bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
+
+  // The original _inputBorder and _errorBorder fields are removed
+  // as they are created dynamically in _createInputDecoration now.
 
   @override
   void dispose() {
@@ -60,7 +63,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final double logoTopPosition = formTopPosition - logoHeight;
 
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      // Apply theme-aware background color
+      backgroundColor: _isDarkMode ? _darkScaffoldBackground : Colors.grey[200],
       body: Stack(
         children: [
           _buildHeaderGradient(screenHeight),
@@ -73,11 +77,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildHeaderGradient(double screenHeight) {
+    // Gradient colors remain constant as a design element
     return Container(
       height: screenHeight * 0.35,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF1976D2), Color(0xFF8CCBFF)],
+          colors: [_primaryBlue, _lightBlue],
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
         ),
@@ -98,7 +103,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 style: TextStyle(
                   fontSize: 34,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white,
+                  color: Colors.white, // White text over the gradient
                   shadows: [
                     Shadow(
                       blurRadius: 2.0,
@@ -116,7 +121,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: IconButton(
                   icon: const Icon(
                     Icons.arrow_back_ios_new,
-                    color: Colors.white,
+                    color: Colors.white, // White icon over the gradient
                     size: 24.0,
                   ),
                   onPressed: () {
@@ -132,15 +137,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildLogo(double logoTopPosition, double logoHeight) {
+    // Using a conditional path for the image based on theme
+    final String imagePath = _isDarkMode
+        ? 'assets/image/home_dark.png'
+        : 'assets/image/home.png';
+
     return Positioned(
       top: logoTopPosition,
       left: 0,
       right: 0,
-      child: Image.asset('assets/image/home.png', height: logoHeight),
+      child: Image.asset(imagePath, height: logoHeight),
     );
   }
 
   Widget _buildSignUpForm(double formTopPosition) {
+    final Color containerColor = _isDarkMode ? _darkCardColor : Colors.white;
+    final Color titleColor = _isDarkMode ? Colors.white : Colors.black;
+    final Color shadowColor = _isDarkMode
+        ? Colors.black.withOpacity(0.5)
+        : Colors.black.withOpacity(0.1);
+
     return Positioned(
       top: formTopPosition,
       left: 0,
@@ -148,14 +164,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
       bottom: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: containerColor,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(50.0),
             topRight: Radius.circular(50.0),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: shadowColor,
               spreadRadius: 1,
               blurRadius: 10,
               offset: const Offset(0, -3),
@@ -170,12 +186,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Create Account",
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: titleColor,
                     ),
                   ),
                   const SizedBox(height: 20.0),
@@ -206,34 +222,66 @@ class _SignUpScreenState extends State<SignUpScreen> {
     required String hint,
     required IconData icon,
     Widget? suffixIcon,
-    Color? fillColor = Colors.grey,
+    Color? fillColor =
+        Colors.grey, // This is ignored, logic below determines fill color
   }) {
+    // Determine the fill color based on the original logic: white for some fields, grey[100] for others
+    final bool isWhiteFill = fillColor == Colors.white;
+
+    final Color inputFillColor = _isDarkMode
+        ? (isWhiteFill ? _darkCardColor : Colors.grey[800]!)
+        : (isWhiteFill ? Colors.white : Colors.grey[100]!);
+    final Color hintTextColor = _isDarkMode
+        ? Colors.grey[500]!
+        : Colors.grey[400]!;
+    final Color iconColor = _isDarkMode ? Colors.grey[400]! : Colors.grey[500]!;
+    final Color borderColor = _isDarkMode
+        ? Colors.grey[700]!
+        : Colors.grey[300]!;
+    final Color focusBorderColor = _isDarkMode ? _lightBlue : _primaryBlue;
+
+    // Theme-aware borders
+    final OutlineInputBorder inputBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12.0),
+      borderSide: BorderSide(color: borderColor, width: 2.5),
+    );
+
+    final OutlineInputBorder focusedBorder = inputBorder.copyWith(
+      borderSide: BorderSide(color: focusBorderColor, width: 2.5),
+    );
+
+    // FIX: Removed 'const'
+    final OutlineInputBorder errorBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12.0),
+      borderSide: const BorderSide(color: Colors.red, width: 2.5),
+    );
+
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: Colors.grey[400]),
-      prefixIcon: Icon(icon, color: Colors.grey[500]),
+      hintStyle: TextStyle(color: hintTextColor),
+      prefixIcon: Icon(icon, color: iconColor),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: fillColor == Colors.white ? Colors.white : Colors.grey[100],
-      enabledBorder: _inputBorder,
-      focusedBorder: _inputBorder.copyWith(
-        borderSide: BorderSide(color: Colors.grey[500]!, width: 2.5),
-      ),
-      errorBorder: _errorBorder,
-      focusedErrorBorder: _errorBorder,
+      fillColor: inputFillColor,
+      enabledBorder: inputBorder,
+      focusedBorder: focusedBorder,
+      errorBorder: errorBorder,
+      focusedErrorBorder: errorBorder,
     );
   }
 
   Widget _buildNameFields() {
+    final Color fieldTextColor = _isDarkMode ? Colors.white : Colors.black87;
     return Row(
       children: [
         Expanded(
           child: TextFormField(
             controller: _firstNameController,
+            style: TextStyle(color: fieldTextColor),
             decoration: _createInputDecoration(
               hint: "First Name",
               icon: Icons.person_outline,
-              fillColor: Colors.white,
+              fillColor: Colors.white, // Indicates to use the white-fill logic
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -247,10 +295,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         Expanded(
           child: TextFormField(
             controller: _lastNameController,
+            style: TextStyle(color: fieldTextColor),
             decoration: _createInputDecoration(
               hint: "Last Name",
               icon: Icons.person_outline,
-              fillColor: Colors.white,
+              fillColor: Colors.white, // Indicates to use the white-fill logic
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -265,12 +314,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildPhoneField() {
+    final Color fieldTextColor = _isDarkMode ? Colors.white : Colors.black87;
     return TextFormField(
       controller: _phoneController,
       keyboardType: TextInputType.phone,
+      style: TextStyle(color: fieldTextColor),
       decoration: _createInputDecoration(
         hint: "Phone Number",
         icon: Icons.phone_outlined,
+        // fillColor is default (Colors.grey), which translates to grey[100]/grey[800]
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -282,9 +334,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildEmailField() {
+    final Color fieldTextColor = _isDarkMode ? Colors.white : Colors.black87;
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
+      style: TextStyle(color: fieldTextColor),
       decoration: _createInputDecoration(
         hint: "Email",
         icon: Icons.email_outlined,
@@ -299,9 +353,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildPasswordField() {
+    final Color fieldTextColor = _isDarkMode ? Colors.white : Colors.black87;
     return TextFormField(
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
+      style: TextStyle(color: fieldTextColor),
       decoration: _createInputDecoration(
         hint: "Password",
         icon: Icons.lock_outline,
@@ -310,7 +366,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             _isPasswordVisible
                 ? Icons.visibility_outlined
                 : Icons.visibility_off_outlined,
-            color: Colors.grey[500],
+            color: _isDarkMode ? Colors.grey[400]! : Colors.grey[500]!,
           ),
           onPressed: () {
             setState(() {
@@ -329,19 +385,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildConfirmPasswordField() {
+    final Color fieldTextColor = _isDarkMode ? Colors.white : Colors.black87;
     return TextFormField(
       controller: _confirmPasswordController,
       obscureText: !_isConfirmPasswordVisible,
+      style: TextStyle(color: fieldTextColor),
       decoration: _createInputDecoration(
         hint: "Confirm Password",
         icon: Icons.lock_outline,
-        fillColor: Colors.white,
+        fillColor: Colors.white, // Indicates to use the white-fill logic
         suffixIcon: IconButton(
           icon: Icon(
             _isConfirmPasswordVisible
                 ? Icons.visibility_outlined
                 : Icons.visibility_off_outlined,
-            color: Colors.grey[500],
+            color: _isDarkMode ? Colors.grey[400]! : Colors.grey[500]!,
           ),
           onPressed: () {
             setState(() {
@@ -363,13 +421,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildSignUpButton() {
+    final Color shadowColor = _primaryBlue.withOpacity(_isDarkMode ? 0.8 : 0.5);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 80.0),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF1976D2), Color(0xFF8CCBFF)],
+            colors: [_primaryBlue, _lightBlue],
             begin: Alignment.topRight,
             end: Alignment.bottomLeft,
           ),
@@ -377,7 +437,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           borderRadius: BorderRadius.circular(30.0),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1976D2).withOpacity(0.5),
+              color: shadowColor,
               spreadRadius: 2,
               blurRadius: 20,
               offset: const Offset(0, 0),
@@ -409,12 +469,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildLoginLink() {
+    final Color linkTextColor = _isDarkMode
+        ? Colors.grey[400]!
+        : Colors.grey[600]!;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           "Already have an account? ",
-          style: TextStyle(color: Colors.grey[600]),
+          style: TextStyle(color: linkTextColor),
         ),
         TextButton(
           onPressed: () {
@@ -427,7 +491,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
           child: const Text(
             "Log in",
-            style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+            style: TextStyle(color: _primaryBlue, fontWeight: FontWeight.bold),
           ),
         ),
       ],
