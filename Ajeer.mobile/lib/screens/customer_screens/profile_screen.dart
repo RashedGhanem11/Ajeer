@@ -9,6 +9,7 @@ import 'chat_screen.dart';
 import '../../themes/theme_notifier.dart';
 import '../customer_screens/login_screen.dart';
 import '../../widgets/customer_widgets/settings_menu.dart';
+import '../service_provider_screens/services_screen.dart'; // <--- NEW: Import the ServicesScreen
 
 class ProfileScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -421,8 +422,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                   ),
                   onPressed: () {
-                    Navigator.of(ctx).pop();
-                  },
+                    Navigator.of(ctx).pop(); // Close the dialog
+                    // FIX: Navigate to ServicesScreen
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ServicesScreen(themeNotifier: widget.themeNotifier),
+                      ),
+                    );
+                  }, // <--- FIX APPLIED HERE
                   child: const Center(
                     child: Text(
                       'Switch',

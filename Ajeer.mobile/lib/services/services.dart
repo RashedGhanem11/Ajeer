@@ -1,8 +1,5 @@
-// lib/services/services.dart
-
 import 'package:flutter/material.dart';
 
-// --- Data Models (Do not edit these) ---
 class Service {
   final String name;
   final IconData icon;
@@ -21,10 +18,6 @@ class UnitType {
 
   const UnitType({required this.estimatedTimeMinutes, required this.priceJOD});
 }
-
-// -----------------------------------------------------------------------------
-// --- ALL UNIT TYPE DATA (Define your specific services here) ------------------
-// -----------------------------------------------------------------------------
 
 const Map<String, UnitType> cleaningUnitTypes = {
   'Deep Cleaning': UnitType(estimatedTimeMinutes: 180, priceJOD: 55.0),
@@ -53,11 +46,7 @@ const Map<String, UnitType> electricalUnitTypes = {
   ),
 };
 
-// -----------------------------------------------------------------------------
-// --- ALL SERVICES LIST (Define the top-level tiles here) ---------------------
-// -----------------------------------------------------------------------------
 const List<Service> kAvailableServices = [
-  // --- Services with Unit Types Configured ---
   Service(
     name: 'Cleaning',
     icon: Icons.cleaning_services,
@@ -69,9 +58,6 @@ const List<Service> kAvailableServices = [
     icon: Icons.electrical_services,
     unitTypes: electricalUnitTypes,
   ),
-
-  // --- Services Yet to be Set Up (unitTypes: {}) ---
-  // These will show an "unconfigured" message when tapped in home_screen.dart.
   Service(name: 'Gardening', icon: Icons.grass, unitTypes: {}),
   Service(name: 'Assembly', icon: Icons.handyman, unitTypes: {}),
   Service(name: 'Painting', icon: Icons.format_paint, unitTypes: {}),
