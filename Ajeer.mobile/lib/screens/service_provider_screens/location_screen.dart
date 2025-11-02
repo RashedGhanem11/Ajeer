@@ -932,7 +932,7 @@ class _AreaSearchBar extends StatelessWidget {
         onChanged: onSearchChanged,
         style: TextStyle(color: searchTextColor, fontSize: 14.0),
         decoration: InputDecoration(
-          hintText: 'Search Only',
+          hintText: 'Search',
           hintStyle: TextStyle(color: searchHintColor, fontSize: 14.0),
           prefixIcon: Icon(Icons.search, color: iconColor, size: 20),
           contentPadding: const EdgeInsets.symmetric(
