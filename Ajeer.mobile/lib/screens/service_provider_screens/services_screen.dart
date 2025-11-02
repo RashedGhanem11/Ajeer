@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../services/services.dart';
 import '../customer_screens/profile_screen.dart';
 import '../../themes/theme_notifier.dart';
+import 'location_screen.dart';
 
 class ServicesScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -18,7 +19,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const double _borderRadius = 50.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
-  // Adjusted constant for raised container
   static const double _whiteContainerTopRatio = 0.15;
 
   String _searchQuery = '';
@@ -60,7 +60,15 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
   void _onNextTap() {
     if (_isNextEnabled) {
-      // Navigation logic here
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LocationScreen(
+            themeNotifier: widget.themeNotifier,
+            selectedServices: _selectedUnitTypes,
+          ),
+        ),
+      );
     }
   }
 
@@ -240,8 +248,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 }
 
-// --- Navigation Header Widget ---
-
 class _ProviderNavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
@@ -300,8 +306,6 @@ class _ProviderNavigationHeader extends StatelessWidget {
   }
 }
 
-// --- Service Grid View Widget ---
-
 class _ProviderServiceGridView extends StatelessWidget {
   final List<Service> services;
   final String searchQuery;
@@ -323,12 +327,10 @@ class _ProviderServiceGridView extends StatelessWidget {
   Widget build(BuildContext context) {
     String normalizedQuery = searchQuery.trim().toLowerCase();
 
-    // 1. Start with services that have unit types configured (the base list)
     List<Service> servicesToShow = services
         .where((s) => s.unitTypes.isNotEmpty)
         .toList();
 
-    // 2. If a search query exists, filter the base list
     if (normalizedQuery.isNotEmpty) {
       servicesToShow = servicesToShow.where((service) {
         return service.name.toLowerCase().contains(normalizedQuery);
@@ -413,8 +415,6 @@ class _ProviderServiceGridView extends StatelessWidget {
   }
 }
 
-// --- Service Grid Item Widget ---
-
 class _ProviderServiceGridItem extends StatelessWidget {
   final IconData? icon;
   final String name;
@@ -438,11 +438,9 @@ class _ProviderServiceGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Define constant colors
     final Color _selectionBlue = const Color(0xFF1976D2);
     final Color _highlightGreen = Colors.green.shade600;
 
-    // 1. Determine the active color and whether to apply shadow/box style
     Color activeColor;
     bool applyBoxStyle = false;
 
@@ -453,11 +451,9 @@ class _ProviderServiceGridItem extends StatelessWidget {
       activeColor = _highlightGreen;
       applyBoxStyle = true;
     } else {
-      // Default unselected/unhighlighted colors
       activeColor = isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400;
     }
 
-    // 2. Derive style properties based on activeColor and mode
     final Color itemPrimaryColor = activeColor;
     final Color itemBackgroundColor = applyBoxStyle
         ? itemPrimaryColor.withOpacity(0.1)
@@ -553,8 +549,6 @@ class _ProviderServiceGridItem extends StatelessWidget {
   }
 }
 
-// --- Unit Type Selection Dialog Widget ---
-
 class _UnitTypeSelectionDialog extends StatefulWidget {
   final Service service;
   final Set<String> initialSelectedUnitTypes;
@@ -639,8 +633,7 @@ class _UnitTypeSelectionDialogState extends State<_UnitTypeSelectionDialog> {
                 itemCount: unitTypeKeys.length,
                 itemBuilder: (context, index) {
                   final unitName = unitTypeKeys[index];
-                  // Use a null-aware operator for safety, though services.dart suggests it's safe.
-                  final UnitType? data = unitTypesMap[unitName];
+                  final dynamic data = unitTypesMap[unitName];
                   if (data == null) return const SizedBox.shrink();
 
                   final int estimatedTime = data.estimatedTimeMinutes;
@@ -685,8 +678,6 @@ class _UnitTypeSelectionDialogState extends State<_UnitTypeSelectionDialog> {
     );
   }
 }
-
-// --- Unit Type List Item Widget ---
 
 class _UnitTypeListItem extends StatelessWidget {
   final String name;
