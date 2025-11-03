@@ -2,6 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../themes/theme_notifier.dart';
 
+// --- CONSTANTS ---
+const Color kLightBlue = Color(0xFF8CCBFF);
+const Color kPrimaryBlue = Color(0xFF1976D2);
+const Color kDeleteRed = Color(0xFFF44336);
+const Color kSelectedGreen = Colors.green;
+const double kBorderRadius = 50.0;
+const double kWhiteContainerTopRatio = 0.15;
+const double kSaveButtonHeight = 45.0;
+const double kSearchBoxHeight = 40.0;
+const double kContentHorizontalPadding = 5.0;
+const double kBoxRadius = 15.0;
+const double kHeaderRadius = 13.0;
+
 class LocationSelection {
   final String city;
   final Set<String> areas;
@@ -111,11 +124,6 @@ class LocationScreen extends StatefulWidget {
 }
 
 class _LocationScreenState extends State<LocationScreen> {
-  static const Color _lightBlue = Color(0xFF8CCBFF);
-  static const Color _primaryBlue = Color(0xFF1976D2);
-  static const double _borderRadius = 50.0;
-  static const double _whiteContainerTopRatio = 0.15;
-
   String? _selectedCity;
   Set<String> _currentAreaSelection = {};
   List<LocationSelection> _finalLocations = [];
@@ -131,9 +139,7 @@ class _LocationScreenState extends State<LocationScreen> {
     _selectedCity = _availableCities.isNotEmpty ? _availableCities.first : null;
   }
 
-  void _onBackTap() {
-    Navigator.pop(context);
-  }
+  void _onBackTap() => Navigator.pop(context);
 
   bool get _isNextEnabled => _finalLocations.isNotEmpty;
 
@@ -144,7 +150,7 @@ class _LocationScreenState extends State<LocationScreen> {
           content: Text(
             'Navigating to next step with ${_finalLocations.length} locations and ${widget.selectedServices.length} services.',
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: kSelectedGreen,
         ),
       );
     }
@@ -220,13 +226,13 @@ class _LocationScreenState extends State<LocationScreen> {
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
-    final double whiteContainerTop = screenHeight * _whiteContainerTopRatio;
+    final double whiteContainerTop = screenHeight * kWhiteContainerTopRatio;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          _buildBackgroundGradient(context),
+          _buildBackgroundGradient(),
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             isDarkMode: isDarkMode,
@@ -241,14 +247,14 @@ class _LocationScreenState extends State<LocationScreen> {
     );
   }
 
-  Widget _buildBackgroundGradient(BuildContext context) {
+  Widget _buildBackgroundGradient() {
     return SizedBox(
       height: MediaQuery.of(context).size.height,
       width: MediaQuery.of(context).size.width,
       child: const DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [_lightBlue, _primaryBlue],
+            colors: [kLightBlue, kPrimaryBlue],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -270,7 +276,7 @@ class _LocationScreenState extends State<LocationScreen> {
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
-          borderRadius: const BorderRadius.all(Radius.circular(_borderRadius)),
+          borderRadius: const BorderRadius.all(Radius.circular(kBorderRadius)),
           boxShadow: [
             BoxShadow(
               color: isDarkMode ? Colors.black45 : Colors.black26,
@@ -280,65 +286,67 @@ class _LocationScreenState extends State<LocationScreen> {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 25.0),
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 20.0,
-                right: 20.0,
-                bottom: 5.0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Pick location(s)',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : Colors.black87,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 25.0),
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 20.0,
+                  right: 20.0,
+                  bottom: 5.0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pick location(s)',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode ? Colors.white : Colors.black87,
+                          ),
                     ),
-                  ),
-                  const SizedBox(height: 15.0),
-                  SizedBox(
-                    width: double.infinity,
-                    child: Text(
-                      'Select the cities and areas where you will be providing your services.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    const SizedBox(height: 15.0),
+                    SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        'Select the cities and areas where you will be providing your services.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: isDarkMode
+                              ? Colors.grey[400]
+                              : Colors.grey[600],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: _LocationSelectionContent(
-                  availableCities: _availableCities,
-                  selectedCity: _selectedCity,
-                  currentAreaSelection: _currentAreaSelection,
-                  finalLocations: _finalLocations,
-                  areaSearchQuery: _areaSearchQuery,
-                  onCitySelected: _onCitySelected,
-                  onAreaTapped: _onAreaTapped,
-                  onAreaSearchChanged: (query) {
-                    setState(() {
-                      _areaSearchQuery = query;
-                    });
-                  },
-                  onSave: _onSaveLocations,
-                  onEdit: _onEditLocation,
-                  onDelete: _onDeleteLocation,
-                  isDarkMode: isDarkMode,
+                  ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 7.0),
+              _LocationSelectionContent(
+                availableCities: _availableCities,
+                selectedCity: _selectedCity,
+                currentAreaSelection: _currentAreaSelection,
+                finalLocations: _finalLocations,
+                areaSearchQuery: _areaSearchQuery,
+                onCitySelected: _onCitySelected,
+                onAreaTapped: _onAreaTapped,
+                onAreaSearchChanged: (query) {
+                  setState(() {
+                    _areaSearchQuery = query;
+                  });
+                },
+                onSave: _onSaveLocations,
+                onEdit: _onEditLocation,
+                onDelete: _onDeleteLocation,
+                isDarkMode: isDarkMode,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -434,8 +442,6 @@ class _LocationSelectionContent extends StatelessWidget {
 
   List<Widget> _buildSelectedLocationsList() {
     final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
-    const Color primaryBlue = Color(0xFF1976D2);
-    const Color deleteRed = Color(0xFFF44336);
 
     return [
       Padding(
@@ -472,7 +478,11 @@ class _LocationSelectionContent extends StatelessWidget {
               : Colors.black87;
 
           return Container(
-            margin: const EdgeInsets.only(bottom: 8.0, left: 5.0, right: 5.0),
+            margin: const EdgeInsets.only(
+              bottom: 8.0,
+              left: kContentHorizontalPadding,
+              right: kContentHorizontalPadding,
+            ),
             padding: const EdgeInsets.all(8.0),
             decoration: BoxDecoration(
               color: itemBgColor,
@@ -524,7 +534,7 @@ class _LocationSelectionContent extends StatelessWidget {
                         height: 35,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: primaryBlue,
+                          color: kPrimaryBlue,
                         ),
                         child: const Icon(
                           Icons.edit,
@@ -542,7 +552,7 @@ class _LocationSelectionContent extends StatelessWidget {
                         height: 35,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: deleteRed,
+                          color: kDeleteRed,
                         ),
                         child: const Icon(
                           Icons.delete_forever,
@@ -564,7 +574,9 @@ class _LocationSelectionContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5.0),
+      padding: const EdgeInsets.symmetric(
+        horizontal: kContentHorizontalPadding,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -573,14 +585,11 @@ class _LocationSelectionContent extends StatelessWidget {
             availableCities: availableCities,
             selectedCity: selectedCity,
             currentAreaSelection: currentAreaSelection,
-            finalLocations: finalLocations,
             areaSearchQuery: areaSearchQuery,
             onCitySelected: onCitySelected,
             onAreaTapped: onAreaTapped,
             onAreaSearchChanged: onAreaSearchChanged,
             onSave: onSave,
-            onEdit: onEdit,
-            onDelete: onDelete,
             isDarkMode: isDarkMode,
           ),
           if (finalLocations.isNotEmpty) const SizedBox(height: 10.0),
@@ -596,28 +605,22 @@ class _CityAreaSelector extends StatelessWidget {
   final List<String> availableCities;
   final String? selectedCity;
   final Set<String> currentAreaSelection;
-  final List<LocationSelection> finalLocations;
   final String areaSearchQuery;
   final ValueChanged<String> onCitySelected;
   final ValueChanged<String> onAreaTapped;
   final ValueChanged<String> onAreaSearchChanged;
   final VoidCallback onSave;
-  final ValueChanged<LocationSelection> onEdit;
-  final ValueChanged<String> onDelete;
   final bool isDarkMode;
 
   const _CityAreaSelector({
     required this.availableCities,
     required this.selectedCity,
     required this.currentAreaSelection,
-    required this.finalLocations,
     required this.areaSearchQuery,
     required this.onCitySelected,
     required this.onAreaTapped,
     required this.onAreaSearchChanged,
     required this.onSave,
-    required this.onEdit,
-    required this.onDelete,
     required this.isDarkMode,
   });
 
@@ -668,13 +671,13 @@ class _CityAreaSelector extends StatelessWidget {
           padding: const EdgeInsets.only(top: 8.0, bottom: 5.0),
           child: Center(
             child: SizedBox(
-              height: 45,
+              height: kSaveButtonHeight,
               child: ElevatedButton(
                 onPressed: isSaveEnabled ? onSave : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1976D2),
+                  backgroundColor: kPrimaryBlue,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15.0),
+                    borderRadius: BorderRadius.circular(kBoxRadius),
                   ),
                   elevation: 5,
                 ),
@@ -711,8 +714,7 @@ class _LocationBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryBlue = Color(0xFF1976D2);
-    final Color headerBgColor = primaryBlue;
+    final Color headerBgColor = kPrimaryBlue;
     const Color headerTextColor = Colors.white;
     final Color listBgColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
     final Color borderColor = isDarkMode
@@ -722,7 +724,7 @@ class _LocationBox extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: listBgColor,
-        borderRadius: BorderRadius.circular(15.0),
+        borderRadius: BorderRadius.circular(kBoxRadius),
         border: Border.all(color: borderColor, width: 2),
       ),
       child: Column(
@@ -733,7 +735,7 @@ class _LocationBox extends StatelessWidget {
             decoration: BoxDecoration(
               color: headerBgColor,
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(13.0),
+                top: Radius.circular(kHeaderRadius),
               ),
             ),
             child: Text(
@@ -769,8 +771,7 @@ class _CityList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF1976D2);
-    final Color selectedBgColor = primaryColor.withOpacity(0.1);
+    final Color selectedBgColor = kPrimaryBlue.withOpacity(0.1);
 
     return ListView.builder(
       padding: EdgeInsets.zero,
@@ -780,7 +781,7 @@ class _CityList extends StatelessWidget {
         final bool isSelected = city == selectedCity;
 
         final Color itemTextColor = isSelected
-            ? primaryColor
+            ? kPrimaryBlue
             : (isDarkMode ? Colors.white70 : Colors.black87);
 
         return ListTile(
@@ -801,7 +802,7 @@ class _CityList extends StatelessWidget {
             ),
           ),
           trailing: isSelected
-              ? const Icon(Icons.check, color: primaryColor, size: 20)
+              ? const Icon(Icons.check, color: kPrimaryBlue, size: 20)
               : null,
           tileColor: isSelected ? selectedBgColor : null,
           shape: RoundedRectangleBorder(
@@ -857,9 +858,6 @@ class _AreaList extends StatelessWidget {
       return _normalizeString(area).contains(normalizedQuery);
     }).toList();
 
-    const Color selectedGreen = Colors.green;
-    const Color primaryColor = Color(0xFF1976D2);
-
     return Column(
       children: [
         Padding(
@@ -894,13 +892,13 @@ class _AreaList extends StatelessWidget {
                     final bool isSelected = currentAreaSelection.contains(area);
 
                     final Color itemBgColor = isSelected
-                        ? primaryColor.withOpacity(0.1)
+                        ? kPrimaryBlue.withOpacity(0.1)
                         : (isDarkMode
                               ? Colors.transparent
                               : Colors.transparent);
                     final Color itemTextColor = isDarkMode
-                        ? (isSelected ? primaryColor : Colors.white70)
-                        : (isSelected ? primaryColor : Colors.black87);
+                        ? (isSelected ? kPrimaryBlue : Colors.white70)
+                        : (isSelected ? kPrimaryBlue : Colors.black87);
 
                     return ListTile(
                       onTap: () => onAreaTapped(area),
@@ -924,7 +922,7 @@ class _AreaList extends StatelessWidget {
                       trailing: isSelected
                           ? const Icon(
                               Icons.check_circle,
-                              color: selectedGreen,
+                              color: kSelectedGreen,
                               size: 20,
                             )
                           : Icon(
@@ -970,7 +968,7 @@ class _AreaSearchBar extends StatelessWidget {
         : Colors.grey.shade400;
 
     return SizedBox(
-      height: 40,
+      height: kSearchBoxHeight,
       child: TextField(
         onChanged: onSearchChanged,
         style: TextStyle(color: searchTextColor, fontSize: 14.0),
@@ -994,7 +992,7 @@ class _AreaSearchBar extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20.0),
-            borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2),
+            borderSide: const BorderSide(color: kPrimaryBlue, width: 2),
           ),
         ),
       ),
