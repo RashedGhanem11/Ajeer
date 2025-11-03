@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../themes/theme_notifier.dart';
+import 'work_schedule_screen.dart';
 
-// --- CONSTANTS ---
 const Color kLightBlue = Color(0xFF8CCBFF);
 const Color kPrimaryBlue = Color(0xFF1976D2);
 const Color kDeleteRed = Color(0xFFF44336);
@@ -14,6 +14,7 @@ const double kSearchBoxHeight = 40.0;
 const double kContentHorizontalPadding = 5.0;
 const double kBoxRadius = 15.0;
 const double kHeaderRadius = 13.0;
+const double kListContainerHeight = 310.0;
 
 class LocationSelection {
   final String city;
@@ -145,12 +146,14 @@ class _LocationScreenState extends State<LocationScreen> {
 
   void _onNextTap() {
     if (_isNextEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Navigating to next step with ${_finalLocations.length} locations and ${widget.selectedServices.length} services.',
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WorkScheduleScreen(
+            themeNotifier: widget.themeNotifier,
+            selectedServices: widget.selectedServices,
+            selectedLocations: _finalLocations,
           ),
-          backgroundColor: kSelectedGreen,
         ),
       );
     }
@@ -486,7 +489,7 @@ class _LocationSelectionContent extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             decoration: BoxDecoration(
               color: itemBgColor,
-              borderRadius: BorderRadius.circular(10.0),
+              borderRadius: BorderRadius.circular(20.0),
               border: Border.all(color: itemBorderColor, width: 2.0),
               boxShadow: isDarkMode
                   ? null
@@ -632,7 +635,7 @@ class _CityAreaSelector extends StatelessWidget {
     return Column(
       children: [
         SizedBox(
-          height: 370,
+          height: kListContainerHeight,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
