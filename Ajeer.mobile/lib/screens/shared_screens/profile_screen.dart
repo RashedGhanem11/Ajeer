@@ -28,6 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const Color _darkBlue = Color(0xFF0D47A1);
   static const Color _subtleDark = Color(0xFF1E1E1E);
   static const Color _subtleLighterDark = Color(0xFF2C2C2C);
+  static const Color _editableBorderColorDark = Color(0xFF757575);
   static const Color _saveGreen = Color(0xFF4CAF50);
   static const Color _cancelRed = Color(0xFFF44336);
   static const double _borderRadius = 50.0;
@@ -41,6 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _selectedIndex = 0;
   bool _isPasswordVisible = false;
   bool _isEditing = false;
+  bool _dataHasChanged = false;
 
   Set<int> _selectedNotifications = {};
   bool _isDeleting = false;
@@ -104,7 +106,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _password = '********';
   File? _profileImage;
   File? _originalProfileImage;
-  bool _dataHasChanged = false;
 
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
@@ -507,7 +508,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: Stack(
         children: [
-          _buildBackgroundGradient(whiteContainerTop, isDarkMode),
+          _buildBackgroundGradient(
+            containerTop: whiteContainerTop,
+            isDarkMode: isDarkMode,
+          ),
           _buildAjeerTitle(context),
           _buildSwitchModeButton(context, isDarkMode, userNotifier.isProvider),
           _buildWhiteContainer(
@@ -527,7 +531,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildBackgroundGradient(double containerTop, bool isDarkMode) {
+  Widget _buildBackgroundGradient({
+    required double containerTop,
+    required bool isDarkMode,
+  }) {
     final Color endColor = _primaryBlue;
     final Color startColor = _lightBlue;
 
@@ -795,6 +802,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           providerData: userNotifier.providerData!,
                           isEnabled: userNotifier.isProvider,
                           isDarkMode: isDarkMode,
+                          isEditing: _isEditing,
+                          editableBorderColorDark: _editableBorderColorDark,
+                          subtleLighterDark: _subtleLighterDark,
                         ),
                     ],
                   ),
@@ -824,7 +834,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: saveColor,
           ),
         if (_isEditing) const SizedBox(width: 10),
-
         _buildActionButton(
           icon: _isEditing ? Icons.close : Icons.edit,
           tooltip: _isEditing ? 'Cancel Editing' : 'Edit Profile',
@@ -877,12 +886,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final Color fieldTextColor = _isEditing
         ? (isDarkMode ? Colors.white : Colors.black87)
         : Colors.grey.shade400;
+
     final Color fieldFillColor = _isEditing
         ? (isDarkMode ? _subtleLighterDark : Colors.white)
         : (isDarkMode ? _subtleDark : Colors.grey.shade100);
-    final Color fieldBorderColor = isDarkMode
-        ? Colors.grey.shade600
-        : Colors.grey.shade300;
+
+    final Color fieldBorderColor = _isEditing
+        ? (isDarkMode ? _editableBorderColorDark : Colors.grey.shade400)
+        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
+
     final Color disabledBorderColor = isDarkMode
         ? Colors.grey.shade700
         : Colors.grey.shade300;
@@ -895,6 +907,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         obscureText: isPassword && !_isPasswordVisible,
         keyboardType: keyboardType,
         style: TextStyle(color: fieldTextColor),
+        enableInteractiveSelection: _isEditing,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(
@@ -939,10 +952,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(
-              color: _isEditing ? Colors.grey.shade400 : fieldBorderColor,
-              width: 2.0,
-            ),
+            borderSide: BorderSide(color: fieldBorderColor, width: 2.0),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
@@ -966,14 +976,41 @@ class _ProviderInfoSection extends StatelessWidget {
   final ProviderData providerData;
   final bool isEnabled;
   final bool isDarkMode;
+  final bool isEditing;
+  final Color editableBorderColorDark;
+  final Color subtleLighterDark;
 
-  static const Color _subtleLighterDark = Color(0xFF2C2C2C);
+  static const Color _primaryBlue = Color(0xFF1976D2);
+  static const Color _subtleDark = Color(0xFF1E1E1E);
 
   const _ProviderInfoSection({
     required this.providerData,
     required this.isEnabled,
     required this.isDarkMode,
+    required this.isEditing,
+    required this.editableBorderColorDark,
+    required this.subtleLighterDark,
   });
+
+  Widget _buildSmallEditButton() {
+    // Only show the edit button if in Provider Mode AND isEditing is true
+    if (!isEditing || !isEnabled) return const SizedBox.shrink();
+
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: _primaryBlue,
+        shape: BoxShape.circle,
+        border: Border.all(color: subtleLighterDark, width: 1.0),
+      ),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: const Icon(Icons.edit, color: Colors.white, size: 16),
+        onPressed: () {},
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -981,19 +1018,13 @@ class _ProviderInfoSection extends StatelessWidget {
         ? (isDarkMode ? Colors.white : Colors.black87)
         : (isDarkMode ? Colors.grey.shade600 : Colors.grey.shade500);
 
-    final Color subtitleColor = isEnabled
-        ? (isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600)
-        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400);
-
     return Opacity(
       opacity: isEnabled ? 1.0 : 0.5,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 20),
-          const Divider(),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10.0),
+            padding: const EdgeInsets.only(top: 5.0, bottom: 15.0),
             child: Text(
               'Provider Information',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -1003,109 +1034,163 @@ class _ProviderInfoSection extends StatelessWidget {
               ),
             ),
           ),
-
-          _buildSectionTitle(context, 'My Services', titleColor),
-          if (providerData.selectedServices.isEmpty)
-            _buildInfoItem(context, 'No services selected.', '', subtitleColor)
-          else
-            ...providerData.selectedServices.entries.map((entry) {
-              if (entry.value.isEmpty) return const SizedBox.shrink();
-              final serviceName = entry.key;
-              final unitTypes = entry.value.join(', ');
-              return _buildInfoItem(
-                context,
-                serviceName,
-                unitTypes,
-                subtitleColor,
-              );
-            }).toList(),
-
-          const SizedBox(height: 15),
-
-          _buildSectionTitle(context, 'My Locations', titleColor),
-          if (providerData.selectedLocations.isEmpty)
-            _buildInfoItem(context, 'No locations selected.', '', subtitleColor)
-          else
-            ...providerData.selectedLocations.map((loc) {
-              final areas = loc.areas.join(', ');
-              return _buildInfoItem(context, loc.city, areas, subtitleColor);
-            }).toList(),
-
-          const SizedBox(height: 15),
-
-          _buildSectionTitle(context, 'My Schedule', titleColor),
-          if (providerData.finalSchedule.isEmpty)
-            _buildInfoItem(context, 'No schedule set.', '', subtitleColor)
-          else
-            ...providerData.finalSchedule.map((schedule) {
-              final times = schedule.timeSlots
-                  .map((t) => t.toString())
-                  .join(', ');
-              return _buildInfoItem(
-                context,
-                schedule.day,
-                times,
-                subtitleColor,
-              );
-            }).toList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(BuildContext context, String title, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: color,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(
-    BuildContext context,
-    String title,
-    String subtitle,
-    Color subtitleColor,
-  ) {
-    final Color itemTitleColor = isEnabled
-        ? (isDarkMode ? Colors.white70 : Colors.black87)
-        : (isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600);
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8.0),
-      padding: const EdgeInsets.all(12.0),
-      decoration: BoxDecoration(
-        color: isDarkMode ? _subtleLighterDark : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10.0),
-        border: Border.all(
-          color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: itemTitleColor,
-            ),
+          _buildProviderField(
+            context,
+            'My Services',
+            Icons.miscellaneous_services_outlined,
+            providerData.selectedServices.isEmpty
+                ? ['No services selected.']
+                : providerData.selectedServices.entries
+                      .map(
+                        // Format: **ServiceName**: Unit Types
+                        (entry) =>
+                            '**${entry.key}**: ${entry.value.join(', ')}',
+                      )
+                      .toList(),
           ),
-          if (subtitle.isNotEmpty) const SizedBox(height: 4.0),
-          if (subtitle.isNotEmpty)
-            Text(
-              subtitle,
-              style: TextStyle(fontSize: 14, color: subtitleColor),
-            ),
+          _buildProviderField(
+            context,
+            'My Locations',
+            Icons.location_on_outlined,
+            providerData.selectedLocations.isEmpty
+                ? ['No locations selected.']
+                : providerData.selectedLocations
+                      .map(
+                        // Format: **CityName**: Areas
+                        (loc) => '**${loc.city}**: ${loc.areas.join(', ')}',
+                      )
+                      .toList(),
+          ),
+          _buildProviderField(
+            context,
+            'My Schedule',
+            Icons.schedule_outlined,
+            providerData.finalSchedule.isEmpty
+                ? ['No schedule set.']
+                : providerData.finalSchedule
+                      .map(
+                        (schedule) =>
+                            '${schedule.day}: ${schedule.timeSlots.map((t) => t.toString()).join(', ')}',
+                      )
+                      .toList(),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildProviderField(
+    BuildContext context,
+    String label,
+    IconData icon,
+    List<String> contentLines,
+  ) {
+    final bool isReadOnly = !isEnabled || !isEditing;
+
+    final Color fieldTextColor = isReadOnly
+        ? (isDarkMode ? Colors.grey.shade400 : Colors.black54)
+        : (isDarkMode ? Colors.white70 : Colors.black87);
+
+    final Color fieldFillColor = isReadOnly
+        ? (isDarkMode ? _subtleDark : Colors.grey.shade100)
+        : (isDarkMode ? subtleLighterDark : Colors.white);
+
+    final Color fieldBorderColor = isReadOnly
+        ? (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300)
+        : (isDarkMode ? editableBorderColorDark : Colors.grey.shade400);
+
+    final Color labelColor = isReadOnly
+        ? (isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600)
+        : (isDarkMode ? Colors.white : Colors.black87);
+
+    // Icon should stay gray/disabled if not in Provider Mode (isEnabled is false)
+    final Color iconColor = isEnabled && isEditing ? _primaryBlue : Colors.grey;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15.0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(15.0),
+        decoration: BoxDecoration(
+          color: fieldFillColor,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: fieldBorderColor, width: 2.0),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 24, color: iconColor),
+                    const SizedBox(width: 10),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: labelColor,
+                      ),
+                    ),
+                  ],
+                ),
+                _buildSmallEditButton(),
+              ],
+            ),
+            const SizedBox(height: 8.0),
+            ...contentLines.map((line) {
+              // Find the index of the key-value separator, which is always ': '
+              final int separatorIndex = line.indexOf(': ');
+
+              if (separatorIndex != -1 && line.startsWith('**')) {
+                // Key includes the bolding markers: **Service/City**
+                final String keyPart = line.substring(0, separatorIndex);
+                // Value is the rest of the line
+                final String valuePart = line.substring(
+                  separatorIndex + 2,
+                ); // +2 to skip ': '
+
+                // Remove the bolding markers to get the plain text key
+                final String plainKey = keyPart.replaceAll('**', '');
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        // First span is the bolded key with the required colon and space
+                        TextSpan(
+                          text: '$plainKey: ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: fieldTextColor,
+                          ),
+                        ),
+                        // Second span is the unbolded content
+                        TextSpan(
+                          text: valuePart,
+                          style: TextStyle(fontSize: 14, color: fieldTextColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              } else {
+                // Fallback for lines without the key-value format (e.g., schedule or "No services")
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Text(
+                    line,
+                    style: TextStyle(fontSize: 14, color: fieldTextColor),
+                  ),
+                );
+              }
+            }).toList(),
+          ],
+        ),
       ),
     );
   }
