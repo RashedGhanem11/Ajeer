@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
+import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
 import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
-import 'profile_screen.dart';
+import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
-import '../../main.dart';
+// Removed: import '../../main.dart';
 
 class ConfirmationScreen extends StatefulWidget {
   final String serviceName;
@@ -110,6 +112,9 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
+
+    // 💡 FIX 3: Retrieve themeNotifier using Provider (listen: false for navigation)
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
     switch (index) {
       case 0:
@@ -442,7 +447,8 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = themeNotifier.isDarkMode;
+    // 💡 FIX 4: Retrieve isDarkMode via Provider for build
+    final bool isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode

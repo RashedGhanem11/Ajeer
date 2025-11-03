@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../themes/theme_notifier.dart';
-import 'location_screen.dart';
+import '../../models/provider_data.dart';
+import '../../notifiers/user_notifier.dart';
+import '../shared_screens/profile_screen.dart';
 
 const Color kLightBlue = Color(0xFF8CCBFF);
 const Color kPrimaryBlue = Color(0xFF1976D2);
@@ -12,32 +15,6 @@ const double kWhiteContainerTopRatio = 0.15;
 const double kSaveButtonHeight = 45.0;
 const double kContentHorizontalPadding = 5.0;
 const double kBoxRadius = 15.0;
-
-class WorkTime {
-  final TimeOfDay startTimeOfDay;
-  final TimeOfDay endTimeOfDay;
-
-  WorkTime({required this.startTimeOfDay, required this.endTimeOfDay});
-
-  @override
-  String toString() {
-    String formatTime(TimeOfDay time) {
-      final hour = time.hourOfPeriod;
-      final minute = time.minute.toString().padLeft(2, '0');
-      final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-      return '$hour:$minute $period';
-    }
-
-    return '${formatTime(startTimeOfDay)} - ${formatTime(endTimeOfDay)}';
-  }
-}
-
-class WorkSchedule {
-  final String day;
-  final List<WorkTime> timeSlots;
-
-  WorkSchedule({required this.day, required this.timeSlots});
-}
 
 const List<String> kWeekDays = [
   'Sunday',
@@ -201,7 +178,27 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pop(context);
+                        final providerData = ProviderData(
+                          selectedServices: widget.selectedServices,
+                          selectedLocations: widget.selectedLocations,
+                          finalSchedule: _finalSchedule,
+                        );
+
+                        Provider.of<UserNotifier>(
+                          context,
+                          listen: false,
+                        ).completeProviderSetup(providerData);
+
+                        Navigator.of(context).pop();
+
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => ProfileScreen(
+                              themeNotifier: widget.themeNotifier,
+                            ),
+                          ),
+                          (Route<dynamic> route) => false,
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: kPrimaryBlue,

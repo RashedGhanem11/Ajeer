@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
+import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
 import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
 import 'home_screen.dart';
-import 'profile_screen.dart';
+import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
-import '../../main.dart'; // Imports themeNotifier
+// Removed: import '../../main.dart'; // Imports themeNotifier
 
 enum _BookingStatus { active, pending, closed }
 
@@ -108,6 +110,9 @@ class _BookingsScreenState extends State<BookingsScreen>
 
     if (index == _selectedIndex) return;
 
+    // 💡 FIX 3: Retrieve themeNotifier using Provider (listen: false for navigation)
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+
     switch (index) {
       case 0:
         Navigator.pushReplacement(
@@ -178,7 +183,8 @@ class _BookingsScreenState extends State<BookingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = themeNotifier.isDarkMode;
+    // 💡 FIX 4: Retrieve isDarkMode via Provider for build
+    final bool isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
@@ -217,7 +223,7 @@ class _BookingsScreenState extends State<BookingsScreen>
         body: Stack(
           children: [
             _buildBackgroundGradient(whiteContainerTop),
-            _buildBookingsHeader(context),
+            _buildBookingsHeader(context, isDarkMode), // Passed isDarkMode
             _buildContentContainer(
               containerTop: whiteContainerTop,
               bottomNavClearance: bottomNavClearance,
@@ -262,6 +268,7 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
+  // 💡 FIX 5: Updated method signature to accept isDarkMode
   Widget _buildAjeerTitle(BuildContext context, bool isDarkMode) {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 5,
@@ -289,8 +296,9 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  Widget _buildBookingsHeader(BuildContext context) {
-    return _buildAjeerTitle(context, themeNotifier.isDarkMode);
+  // 💡 FIX 6: Updated method to pass isDarkMode from the build method
+  Widget _buildBookingsHeader(BuildContext context, bool isDarkMode) {
+    return _buildAjeerTitle(context, isDarkMode);
   }
 
   Widget _buildHomeImage(double logoTopPosition, bool isDarkMode) {

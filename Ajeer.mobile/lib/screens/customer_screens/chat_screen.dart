@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
+import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
 import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'home_screen.dart';
-import 'profile_screen.dart';
-import '../../main.dart';
+import '../shared_screens/profile_screen.dart';
+// Removed: import '../../main.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -37,6 +39,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
+
+    // 💡 FIX 3: Retrieve themeNotifier using Provider (listen: false for navigation)
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
     switch (index) {
       case 0:

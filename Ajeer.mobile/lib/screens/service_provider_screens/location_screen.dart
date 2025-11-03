@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../themes/theme_notifier.dart';
 import 'work_schedule_screen.dart';
+import '../../models/provider_data.dart';
 
 const Color kLightBlue = Color(0xFF8CCBFF);
 const Color kPrimaryBlue = Color(0xFF1976D2);
@@ -15,13 +16,6 @@ const double kContentHorizontalPadding = 5.0;
 const double kBoxRadius = 15.0;
 const double kHeaderRadius = 13.0;
 const double kListContainerHeight = 310.0;
-
-class LocationSelection {
-  final String city;
-  final Set<String> areas;
-
-  LocationSelection({required this.city, required this.areas});
-}
 
 const List<String> kJordanCities = [
   'Amman',

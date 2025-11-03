@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider
+import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
 import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'confirmation_screen.dart';
-import 'profile_screen.dart';
+import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
-import '../../main.dart'; // Imports themeNotifier
+// Removed: import '../../main.dart'; // Imports themeNotifier
 
 class MediaScreen extends StatefulWidget {
   final String serviceName;
@@ -115,12 +117,15 @@ class _MediaScreenState extends State<MediaScreen> {
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
 
+    // 💡 FIX 3: Retrieve ThemeNotifier via Provider for navigation
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+
     switch (index) {
       case 0:
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            // FIX: Pass the required 'themeNotifier' to ProfileScreen
+            // Correctly pass the retrieved themeNotifier
             builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
           ),
         );
@@ -172,8 +177,7 @@ class _MediaScreenState extends State<MediaScreen> {
           pickedMediaFiles: allPickedFiles,
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
-          // FIX: Removed 'themeNotifier' as ConfirmationScreen's constructor
-          // defined in the previous step did not include it.
+          // ConfirmationScreen does not require themeNotifier, so it's omitted
         ),
       ),
     );
@@ -328,6 +332,8 @@ class _MediaScreenState extends State<MediaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 💡 FIX 4: Retrieve ThemeNotifier via Provider for build
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
     final bool isDarkMode = themeNotifier.isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(

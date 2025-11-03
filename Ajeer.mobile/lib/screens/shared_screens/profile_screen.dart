@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:provider/provider.dart';
 import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
-import 'bookings_screen.dart';
-import 'home_screen.dart';
-import 'chat_screen.dart';
+import '../customer_screens/bookings_screen.dart';
+import '../customer_screens/home_screen.dart';
+import '../customer_screens/chat_screen.dart';
 import '../../themes/theme_notifier.dart';
 import '../customer_screens/login_screen.dart';
 import '../../widgets/customer_widgets/settings_menu.dart';
-import '../service_provider_screens/services_screen.dart'; // <--- NEW: Import the ServicesScreen
+import '../service_provider_screens/services_screen.dart';
+import '../../notifiers/user_notifier.dart';
+import '../../models/provider_data.dart';
 
 class ProfileScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -372,7 +375,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showSwitchModeDialog() {
+    final userNotifier = Provider.of<UserNotifier>(context, listen: false);
+    final bool isProvider = userNotifier.isProvider;
+    final bool isSetupComplete = userNotifier.isProviderSetupComplete;
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
+
+    final String title = isProvider
+        ? 'Switch to Customer Mode'
+        : 'Switch to Provider Mode';
+    final String content = isProvider
+        ? 'Do you want to switch back to Customer mode?'
+        : 'Do you want to switch to Service Provider mode?';
 
     showDialog(
       context: context,
@@ -382,12 +395,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           borderRadius: BorderRadius.circular(25.0),
         ),
         title: Text(
-          'Switch to Provider Mode',
+          title,
           style: TextStyle(color: _primaryBlue, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
         content: Text(
-          'Do you want to switch from Customer mode to Service Provider mode?',
+          content,
           textAlign: TextAlign.center,
           style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black),
         ),
@@ -422,16 +435,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                   ),
                   onPressed: () {
-                    Navigator.of(ctx).pop(); // Close the dialog
-                    // FIX: Navigate to ServicesScreen
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            ServicesScreen(themeNotifier: widget.themeNotifier),
-                      ),
-                    );
-                  }, // <--- FIX APPLIED HERE
+                    Navigator.of(ctx).pop();
+
+                    if (isSetupComplete) {
+                      userNotifier.toggleUserMode();
+                    } else {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ServicesScreen(
+                            themeNotifier: widget.themeNotifier,
+                          ),
+                        ),
+                      );
+                    }
+                  },
                   child: const Center(
                     child: Text(
                       'Switch',
@@ -452,6 +470,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userNotifier = Provider.of<UserNotifier>(context);
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -490,11 +509,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           _buildBackgroundGradient(whiteContainerTop, isDarkMode),
           _buildAjeerTitle(context),
-          _buildSwitchModeButton(context, isDarkMode),
+          _buildSwitchModeButton(context, isDarkMode, userNotifier.isProvider),
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
             isDarkMode: isDarkMode,
+            userNotifier: userNotifier,
           ),
           _buildProfileAvatar(avatarTopPosition, isDarkMode),
         ],
@@ -551,11 +571,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSwitchModeButton(BuildContext context, bool isDarkMode) {
+  Widget _buildSwitchModeButton(
+    BuildContext context,
+    bool isDarkMode,
+    bool isProvider,
+  ) {
     final double buttonTop = MediaQuery.of(context).padding.top + 70;
 
     final Color bgColor = isDarkMode ? _subtleDark : Colors.grey.shade300;
     final Color fgColor = isDarkMode ? Colors.white : _primaryBlue;
+
+    final IconData icon = isProvider ? Icons.person : Icons.handyman;
+    final String label = isProvider
+        ? 'Switch to Customer Mode'
+        : 'Switch to Provider Mode';
 
     return Positioned(
       top: buttonTop,
@@ -566,10 +595,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           width: _maxButtonWidth,
           child: ElevatedButton.icon(
             onPressed: _showSwitchModeDialog,
-            icon: const Icon(Icons.handyman, size: 20),
-            label: const Text(
-              'Switch to Provider Mode',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            icon: Icon(icon, size: 20),
+            label: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: bgColor,
@@ -660,6 +689,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required double containerTop,
     required double bottomNavClearance,
     required bool isDarkMode,
+    required UserNotifier userNotifier,
   }) {
     final Color containerColor = isDarkMode ? _subtleDark : Colors.white;
     final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
@@ -709,8 +739,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: titleColor,
                           ),
                     ),
-                    // FIX: Wrap the call to _buildEditSaveButtons in a Builder
-                    // to ensure a correct context for Scaffold.of(context).openDrawer()
                     Builder(
                       builder: (context) {
                         return _buildEditSaveButtons(context);
@@ -761,6 +789,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         isPassword: true,
                         isDarkMode: isDarkMode,
                       ),
+                      if (userNotifier.isProviderSetupComplete &&
+                          userNotifier.providerData != null)
+                        _ProviderInfoSection(
+                          providerData: userNotifier.providerData!,
+                          isEnabled: userNotifier.isProvider,
+                          isDarkMode: isDarkMode,
+                        ),
                     ],
                   ),
                 ),
@@ -772,7 +807,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // FIX: Accept BuildContext as an argument
   Widget _buildEditSaveButtons(BuildContext context) {
     final Color saveColor = _dataHasChanged ? _saveGreen : Colors.grey;
     final bool saveEnabled = _dataHasChanged;
@@ -801,7 +835,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _buildActionButton(
           icon: Icons.settings,
           tooltip: 'Settings',
-          // FIX: The context now reliably finds the Scaffold
           onPressed: () => Scaffold.of(context).openDrawer(),
           backgroundColor: _primaryBlue,
         ),
@@ -924,6 +957,155 @@ class _ProfileScreenState extends State<ProfileScreen> {
             horizontal: 10,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ProviderInfoSection extends StatelessWidget {
+  final ProviderData providerData;
+  final bool isEnabled;
+  final bool isDarkMode;
+
+  static const Color _subtleLighterDark = Color(0xFF2C2C2C);
+
+  const _ProviderInfoSection({
+    required this.providerData,
+    required this.isEnabled,
+    required this.isDarkMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color titleColor = isEnabled
+        ? (isDarkMode ? Colors.white : Colors.black87)
+        : (isDarkMode ? Colors.grey.shade600 : Colors.grey.shade500);
+
+    final Color subtitleColor = isEnabled
+        ? (isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600)
+        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400);
+
+    return Opacity(
+      opacity: isEnabled ? 1.0 : 0.5,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10.0),
+            child: Text(
+              'Provider Information',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: titleColor,
+              ),
+            ),
+          ),
+
+          _buildSectionTitle(context, 'My Services', titleColor),
+          if (providerData.selectedServices.isEmpty)
+            _buildInfoItem(context, 'No services selected.', '', subtitleColor)
+          else
+            ...providerData.selectedServices.entries.map((entry) {
+              if (entry.value.isEmpty) return const SizedBox.shrink();
+              final serviceName = entry.key;
+              final unitTypes = entry.value.join(', ');
+              return _buildInfoItem(
+                context,
+                serviceName,
+                unitTypes,
+                subtitleColor,
+              );
+            }).toList(),
+
+          const SizedBox(height: 15),
+
+          _buildSectionTitle(context, 'My Locations', titleColor),
+          if (providerData.selectedLocations.isEmpty)
+            _buildInfoItem(context, 'No locations selected.', '', subtitleColor)
+          else
+            ...providerData.selectedLocations.map((loc) {
+              final areas = loc.areas.join(', ');
+              return _buildInfoItem(context, loc.city, areas, subtitleColor);
+            }).toList(),
+
+          const SizedBox(height: 15),
+
+          _buildSectionTitle(context, 'My Schedule', titleColor),
+          if (providerData.finalSchedule.isEmpty)
+            _buildInfoItem(context, 'No schedule set.', '', subtitleColor)
+          else
+            ...providerData.finalSchedule.map((schedule) {
+              final times = schedule.timeSlots
+                  .map((t) => t.toString())
+                  .join(', ');
+              return _buildInfoItem(
+                context,
+                schedule.day,
+                times,
+                subtitleColor,
+              );
+            }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(
+    BuildContext context,
+    String title,
+    String subtitle,
+    Color subtitleColor,
+  ) {
+    final Color itemTitleColor = isEnabled
+        ? (isDarkMode ? Colors.white70 : Colors.black87)
+        : (isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: isDarkMode ? _subtleLighterDark : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(10.0),
+        border: Border.all(
+          color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: itemTitleColor,
+            ),
+          ),
+          if (subtitle.isNotEmpty) const SizedBox(height: 4.0),
+          if (subtitle.isNotEmpty)
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 14, color: subtitleColor),
+            ),
+        ],
       ),
     );
   }

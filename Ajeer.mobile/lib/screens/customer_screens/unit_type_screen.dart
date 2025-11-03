@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
 import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
 import 'date_time_screen.dart';
 import 'bookings_screen.dart';
-import 'profile_screen.dart';
+import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
 import '../../services/services.dart';
-import '../../main.dart'; // Imports themeNotifier
+import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
 
 class UnitTypeScreen extends StatefulWidget {
   final Service service;
@@ -52,12 +53,15 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
 
+    // 💡 FIX 3: Retrieve ThemeNotifier via Provider for navigation
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+
     switch (index) {
       case 0:
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            // FIX: Pass the required 'themeNotifier' and remove 'const'
+            // Removed 'const' since we are passing a variable
             builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
           ),
         );
@@ -135,6 +139,8 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
 
   @override
   Widget build(BuildContext context) {
+    // 💡 FIX 4: Retrieve ThemeNotifier via Provider for build
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
     final bool isDarkMode = themeNotifier.isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
+import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import 'home_screen.dart';
-import '../../main.dart'; // Accesses the global themeNotifier
+// Removed: import '../../main.dart'; // Accesses the global themeNotifier
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,6 +40,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _validateAndLogin() {
     debugPrint("Validation bypassed for testing! Navigating to Home Screen...");
+
+    // 💡 FIX 3: Retrieve themeNotifier using Provider (listen: false for navigation)
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
     // FIX: Navigate to the correct class (HomeScreen) and pass the required themeNotifier instance.
     Navigator.pushReplacement(
@@ -281,7 +286,9 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.push(
             context,
             // FIX: Removed 'const'
-            MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
+            MaterialPageRoute(
+              builder: (context) => const ForgotPasswordScreen(),
+            ),
           );
         },
         child: const Text(
@@ -355,7 +362,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Navigator.push(
               context,
               // FIX: Removed 'const'
-              MaterialPageRoute(builder: (context) => SignUpScreen()),
+              MaterialPageRoute(builder: (context) => const SignUpScreen()),
             );
           },
           style: TextButton.styleFrom(

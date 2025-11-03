@@ -1,23 +1,33 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-// REMOVED: import 'package:flutter/material.dart';
+// Required for widget test setup
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart'; // Required for MultiProvider setup
 
 import 'package:ajeer_mobile/main.dart';
 import 'package:ajeer_mobile/themes/theme_notifier.dart';
+import 'package:ajeer_mobile/notifiers/user_notifier.dart'; // Required to mock UserNotifier
 
 void main() {
-  // Create a dummy ThemeNotifier instance to satisfy the required argument
-  final ThemeNotifier dummyNotifier = ThemeNotifier();
+  // Create dummy Notifier instances to satisfy the required Providers
+  final ThemeNotifier dummyThemeNotifier = ThemeNotifier();
+  final UserNotifier dummyUserNotifier = UserNotifier();
 
   testWidgets('App starts at LoginScreen test', (WidgetTester tester) async {
-    // Build our app and trigger a frame, passing the required themeNotifier.
-    await tester.pumpWidget(MyApp(themeNotifier: dummyNotifier));
+    // Build our app and trigger a frame.
+    // FIX: Wrap MyApp in a MultiProvider to mock all dependencies.
+    // FIX: Remove the non-existent 'themeNotifier' named parameter from MyApp().
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          // Use .value constructor to inject the dummy instances
+          ChangeNotifierProvider<ThemeNotifier>.value(
+            value: dummyThemeNotifier,
+          ),
+          ChangeNotifierProvider<UserNotifier>.value(value: dummyUserNotifier),
+        ],
+        // MyApp is now called without any parameters.
+        child: const MyApp(),
+      ),
+    );
 
     // Verify that the Login screen loads by checking for expected text
     expect(find.text('Login'), findsOneWidget);

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/services.dart';
-import '../customer_screens/profile_screen.dart';
+import '../shared_screens/profile_screen.dart';
 import '../../themes/theme_notifier.dart';
 import 'location_screen.dart';
 

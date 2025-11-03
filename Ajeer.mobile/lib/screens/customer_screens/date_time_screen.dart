@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
+import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
 import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'location_screen.dart';
-import 'profile_screen.dart';
+import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
-import '../../main.dart';
+// Removed: import '../../main.dart';
 
 class DateTimeScreen extends StatefulWidget {
   final String serviceName;
@@ -74,12 +76,15 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
 
+    // 💡 FIX 3: Retrieve themeNotifier using Provider (listen: false for navigation)
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+
     switch (index) {
       case 0:
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            // FIX: Pass the required 'themeNotifier' and remove 'const'
+            // FIX: Pass the required 'themeNotifier'
             builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
           ),
         );
@@ -120,7 +125,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 
   void _showDatePicker() async {
-    final bool isDarkMode = themeNotifier.isDarkMode;
+    // 💡 FIX 4: Retrieve isDarkMode using Provider (listen: false for modal)
+    final isDarkMode = Provider.of<ThemeNotifier>(
+      context,
+      listen: false,
+    ).isDarkMode;
 
     final pickedDate = await showDatePicker(
       context: context,
@@ -165,7 +174,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 
   void _showTimePicker() async {
-    final bool isDarkMode = themeNotifier.isDarkMode;
+    // 💡 FIX 5: Retrieve isDarkMode using Provider (listen: false for modal)
+    final isDarkMode = Provider.of<ThemeNotifier>(
+      context,
+      listen: false,
+    ).isDarkMode;
 
     final pickedTime = await showTimePicker(
       context: context,
@@ -221,8 +234,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           selectionMode: _selectionMode,
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
-          // Assuming LocationScreen will need themeNotifier as well
-          // themeNotifier: themeNotifier,
+          // LocationScreen now handles theme itself via Provider (fixed in previous step)
         ),
       ),
     );
@@ -230,7 +242,8 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = themeNotifier.isDarkMode;
+    // 💡 FIX 6: Retrieve ThemeNotifier via Provider for build
+    final bool isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
