@@ -417,6 +417,8 @@ class _LocationSelectionContent extends StatelessWidget {
 
   List<Widget> _buildSelectedLocationsList() {
     final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
+    const Color primaryBlue = Color(0xFF1976D2);
+    const Color deleteRed = Color(0xFFF44336);
 
     return [
       Padding(
@@ -439,7 +441,9 @@ class _LocationSelectionContent extends StatelessWidget {
         itemBuilder: (context, index) {
           final loc = finalLocations[index];
           final areas = loc.areas.toList().join(', ');
-          final Color itemBgColor = isDarkMode ? Colors.black : Colors.white;
+          final Color itemBgColor = isDarkMode
+              ? Colors.black
+              : Colors.grey.shade100;
           final Color itemBorderColor = isDarkMode
               ? Colors.grey.shade600
               : Colors.grey.shade400;
@@ -449,8 +453,6 @@ class _LocationSelectionContent extends StatelessWidget {
           final Color cityTextColor = isDarkMode
               ? Colors.white
               : Colors.black87;
-          const Color iconColor = Color(0xFF1976D2);
-          const Color deleteColor = Color(0xFFF44336);
 
           return Container(
             margin: const EdgeInsets.only(bottom: 8.0, left: 5.0, right: 5.0),
@@ -503,15 +505,13 @@ class _LocationSelectionContent extends StatelessWidget {
                       child: Container(
                         width: 35,
                         height: 35,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isDarkMode
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade100,
+                          color: primaryBlue,
                         ),
                         child: const Icon(
                           Icons.edit,
-                          color: iconColor,
+                          color: Colors.white,
                           size: 20,
                         ),
                       ),
@@ -523,15 +523,13 @@ class _LocationSelectionContent extends StatelessWidget {
                       child: Container(
                         width: 35,
                         height: 35,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isDarkMode
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade100,
+                          color: deleteRed,
                         ),
                         child: const Icon(
                           Icons.delete_forever,
-                          color: deleteColor,
+                          color: Colors.white,
                           size: 20,
                         ),
                       ),
@@ -605,7 +603,7 @@ class _CityAreaSelector extends StatelessWidget {
     return Column(
       children: [
         SizedBox(
-          height: 400,
+          height: 370,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -639,26 +637,37 @@ class _CityAreaSelector extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(
+          height: 15.0,
+        ), // UPDATED: Added vertical space to move button down
         Padding(
           padding: const EdgeInsets.only(top: 8.0, bottom: 5.0),
-          child: SizedBox(
-            width: double.infinity,
-            height: 45,
-            child: ElevatedButton(
-              onPressed: isSaveEnabled ? onSave : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1976D2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
+          // UPDATED: Wrapped in Center to size to content instead of double.infinity
+          child: Center(
+            child: SizedBox(
+              height: 45,
+              child: ElevatedButton(
+                onPressed: isSaveEnabled ? onSave : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1976D2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15.0),
+                  ),
+                  elevation: 5,
+                  // Removed fixed width, allowing it to size to text content
                 ),
-                elevation: 5,
-              ),
-              child: Text(
-                isSaveEnabled ? 'Add Location' : 'Select Areas to Add',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                  ), // Added horizontal padding for better appearance
+                  child: Text(
+                    isSaveEnabled ? 'Add Location' : 'Select Areas to Add',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -682,31 +691,39 @@ class _LocationBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color headerColor = isDarkMode ? Colors.white70 : Colors.black87;
-    final Color boxColor = isDarkMode
-        ? Colors.grey.shade900
-        : Colors.grey.shade100;
+    const Color primaryBlue = Color(0xFF1976D2);
+    // Use primaryBlue in dark mode as requested, and in light mode (original logic)
+    final Color headerBgColor = isDarkMode ? primaryBlue : primaryBlue;
+    final Color headerTextColor = isDarkMode ? Colors.white : Colors.white;
+    final Color listBgColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
     final Color borderColor = isDarkMode
         ? Colors.grey.shade700
         : Colors.grey.shade300;
 
     return Container(
       decoration: BoxDecoration(
-        color: boxColor,
+        color: listBgColor,
         borderRadius: BorderRadius.circular(15.0),
         border: Border.all(color: borderColor, width: 2),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
+          Container(
             padding: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              color: headerBgColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(13.0),
+              ),
+            ),
             child: Text(
               title,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: headerColor,
+                color: headerTextColor,
               ),
             ),
           ),
@@ -759,7 +776,7 @@ class _CityList extends StatelessWidget {
           title: Text(
             city,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
               color: itemTextColor,
             ),
@@ -794,6 +811,10 @@ class _AreaList extends StatelessWidget {
     required this.isDarkMode,
   });
 
+  String _normalizeString(String text) {
+    return text.replaceAll(RegExp(r'[\s-]'), '').toLowerCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (selectedCity == null) {
@@ -810,12 +831,15 @@ class _AreaList extends StatelessWidget {
     }
 
     final List<String> availableAreas = kCityAreas[selectedCity] ?? [];
-    String normalizedQuery = areaSearchQuery.trim().toLowerCase();
+    String normalizedQuery = _normalizeString(areaSearchQuery);
 
     final List<String> filteredAreas = availableAreas.where((area) {
       if (normalizedQuery.isEmpty) return true;
-      return area.toLowerCase().contains(normalizedQuery);
+      return _normalizeString(area).contains(normalizedQuery);
     }).toList();
+
+    const Color selectedGreen = Colors.green; // UPDATED: Defined green color
+    const Color primaryColor = Color(0xFF1976D2);
 
     return Column(
       children: [
@@ -849,7 +873,7 @@ class _AreaList extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final area = filteredAreas[index];
                     final bool isSelected = currentAreaSelection.contains(area);
-                    const Color primaryColor = Color(0xFF1976D2);
+
                     final Color itemBgColor = isSelected
                         ? primaryColor.withOpacity(0.1)
                         : (isDarkMode
@@ -871,7 +895,7 @@ class _AreaList extends StatelessWidget {
                       title: Text(
                         area,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 14,
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -881,7 +905,7 @@ class _AreaList extends StatelessWidget {
                       trailing: isSelected
                           ? const Icon(
                               Icons.check_box,
-                              color: primaryColor,
+                              color: selectedGreen, // UPDATED: Green checkmark
                               size: 20,
                             )
                           : Icon(
@@ -914,7 +938,7 @@ class _AreaSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color searchFillColor = isDarkMode
         ? Colors.grey.shade800
-        : Colors.white;
+        : Colors.grey.shade100;
     final Color searchTextColor = isDarkMode ? Colors.white : Colors.black;
     final Color searchHintColor = isDarkMode
         ? Colors.grey.shade500

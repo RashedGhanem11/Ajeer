@@ -440,6 +440,8 @@ class _ProviderServiceGridItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color _selectionBlue = const Color(0xFF1976D2);
     final Color _highlightGreen = Colors.green.shade600;
+    const Color _editButtonColor = Color(0xFF1976D2);
+    const Color _badgeColor = Colors.green;
 
     Color activeColor;
     bool applyBoxStyle = false;
@@ -476,6 +478,11 @@ class _ProviderServiceGridItem extends StatelessWidget {
 
     const double iconContainerSize = 80.0;
     const double iconSize = 40.0;
+    const double badgeSize = 26.0;
+
+    // Adjusted edit icon size and position
+    const double editIconContainerSize = 30.0;
+    const double editIconOffset = -2.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -497,15 +504,16 @@ class _ProviderServiceGridItem extends StatelessWidget {
               ),
               if (isSelected)
                 Positioned(
-                  bottom: 0,
-                  right: 0,
+                  // Reduced offset and size to prevent clipping
+                  bottom: editIconOffset,
+                  right: editIconOffset,
                   child: GestureDetector(
                     onTap: onUnitTypeTap,
                     child: Container(
-                      padding: const EdgeInsets.all(5),
-                      constraints: const BoxConstraints(minWidth: 30),
+                      width: editIconContainerSize,
+                      height: editIconContainerSize,
                       decoration: BoxDecoration(
-                        color: Colors.green,
+                        color: _editButtonColor,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDarkMode
@@ -514,14 +522,39 @@ class _ProviderServiceGridItem extends StatelessWidget {
                           width: 2,
                         ),
                       ),
-                      child: Center(
-                        child: Text(
-                          unitCount == 0 ? '0+' : '$unitCount+',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      child: const Icon(
+                        Icons.edit,
+                        color: Colors.white,
+                        size: 16, // Reduced internal icon size
+                      ),
+                    ),
+                  ),
+                ),
+              if (isSelected && unitCount > 0)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    width: badgeSize,
+                    height: badgeSize,
+                    padding: EdgeInsets.zero,
+                    decoration: BoxDecoration(
+                      color: _badgeColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDarkMode
+                            ? Theme.of(context).cardColor
+                            : Colors.white,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$unitCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
