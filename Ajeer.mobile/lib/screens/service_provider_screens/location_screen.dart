@@ -288,15 +288,32 @@ class _LocationScreenState extends State<LocationScreen> {
               padding: const EdgeInsets.only(
                 left: 20.0,
                 right: 20.0,
-                bottom: 15.0,
+                bottom: 5.0,
               ),
-              child: Text(
-                'Pick location(s)',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black87,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pick location(s)',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 15.0),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      'Select the cities and areas where you will be providing your services.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(
@@ -556,11 +573,14 @@ class _LocationSelectionContent extends StatelessWidget {
             availableCities: availableCities,
             selectedCity: selectedCity,
             currentAreaSelection: currentAreaSelection,
+            finalLocations: finalLocations,
             areaSearchQuery: areaSearchQuery,
             onCitySelected: onCitySelected,
             onAreaTapped: onAreaTapped,
             onAreaSearchChanged: onAreaSearchChanged,
             onSave: onSave,
+            onEdit: onEdit,
+            onDelete: onDelete,
             isDarkMode: isDarkMode,
           ),
           if (finalLocations.isNotEmpty) const SizedBox(height: 10.0),
@@ -576,22 +596,28 @@ class _CityAreaSelector extends StatelessWidget {
   final List<String> availableCities;
   final String? selectedCity;
   final Set<String> currentAreaSelection;
+  final List<LocationSelection> finalLocations;
   final String areaSearchQuery;
   final ValueChanged<String> onCitySelected;
   final ValueChanged<String> onAreaTapped;
   final ValueChanged<String> onAreaSearchChanged;
   final VoidCallback onSave;
+  final ValueChanged<LocationSelection> onEdit;
+  final ValueChanged<String> onDelete;
   final bool isDarkMode;
 
   const _CityAreaSelector({
     required this.availableCities,
     required this.selectedCity,
     required this.currentAreaSelection,
+    required this.finalLocations,
     required this.areaSearchQuery,
     required this.onCitySelected,
     required this.onAreaTapped,
     required this.onAreaSearchChanged,
     required this.onSave,
+    required this.onEdit,
+    required this.onDelete,
     required this.isDarkMode,
   });
 
@@ -637,12 +663,9 @@ class _CityAreaSelector extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(
-          height: 15.0,
-        ), // UPDATED: Added vertical space to move button down
+        const SizedBox(height: 15.0),
         Padding(
           padding: const EdgeInsets.only(top: 8.0, bottom: 5.0),
-          // UPDATED: Wrapped in Center to size to content instead of double.infinity
           child: Center(
             child: SizedBox(
               height: 45,
@@ -654,12 +677,9 @@ class _CityAreaSelector extends StatelessWidget {
                     borderRadius: BorderRadius.circular(15.0),
                   ),
                   elevation: 5,
-                  // Removed fixed width, allowing it to size to text content
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20.0,
-                  ), // Added horizontal padding for better appearance
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: Text(
                     isSaveEnabled ? 'Add Location' : 'Select Areas to Add',
                     style: const TextStyle(
@@ -692,9 +712,8 @@ class _LocationBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Color primaryBlue = Color(0xFF1976D2);
-    // Use primaryBlue in dark mode as requested, and in light mode (original logic)
-    final Color headerBgColor = isDarkMode ? primaryBlue : primaryBlue;
-    final Color headerTextColor = isDarkMode ? Colors.white : Colors.white;
+    final Color headerBgColor = primaryBlue;
+    const Color headerTextColor = Colors.white;
     final Color listBgColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
     final Color borderColor = isDarkMode
         ? Colors.grey.shade700
@@ -720,7 +739,7 @@ class _LocationBox extends StatelessWidget {
             child: Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
                 color: headerTextColor,
@@ -838,7 +857,7 @@ class _AreaList extends StatelessWidget {
       return _normalizeString(area).contains(normalizedQuery);
     }).toList();
 
-    const Color selectedGreen = Colors.green; // UPDATED: Defined green color
+    const Color selectedGreen = Colors.green;
     const Color primaryColor = Color(0xFF1976D2);
 
     return Column(
@@ -904,12 +923,12 @@ class _AreaList extends StatelessWidget {
                       ),
                       trailing: isSelected
                           ? const Icon(
-                              Icons.check_box,
-                              color: selectedGreen, // UPDATED: Green checkmark
+                              Icons.check_circle,
+                              color: selectedGreen,
                               size: 20,
                             )
                           : Icon(
-                              Icons.check_box_outline_blank,
+                              Icons.radio_button_unchecked,
                               color: isDarkMode
                                   ? Colors.grey.shade600
                                   : Colors.grey.shade400,

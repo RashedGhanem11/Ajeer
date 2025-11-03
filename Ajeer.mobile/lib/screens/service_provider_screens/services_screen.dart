@@ -211,20 +211,35 @@ class _ServicesScreenState extends State<ServicesScreen> {
           children: [
             const SizedBox(height: 25.0),
             Padding(
-              padding: const EdgeInsets.only(
-                left: 20.0,
-                right: 20.0,
-                bottom: 15.0,
-              ),
-              child: Text(
-                'Select service(s)',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black87,
-                ),
+              padding: const EdgeInsets.only(left: 20.0, right: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Select service(s)',
+                    textAlign: TextAlign.left,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 15.0),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      'Select the services and unit types you want to provide.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 15.0),
             _searchBarWidget(isDarkMode),
             Expanded(
               child: _ProviderServiceGridView(
@@ -291,7 +306,7 @@ class _ProviderNavigationHeader extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: onBackTap,
           ),
-          _buildAjeerTitle(),
+          Expanded(child: Center(child: _buildAjeerTitle())),
           IconButton(
             iconSize: 28.0,
             icon: Icon(
@@ -344,13 +359,12 @@ class _ProviderServiceGridView extends StatelessWidget {
       String name = service.name;
       Set<String> allUnitTypeKeys = service.unitTypes.keys.toSet();
 
-      final Map<String, Set<String>> newSelection = Map.from(selectedUnitTypes);
+      final Map<String, Set<String>> newSelection = {};
 
-      if (isServiceSelected(name)) {
-        newSelection.remove(name);
-      } else {
+      if (!isServiceSelected(name)) {
         newSelection[name] = allUnitTypeKeys;
       }
+
       onUnitTypeSelectionChanged(newSelection);
     }
 
@@ -362,14 +376,12 @@ class _ProviderServiceGridView extends StatelessWidget {
             service: service,
             initialSelectedUnitTypes: selectedUnitTypes[service.name] ?? {},
             onSave: (newSelection) {
-              final Map<String, Set<String>> updatedSelection = Map.from(
-                selectedUnitTypes,
-              );
+              final Map<String, Set<String>> updatedSelection = {};
+
               if (newSelection.isNotEmpty) {
                 updatedSelection[service.name] = newSelection;
-              } else {
-                updatedSelection.remove(service.name);
               }
+
               onUnitTypeSelectionChanged(updatedSelection);
             },
             isDarkMode: isDarkMode,
@@ -480,7 +492,6 @@ class _ProviderServiceGridItem extends StatelessWidget {
     const double iconSize = 40.0;
     const double badgeSize = 26.0;
 
-    // Adjusted edit icon size and position
     const double editIconContainerSize = 30.0;
     const double editIconOffset = -2.0;
 
@@ -504,7 +515,6 @@ class _ProviderServiceGridItem extends StatelessWidget {
               ),
               if (isSelected)
                 Positioned(
-                  // Reduced offset and size to prevent clipping
                   bottom: editIconOffset,
                   right: editIconOffset,
                   child: GestureDetector(
@@ -525,7 +535,7 @@ class _ProviderServiceGridItem extends StatelessWidget {
                       child: const Icon(
                         Icons.edit,
                         color: Colors.white,
-                        size: 16, // Reduced internal icon size
+                        size: 16,
                       ),
                     ),
                   ),
