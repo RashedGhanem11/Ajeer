@@ -5,7 +5,11 @@ import 'themes/app_themes.dart';
 import 'themes/theme_notifier.dart';
 import 'notifiers/user_notifier.dart';
 
-void main() {
+// 1. Make the main function asynchronous
+void main() async {
+  // 2. Ensure Flutter bindings are initialized before any async call
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(
     MultiProvider(
       providers: [

@@ -9,7 +9,7 @@ import '../customer_screens/home_screen.dart';
 import '../customer_screens/chat_screen.dart';
 import '../../themes/theme_notifier.dart';
 import '../customer_screens/login_screen.dart';
-import '../../widgets/customer_widgets/settings_menu.dart';
+import '../../widgets/shared_widgets/settings_menu.dart';
 import '../service_provider_screens/services_screen.dart';
 import '../../notifiers/user_notifier.dart';
 import '../../models/provider_data.dart';
