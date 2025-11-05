@@ -1,3 +1,5 @@
+// ✅ UPDATED: provider_data.dart with 'services' getter for edit mode support
+
 import 'package:flutter/material.dart';
 
 class WorkTime {
@@ -43,4 +45,21 @@ class ProviderData {
     required this.selectedLocations,
     required this.finalSchedule,
   });
+
+  /// ✅ NEW: Used to prefill services when editing
+  List<ServiceSelection> get services => selectedServices.entries
+      .map(
+        (entry) => ServiceSelection(
+          name: entry.key,
+          selectedUnitTypes: entry.value.toList(),
+        ),
+      )
+      .toList();
+}
+
+class ServiceSelection {
+  final String name;
+  final List<String> selectedUnitTypes;
+
+  ServiceSelection({required this.name, required this.selectedUnitTypes});
 }

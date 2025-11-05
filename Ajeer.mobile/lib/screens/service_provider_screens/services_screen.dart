@@ -4,11 +4,19 @@ import '../../services/services.dart';
 import '../shared_screens/profile_screen.dart';
 import '../../themes/theme_notifier.dart';
 import 'location_screen.dart';
+import '../../../models/provider_data.dart'; // ✅ Added to support edit mode
 
 class ServicesScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
+  final bool isEdit; // ✅ New
+  final ProviderData? initialData; // ✅ New
 
-  const ServicesScreen({super.key, required this.themeNotifier});
+  const ServicesScreen({
+    super.key,
+    required this.themeNotifier,
+    this.isEdit = false,
+    this.initialData,
+  });
 
   @override
   State<ServicesScreen> createState() => _ServicesScreenState();
@@ -29,12 +37,21 @@ class _ServicesScreenState extends State<ServicesScreen> {
   void initState() {
     super.initState();
     _initializeSelectedUnitTypes();
+    _prefillIfEditing(); // ✅ added to prefill
   }
 
   void _initializeSelectedUnitTypes() {
     for (var service in _availableServices) {
       if (service.unitTypes.isNotEmpty) {
         _selectedUnitTypes[service.name] = {};
+      }
+    }
+  }
+
+  void _prefillIfEditing() {
+    if (widget.isEdit && widget.initialData != null) {
+      for (var service in widget.initialData!.services) {
+        _selectedUnitTypes[service.name] = service.selectedUnitTypes.toSet();
       }
     }
   }
@@ -66,6 +83,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
           builder: (context) => LocationScreen(
             themeNotifier: widget.themeNotifier,
             selectedServices: _selectedUnitTypes,
+            isEdit: widget.isEdit, // ✅ passed
+            initialData: widget.initialData, // ✅ passed
           ),
         ),
       );

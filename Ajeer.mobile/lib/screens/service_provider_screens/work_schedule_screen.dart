@@ -30,12 +30,16 @@ class WorkScheduleScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
   final Map<String, Set<String>> selectedServices;
   final List<LocationSelection> selectedLocations;
+  final bool isEdit;
+  final ProviderData? initialData;
 
   const WorkScheduleScreen({
     super.key,
     required this.themeNotifier,
     required this.selectedServices,
     required this.selectedLocations,
+    this.isEdit = false,
+    this.initialData,
   });
 
   @override
@@ -56,7 +60,25 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedDay = _availableDays.isNotEmpty ? _availableDays.first : null;
+
+    if (widget.isEdit && widget.initialData != null) {
+      _finalSchedule = List<WorkSchedule>.from(
+        widget.initialData!.finalSchedule,
+      );
+
+      // 👇 Add this line to verify data restoration
+      print('Restored schedule: ${_finalSchedule.length} items');
+    }
+
+    // Don't filter out anything when editing
+    if (widget.isEdit && _finalSchedule.isNotEmpty) {
+      _selectedDay = _finalSchedule.first.day;
+      _currentDayTimeSlots = List<WorkTime>.from(
+        _finalSchedule.first.timeSlots,
+      );
+    } else {
+      _selectedDay = _availableDays.isNotEmpty ? _availableDays.first : null;
+    }
   }
 
   int _timeToMinutes(TimeOfDay time) {
@@ -121,7 +143,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
               ),
               const SizedBox(height: 15.0),
               Text(
-                'You have become an Ajeer!',
+                widget.isEdit ? 'Changes saved' : 'You have become an Ajeer!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -130,30 +152,32 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                 ),
               ),
               const SizedBox(height: 10.0),
-              RichText(
-                textAlign: TextAlign.center,
-                text: TextSpan(
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: bodyTextColor,
-                    height: 1.5,
+              if (!widget.isEdit) ...[
+                RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: bodyTextColor,
+                      height: 1.5,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: 'Start providing your services to customers and ',
+                      ),
+                      TextSpan(
+                        text: 'using the Ajeer App for free for 30 days',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      TextSpan(
+                        text:
+                            '. After this period, you will need to subscribe to the Ajeer App to continue using it. You can check subscription information on your profile page, which you will be directed to shortly.',
+                      ),
+                    ],
                   ),
-                  children: [
-                    const TextSpan(
-                      text: 'Start providing your services to customers and ',
-                    ),
-                    const TextSpan(
-                      text: 'using the Ajeer App for free for 30 days',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const TextSpan(
-                      text:
-                          '. After this period, you will need to subscribe to the Ajeer App to continue using it. You can check subscription information on your profile page, which you will be directed to shortly.',
-                    ),
-                  ],
                 ),
-              ),
-              const SizedBox(height: 25.0),
+                const SizedBox(height: 25.0),
+              ],
               Row(
                 children: [
                   Expanded(
@@ -184,10 +208,16 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                           finalSchedule: _finalSchedule,
                         );
 
-                        Provider.of<UserNotifier>(
+                        final userNotifier = Provider.of<UserNotifier>(
                           context,
                           listen: false,
-                        ).completeProviderSetup(providerData);
+                        );
+
+                        if (widget.isEdit) {
+                          userNotifier.updateProviderData(providerData);
+                        } else {
+                          userNotifier.completeProviderSetup(providerData);
+                        }
 
                         Navigator.of(context).pop();
 

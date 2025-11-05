@@ -107,11 +107,15 @@ const Map<String, List<String>> kCityAreas = {
 class LocationScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
   final Map<String, Set<String>> selectedServices;
+  final bool isEdit;
+  final ProviderData? initialData;
 
   const LocationScreen({
     super.key,
     required this.themeNotifier,
     required this.selectedServices,
+    this.isEdit = false,
+    this.initialData,
   });
 
   @override
@@ -131,7 +135,19 @@ class _LocationScreenState extends State<LocationScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedCity = _availableCities.isNotEmpty ? _availableCities.first : null;
+
+    if (widget.isEdit && widget.initialData != null) {
+      _finalLocations = List<LocationSelection>.from(
+        widget.initialData!.selectedLocations,
+      );
+      _selectedCity = _finalLocations.isNotEmpty
+          ? _finalLocations.first.city
+          : (_availableCities.isNotEmpty ? _availableCities.first : null);
+    } else {
+      _selectedCity = _availableCities.isNotEmpty
+          ? _availableCities.first
+          : null;
+    }
   }
 
   void _onBackTap() => Navigator.pop(context);
@@ -582,6 +598,7 @@ class _LocationSelectionContent extends StatelessWidget {
             availableCities: availableCities,
             selectedCity: selectedCity,
             currentAreaSelection: currentAreaSelection,
+            finalLocations: finalLocations,
             areaSearchQuery: areaSearchQuery,
             onCitySelected: onCitySelected,
             onAreaTapped: onAreaTapped,
@@ -602,6 +619,7 @@ class _CityAreaSelector extends StatelessWidget {
   final List<String> availableCities;
   final String? selectedCity;
   final Set<String> currentAreaSelection;
+  final List<LocationSelection> finalLocations;
   final String areaSearchQuery;
   final ValueChanged<String> onCitySelected;
   final ValueChanged<String> onAreaTapped;
@@ -613,6 +631,7 @@ class _CityAreaSelector extends StatelessWidget {
     required this.availableCities,
     required this.selectedCity,
     required this.currentAreaSelection,
+    required this.finalLocations,
     required this.areaSearchQuery,
     required this.onCitySelected,
     required this.onAreaTapped,
@@ -636,19 +655,20 @@ class _CityAreaSelector extends StatelessWidget {
               Expanded(
                 child: _LocationBox(
                   title: 'City Picker',
+                  isDarkMode: isDarkMode,
                   child: _CityList(
                     cities: availableCities,
                     selectedCity: selectedCity,
                     onCitySelected: onCitySelected,
                     isDarkMode: isDarkMode,
                   ),
-                  isDarkMode: isDarkMode,
                 ),
               ),
               const SizedBox(width: 5),
               Expanded(
                 child: _LocationBox(
                   title: 'Area Picker',
+                  isDarkMode: isDarkMode,
                   child: _AreaList(
                     selectedCity: selectedCity,
                     currentAreaSelection: currentAreaSelection,
@@ -656,8 +676,8 @@ class _CityAreaSelector extends StatelessWidget {
                     onAreaTapped: onAreaTapped,
                     onAreaSearchChanged: onAreaSearchChanged,
                     isDarkMode: isDarkMode,
+                    finalLocations: finalLocations, // Passed the required data
                   ),
-                  isDarkMode: isDarkMode,
                 ),
               ),
             ],
@@ -818,6 +838,8 @@ class _AreaList extends StatelessWidget {
   final ValueChanged<String> onAreaTapped;
   final ValueChanged<String> onAreaSearchChanged;
   final bool isDarkMode;
+  // ✨ FIX: This field was missing and caused the error
+  final List<LocationSelection> finalLocations;
 
   const _AreaList({
     required this.selectedCity,
@@ -826,6 +848,7 @@ class _AreaList extends StatelessWidget {
     required this.onAreaTapped,
     required this.onAreaSearchChanged,
     required this.isDarkMode,
+    required this.finalLocations, // Now correctly defined and initialized
   });
 
   String _normalizeString(String text) {
@@ -847,7 +870,13 @@ class _AreaList extends StatelessWidget {
       );
     }
 
-    final List<String> availableAreas = kCityAreas[selectedCity] ?? [];
+    final bool isCityAlreadyAdded = finalLocations.any(
+      (loc) => loc.city == selectedCity,
+    );
+    final List<String> availableAreas = isCityAlreadyAdded
+        ? []
+        : (kCityAreas[selectedCity] ?? []);
+
     String normalizedQuery = _normalizeString(areaSearchQuery);
 
     final List<String> filteredAreas = availableAreas.where((area) {

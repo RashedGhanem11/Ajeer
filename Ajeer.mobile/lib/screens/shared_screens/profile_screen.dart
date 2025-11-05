@@ -992,7 +992,7 @@ class _ProviderInfoSection extends StatelessWidget {
     required this.subtleLighterDark,
   });
 
-  Widget _buildSmallEditButton() {
+  Widget _buildSmallEditButton(BuildContext context) {
     if (!isEditing || !isEnabled) return const SizedBox.shrink();
 
     return Container(
@@ -1006,7 +1006,29 @@ class _ProviderInfoSection extends StatelessWidget {
       child: IconButton(
         padding: EdgeInsets.zero,
         icon: const Icon(Icons.edit, color: Colors.white, size: 16),
-        onPressed: () {},
+        onPressed: () {
+          final userNotifier = Provider.of<UserNotifier>(
+            context,
+            listen: false,
+          );
+          final providerData = userNotifier.providerData;
+
+          if (providerData != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ServicesScreen(
+                  themeNotifier: Provider.of<ThemeNotifier>(
+                    context,
+                    listen: false,
+                  ),
+                  isEdit: true,
+                  initialData: providerData,
+                ),
+              ),
+            );
+          }
+        },
       ),
     );
   }
@@ -1035,7 +1057,7 @@ class _ProviderInfoSection extends StatelessWidget {
                     color: titleColor,
                   ),
                 ),
-                _buildSmallEditButton(),
+                _buildSmallEditButton(context),
               ],
             ),
           ),
