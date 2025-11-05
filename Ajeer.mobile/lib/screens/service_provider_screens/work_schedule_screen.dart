@@ -65,14 +65,14 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
       _finalSchedule = List<WorkSchedule>.from(
         widget.initialData!.finalSchedule,
       );
-      if (_finalSchedule.isNotEmpty) {
-        // Restore the first day and its time slots
-        _selectedDay = _finalSchedule.first.day;
-        _currentDayTimeSlots = List<WorkTime>.from(
-          _finalSchedule.first.timeSlots,
-        );
-        print('Restored schedule: ${_finalSchedule.length} items');
-      }
+    }
+
+    // Don't filter out anything when editing
+    if (widget.isEdit && _finalSchedule.isNotEmpty) {
+      _selectedDay = _finalSchedule.first.day;
+      _currentDayTimeSlots = List<WorkTime>.from(
+        _finalSchedule.first.timeSlots,
+      );
     } else {
       _selectedDay = _availableDays.isNotEmpty ? _availableDays.first : null;
     }
@@ -211,8 +211,10 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                         );
 
                         if (widget.isEdit) {
+                          // ✅ Just update the existing provider data
                           userNotifier.updateProviderData(providerData);
                         } else {
+                          // ✅ First-time setup
                           userNotifier.completeProviderSetup(providerData);
                         }
 
@@ -414,7 +416,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
     required double containerTop,
     required bool isDarkMode,
   }) {
-    print("Rendering schedule: ${_finalSchedule.length} items");
     return Positioned(
       top: containerTop,
       left: 20,

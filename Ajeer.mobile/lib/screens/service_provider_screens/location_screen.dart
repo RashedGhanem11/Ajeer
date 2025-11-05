@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import '../../themes/theme_notifier.dart';
 import 'work_schedule_screen.dart';
 import '../../models/provider_data.dart';
-import 'package:provider/provider.dart';
-import '../../notifiers/user_notifier.dart';
 
 const Color kLightBlue = Color(0xFF8CCBFF);
 const Color kPrimaryBlue = Color(0xFF1976D2);
@@ -158,11 +156,6 @@ class _LocationScreenState extends State<LocationScreen> {
 
   void _onNextTap() {
     if (_isNextEnabled) {
-      final providerData = Provider.of<UserNotifier>(
-        context,
-        listen: false,
-      ).providerData;
-
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -170,8 +163,6 @@ class _LocationScreenState extends State<LocationScreen> {
             themeNotifier: widget.themeNotifier,
             selectedServices: widget.selectedServices,
             selectedLocations: _finalLocations,
-            isEdit: true,
-            initialData: providerData,
           ),
         ),
       );
