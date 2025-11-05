@@ -993,7 +993,6 @@ class _ProviderInfoSection extends StatelessWidget {
   });
 
   Widget _buildSmallEditButton() {
-    // Only show the edit button if in Provider Mode AND isEditing is true
     if (!isEditing || !isEnabled) return const SizedBox.shrink();
 
     return Container(
@@ -1025,13 +1024,19 @@ class _ProviderInfoSection extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 5.0, bottom: 15.0),
-            child: Text(
-              'Provider Information',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: titleColor,
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Provider Information',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: titleColor,
+                  ),
+                ),
+                _buildSmallEditButton(),
+              ],
             ),
           ),
           _buildProviderField(
@@ -1042,7 +1047,6 @@ class _ProviderInfoSection extends StatelessWidget {
                 ? ['No services selected.']
                 : providerData.selectedServices.entries
                       .map(
-                        // Format: **ServiceName**: Unit Types
                         (entry) =>
                             '**${entry.key}**: ${entry.value.join(', ')}',
                       )
@@ -1055,10 +1059,7 @@ class _ProviderInfoSection extends StatelessWidget {
             providerData.selectedLocations.isEmpty
                 ? ['No locations selected.']
                 : providerData.selectedLocations
-                      .map(
-                        // Format: **CityName**: Areas
-                        (loc) => '**${loc.city}**: ${loc.areas.join(', ')}',
-                      )
+                      .map((loc) => '**${loc.city}**: ${loc.areas.join(', ')}')
                       .toList(),
           ),
           _buildProviderField(
@@ -1103,7 +1104,6 @@ class _ProviderInfoSection extends StatelessWidget {
         ? (isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600)
         : (isDarkMode ? Colors.white : Colors.black87);
 
-    // Icon should stay gray/disabled if not in Provider Mode (isEnabled is false)
     final Color iconColor = isEnabled && isEditing ? _primaryBlue : Colors.grey;
 
     return Padding(
@@ -1120,39 +1120,27 @@ class _ProviderInfoSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(icon, size: 24, color: iconColor),
-                    const SizedBox(width: 10),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: labelColor,
-                      ),
-                    ),
-                  ],
+                Icon(icon, size: 24, color: iconColor),
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: labelColor,
+                  ),
                 ),
-                _buildSmallEditButton(),
               ],
             ),
             const SizedBox(height: 8.0),
             ...contentLines.map((line) {
-              // Find the index of the key-value separator, which is always ': '
               final int separatorIndex = line.indexOf(': ');
 
               if (separatorIndex != -1 && line.startsWith('**')) {
-                // Key includes the bolding markers: **Service/City**
                 final String keyPart = line.substring(0, separatorIndex);
-                // Value is the rest of the line
-                final String valuePart = line.substring(
-                  separatorIndex + 2,
-                ); // +2 to skip ': '
+                final String valuePart = line.substring(separatorIndex + 2);
 
-                // Remove the bolding markers to get the plain text key
                 final String plainKey = keyPart.replaceAll('**', '');
 
                 return Padding(
@@ -1160,7 +1148,6 @@ class _ProviderInfoSection extends StatelessWidget {
                   child: Text.rich(
                     TextSpan(
                       children: [
-                        // First span is the bolded key with the required colon and space
                         TextSpan(
                           text: '$plainKey: ',
                           style: TextStyle(
@@ -1169,7 +1156,6 @@ class _ProviderInfoSection extends StatelessWidget {
                             color: fieldTextColor,
                           ),
                         ),
-                        // Second span is the unbolded content
                         TextSpan(
                           text: valuePart,
                           style: TextStyle(fontSize: 14, color: fieldTextColor),
@@ -1179,7 +1165,6 @@ class _ProviderInfoSection extends StatelessWidget {
                   ),
                 );
               } else {
-                // Fallback for lines without the key-value format (e.g., schedule or "No services")
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 4.0),
                   child: Text(
