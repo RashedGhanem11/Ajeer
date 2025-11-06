@@ -163,6 +163,8 @@ class _LocationScreenState extends State<LocationScreen> {
             themeNotifier: widget.themeNotifier,
             selectedServices: widget.selectedServices,
             selectedLocations: _finalLocations,
+            isEdit: widget.isEdit,
+            initialData: widget.initialData,
           ),
         ),
       );

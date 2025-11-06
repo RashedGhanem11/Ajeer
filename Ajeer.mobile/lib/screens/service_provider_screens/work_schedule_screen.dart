@@ -58,6 +58,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
       .toList();
 
   @override
+  @override
   void initState() {
     super.initState();
 
@@ -65,17 +66,10 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
       _finalSchedule = List<WorkSchedule>.from(
         widget.initialData!.finalSchedule,
       );
+      print('_finalSchedule assigned: $_finalSchedule');
     }
 
-    // Don't filter out anything when editing
-    if (widget.isEdit && _finalSchedule.isNotEmpty) {
-      _selectedDay = _finalSchedule.first.day;
-      _currentDayTimeSlots = List<WorkTime>.from(
-        _finalSchedule.first.timeSlots,
-      );
-    } else {
-      _selectedDay = _availableDays.isNotEmpty ? _availableDays.first : null;
-    }
+    _selectedDay = _availableDays.isNotEmpty ? _availableDays.first : null;
   }
 
   int _timeToMinutes(TimeOfDay time) {
