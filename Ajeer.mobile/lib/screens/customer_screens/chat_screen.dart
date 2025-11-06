@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../themes/theme_notifier.dart';
-import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
+import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import '../shared_screens/profile_screen.dart';
 import 'bookings_screen.dart';
 import 'home_screen.dart';

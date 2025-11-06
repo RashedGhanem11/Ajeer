@@ -60,23 +60,30 @@ class CustomBottomNavBar extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: items.asMap().entries.map((entry) {
-            final int index = entry.key;
-            final Map<String, dynamic> item = entry.value;
-            final bool isSelected = index == selectedIndex;
-            final bool hasNotification = (item['notificationCount'] ?? 0) > 0;
-            final Color itemColor = isSelected
-                ? selectedColor
-                : defaultIconTextColor;
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: List.generate(items.length * 2 - 1, (i) {
+              if (i.isOdd) {
+                // Insert spacing between items
+                return const SizedBox(
+                  width: 25,
+                ); // Adjust this value as you like
+              }
+              final int index = i ~/ 2;
+              final Map<String, dynamic> item = items[index];
+              final bool isSelected = index == selectedIndex;
+              final bool hasNotification = (item['notificationCount'] ?? 0) > 0;
+              final Color itemColor = isSelected
+                  ? selectedColor
+                  : defaultIconTextColor;
 
-            return Expanded(
-              child: GestureDetector(
+              return GestureDetector(
                 onTap: () => onIndexChanged(index),
                 behavior: HitTestBehavior.translucent,
                 child: Container(
+                  width: 70, // optional: fixed width per item
                   padding: const EdgeInsets.symmetric(vertical: 5.0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -115,9 +122,9 @@ class CustomBottomNavBar extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }),
+          ),
         ),
       ),
     );

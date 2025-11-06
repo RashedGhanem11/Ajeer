@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
-import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
+import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'date_time_screen.dart';
 import 'bookings_screen.dart';
 import '../shared_screens/profile_screen.dart';

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
-import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
+import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import '../customer_screens/bookings_screen.dart';
 import '../customer_screens/home_screen.dart';
 import '../customer_screens/chat_screen.dart';
@@ -79,25 +79,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     },
   ];
 
-  final List<Map<String, dynamic>> _navItems = const [
-    {
-      'label': 'Profile',
-      'icon': Icons.person_outline,
-      'activeIcon': Icons.person,
-    },
-    {
-      'label': 'Chat',
-      'icon': Icons.chat_bubble_outline,
-      'activeIcon': Icons.chat_bubble,
-    },
-    {
-      'label': 'Bookings',
-      'icon': Icons.book_outlined,
-      'activeIcon': Icons.book,
-      'notificationCount': 3,
-    },
-    {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
-  ];
+  List<Map<String, dynamic>> get _navItems {
+    final userNotifier = Provider.of<UserNotifier>(context, listen: false);
+    final baseItems = [
+      {
+        'label': 'Profile',
+        'icon': Icons.person_outline,
+        'activeIcon': Icons.person,
+      },
+      {
+        'label': 'Chat',
+        'icon': Icons.chat_bubble_outline,
+        'activeIcon': Icons.chat_bubble,
+      },
+      {
+        'label': 'Bookings',
+        'icon': Icons.book_outlined,
+        'activeIcon': Icons.book,
+        'notificationCount': 3,
+      },
+    ];
+    // Only include Home if user is NOT a provider
+    if (!userNotifier.isProvider) {
+      baseItems.add({
+        'label': 'Home',
+        'icon': Icons.home_outlined,
+        'activeIcon': Icons.home,
+      });
+    }
+    return baseItems;
+  }
 
   String _firstName = 'Ahmad';
   String _lastName = 'K.';
@@ -160,22 +171,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    if (index == _selectedIndex) return;
+    final label = _navItems[index]['label'];
 
-    switch (index) {
-      case 1:
+    switch (label) {
+      case 'Chat':
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const ChatScreen()),
         );
         break;
-      case 2:
+      case 'Bookings':
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const BookingsScreen()),
         );
         break;
-      case 3:
+      case 'Home':
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -183,6 +194,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 HomeScreen(themeNotifier: widget.themeNotifier),
           ),
         );
+        break;
+      default:
+        // Profile is the default current screen
         break;
     }
   }
@@ -522,10 +536,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildProfileAvatar(avatarTopPosition, isDarkMode),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        items: _navItems,
-        selectedIndex: _selectedIndex,
-        onIndexChanged: _onNavItemTapped,
+      bottomNavigationBar: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          final inAnimation = Tween<Offset>(
+            begin: const Offset(0, 1),
+            end: Offset.zero,
+          ).animate(animation);
+
+          final outAnimation = Tween<Offset>(
+            begin: Offset.zero,
+            end: const Offset(0, 1),
+          ).animate(animation);
+
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (context, childWidget) {
+              return Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  if (animation.status == AnimationStatus.reverse ||
+                      animation.status == AnimationStatus.completed)
+                    SlideTransition(position: outAnimation, child: childWidget),
+                  if (animation.status != AnimationStatus.reverse)
+                    SlideTransition(position: inAnimation, child: childWidget),
+                ],
+              );
+            },
+            child: child,
+          );
+        },
+        child: CustomBottomNavBar(
+          key: ValueKey(_navItems.length),
+          items: _navItems,
+          selectedIndex: _selectedIndex,
+          onIndexChanged: _onNavItemTapped,
+        ),
       ),
     );
   }

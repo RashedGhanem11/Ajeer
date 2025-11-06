@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider
 import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
-import '../../widgets/customer_widgets/custom_bottom_nav_bar.dart';
+import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'confirmation_screen.dart';
 import '../shared_screens/profile_screen.dart';
