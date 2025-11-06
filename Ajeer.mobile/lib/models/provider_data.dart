@@ -1,5 +1,3 @@
-// ✅ UPDATED: provider_data.dart with 'services' getter for edit mode support
-
 import 'package:flutter/material.dart';
 
 class WorkTime {
@@ -19,6 +17,21 @@ class WorkTime {
 
     return '${formatTime(startTimeOfDay)} - ${formatTime(endTimeOfDay)}';
   }
+
+  Map<String, dynamic> toJson() => {
+    'startHour': startTimeOfDay.hour,
+    'startMinute': startTimeOfDay.minute,
+    'endHour': endTimeOfDay.hour,
+    'endMinute': endTimeOfDay.minute,
+  };
+
+  factory WorkTime.fromJson(Map<String, dynamic> json) => WorkTime(
+    startTimeOfDay: TimeOfDay(
+      hour: json['startHour'],
+      minute: json['startMinute'],
+    ),
+    endTimeOfDay: TimeOfDay(hour: json['endHour'], minute: json['endMinute']),
+  );
 }
 
 class WorkSchedule {
@@ -26,6 +39,18 @@ class WorkSchedule {
   final List<WorkTime> timeSlots;
 
   WorkSchedule({required this.day, required this.timeSlots});
+
+  Map<String, dynamic> toJson() => {
+    'day': day,
+    'timeSlots': timeSlots.map((slot) => slot.toJson()).toList(),
+  };
+
+  factory WorkSchedule.fromJson(Map<String, dynamic> json) => WorkSchedule(
+    day: json['day'],
+    timeSlots: (json['timeSlots'] as List)
+        .map((t) => WorkTime.fromJson(t))
+        .toList(),
+  );
 }
 
 class LocationSelection {
@@ -33,6 +58,14 @@ class LocationSelection {
   final Set<String> areas;
 
   LocationSelection({required this.city, required this.areas});
+
+  Map<String, dynamic> toJson() => {'city': city, 'areas': areas.toList()};
+
+  factory LocationSelection.fromJson(Map<String, dynamic> json) =>
+      LocationSelection(
+        city: json['city'],
+        areas: Set<String>.from(json['areas']),
+      );
 }
 
 class ProviderData {
@@ -46,7 +79,7 @@ class ProviderData {
     required this.finalSchedule,
   });
 
-  /// ✅ NEW: Used to prefill services when editing
+  /// ✅ Used to prefill services when editing
   List<ServiceSelection> get services => selectedServices.entries
       .map(
         (entry) => ServiceSelection(
@@ -55,6 +88,30 @@ class ProviderData {
         ),
       )
       .toList();
+
+  /// ✅ Save to JSON
+  Map<String, dynamic> toJson() => {
+    'selectedServices': selectedServices.map(
+      (key, value) => MapEntry(key, value.toList()),
+    ),
+    'selectedLocations': selectedLocations.map((loc) => loc.toJson()).toList(),
+    'finalSchedule': finalSchedule.map((s) => s.toJson()).toList(),
+  };
+
+  /// ✅ Load from JSON
+  factory ProviderData.fromJson(Map<String, dynamic> json) => ProviderData(
+    selectedServices: Map<String, Set<String>>.fromEntries(
+      (json['selectedServices'] as Map<String, dynamic>).entries.map(
+        (e) => MapEntry(e.key, Set<String>.from(e.value)),
+      ),
+    ),
+    selectedLocations: (json['selectedLocations'] as List)
+        .map((loc) => LocationSelection.fromJson(loc))
+        .toList(),
+    finalSchedule: (json['finalSchedule'] as List)
+        .map((s) => WorkSchedule.fromJson(s))
+        .toList(),
+  );
 }
 
 class ServiceSelection {
