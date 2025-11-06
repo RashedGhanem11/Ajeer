@@ -12,7 +12,7 @@ const Color kDeleteRed = Color(0xFFF44336);
 const Color kSelectedGreen = Colors.green;
 const double kBorderRadius = 50.0;
 const double kWhiteContainerTopRatio = 0.15;
-const double kSaveButtonHeight = 45.0;
+const double kSaveButtonHeight = 50.0; // Increased slightly for better fit
 const double kContentHorizontalPadding = 5.0;
 const double kBoxRadius = 15.0;
 
@@ -58,7 +58,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
       .toList();
 
   @override
-  @override
   void initState() {
     super.initState();
 
@@ -66,7 +65,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
       _finalSchedule = List<WorkSchedule>.from(
         widget.initialData!.finalSchedule,
       );
-      print('_finalSchedule assigned: $_finalSchedule');
     }
 
     _selectedDay = _availableDays.isNotEmpty ? _availableDays.first : null;
@@ -88,6 +86,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
         return true;
       }
 
+      // Check for overlap
       if (newStart < existingEnd && newEnd > existingStart) {
         return true;
       }
@@ -152,7 +151,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                       color: bodyTextColor,
                       height: 1.5,
                     ),
-                    children: [
+                    children: const [
                       TextSpan(
                         text: 'Start providing your services to customers and ',
                       ),
@@ -205,10 +204,10 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                         );
 
                         if (widget.isEdit) {
-                          // ✅ Just update the existing provider data
+                          // Update the existing provider data
                           userNotifier.updateProviderData(providerData);
                         } else {
-                          // ✅ First-time setup
+                          // First-time setup
                           userNotifier.completeProviderSetup(providerData);
                         }
 
@@ -856,6 +855,7 @@ class _TimeSlotCreator extends StatelessWidget {
               const SizedBox(width: 10),
               SizedBox(
                 height: kSaveButtonHeight,
+                width: kSaveButtonHeight, // Making width equal to height
                 child: ElevatedButton(
                   onPressed: isEnabled ? onAddTimeSlot : null,
                   style: ElevatedButton.styleFrom(
@@ -863,7 +863,7 @@ class _TimeSlotCreator extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(kBoxRadius),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    padding: EdgeInsets.zero, // Remove inner padding
                   ),
                   child: const Icon(Icons.add, color: Colors.white),
                 ),
@@ -880,7 +880,7 @@ class _TimeSlotCreator extends StatelessWidget {
                   backgroundColor: kPrimaryBlue.withOpacity(0.1),
                   label: Text(
                     timeSlot.toString(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: kPrimaryBlue,
                       fontWeight: FontWeight.bold,
                     ),

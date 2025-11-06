@@ -4,12 +4,12 @@ import '../../services/services.dart';
 import '../shared_screens/profile_screen.dart';
 import '../../themes/theme_notifier.dart';
 import 'location_screen.dart';
-import '../../../models/provider_data.dart'; // ✅ Added to support edit mode
+import '../../../models/provider_data.dart';
 
 class ServicesScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
-  final bool isEdit; // ✅ New
-  final ProviderData? initialData; // ✅ New
+  final bool isEdit;
+  final ProviderData? initialData;
 
   const ServicesScreen({
     super.key,
@@ -26,7 +26,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const double _borderRadius = 50.0;
-  static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
+  // Adjusted slightly smaller to compensate for rounding errors causing overflow
+  static const double _navBarTotalHeight = 56.0 + 20.0 + 8.0;
   static const double _whiteContainerTopRatio = 0.15;
 
   String _searchQuery = '';
@@ -50,6 +51,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
   void _prefillIfEditing() {
     if (widget.isEdit && widget.initialData != null) {
+      // Use the service list from initialData
       for (var service in widget.initialData!.services) {
         _selectedUnitTypes[service.name] = service.selectedUnitTypes.toSet();
       }
@@ -66,13 +68,21 @@ class _ServicesScreenState extends State<ServicesScreen> {
       _selectedUnitTypes.values.any((set) => set.isNotEmpty);
 
   void _onBackTap() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            ProfileScreen(themeNotifier: widget.themeNotifier),
-      ),
-    );
+    // If in edit mode, go back to the Profile screen
+    if (widget.isEdit) {
+      Navigator.pop(context);
+    } else {
+      // If not in edit mode (first time setup), go back to the Profile screen
+      // or the previous step if one existed. Since the original seems to jump
+      // to Profile, we'll keep the logic that fits best for a sequential flow.
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              ProfileScreen(themeNotifier: widget.themeNotifier),
+        ),
+      );
+    }
   }
 
   void _onNextTap() {
@@ -109,6 +119,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
     final screenHeight = MediaQuery.of(context).size.height;
     final double whiteContainerTop = screenHeight * _whiteContainerTopRatio;
+
+    // Adjusted bottom clearance calculation
     final double bottomNavClearance =
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
@@ -271,7 +283,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     _selectedUnitTypes.addAll(newSelection);
                   });
                 },
-                bottomPadding: bottomPadding,
+                // Use a slightly reduced padding for the grid view content
+                // to prevent the overflow when combining all the height values.
+                bottomPadding: 20.0, // Reduced from bottomPadding variable
                 isDarkMode: isDarkMode,
               ),
             ),
@@ -361,6 +375,7 @@ class _ProviderServiceGridView extends StatelessWidget {
   Widget build(BuildContext context) {
     String normalizedQuery = searchQuery.trim().toLowerCase();
 
+    // Only show services that have unit types (i.e., selectable services)
     List<Service> servicesToShow = services
         .where((s) => s.unitTypes.isNotEmpty)
         .toList();
@@ -378,9 +393,13 @@ class _ProviderServiceGridView extends StatelessWidget {
       String name = service.name;
       Set<String> allUnitTypeKeys = service.unitTypes.keys.toSet();
 
-      final Map<String, Set<String>> newSelection = {};
+      final Map<String, Set<String>> newSelection = Map.from(selectedUnitTypes);
 
-      if (!isServiceSelected(name)) {
+      if (isServiceSelected(name)) {
+        // If already selected, deselect it (remove from the map)
+        newSelection.remove(name);
+      } else {
+        // If unselected, select all unit types by default
         newSelection[name] = allUnitTypeKeys;
       }
 
@@ -395,10 +414,14 @@ class _ProviderServiceGridView extends StatelessWidget {
             service: service,
             initialSelectedUnitTypes: selectedUnitTypes[service.name] ?? {},
             onSave: (newSelection) {
-              final Map<String, Set<String>> updatedSelection = {};
+              final Map<String, Set<String>> updatedSelection = Map.from(
+                selectedUnitTypes,
+              );
 
               if (newSelection.isNotEmpty) {
                 updatedSelection[service.name] = newSelection;
+              } else {
+                updatedSelection.remove(service.name);
               }
 
               onUnitTypeSelectionChanged(updatedSelection);
