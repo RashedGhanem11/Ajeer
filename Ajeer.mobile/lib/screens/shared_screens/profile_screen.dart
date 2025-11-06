@@ -375,8 +375,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showSwitchModeDialog() {
-    final userNotifier = Provider.of<UserNotifier>(context, listen: false);
+  void _showSwitchModeDialog(BuildContext context, UserNotifier userNotifier) {
     final bool isProvider = userNotifier.isProvider;
     final bool isSetupComplete = userNotifier.isProviderSetupComplete;
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
@@ -513,7 +512,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             isDarkMode: isDarkMode,
           ),
           _buildAjeerTitle(context),
-          _buildSwitchModeButton(context, isDarkMode, userNotifier.isProvider),
+          _buildSwitchModeButton(context, isDarkMode, userNotifier),
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
@@ -581,17 +580,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSwitchModeButton(
     BuildContext context,
     bool isDarkMode,
-    bool isProvider,
+    UserNotifier userNotifier,
   ) {
     final double buttonTop = MediaQuery.of(context).padding.top + 70;
 
     final Color bgColor = isDarkMode ? _subtleDark : Colors.grey.shade300;
     final Color fgColor = isDarkMode ? Colors.white : _primaryBlue;
 
-    final IconData icon = isProvider ? Icons.person : Icons.handyman;
-    final String label = isProvider
-        ? 'Switch to Customer Mode'
-        : 'Switch to Provider Mode';
+    final bool isProvider = userNotifier.isProvider;
+    final bool isSetupComplete = userNotifier.isProviderSetupComplete;
+
+    final IconData icon;
+    final String label;
+
+    if (!isSetupComplete) {
+      icon = Icons.rocket_launch;
+      label = 'Become an Ajeer!';
+    } else if (isProvider) {
+      icon = Icons.person;
+      label = 'Switch to Customer Mode';
+    } else {
+      icon = Icons.handyman;
+      label = 'Switch to Provider Mode';
+    }
 
     return Positioned(
       top: buttonTop,
@@ -601,7 +612,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: SizedBox(
           width: _maxButtonWidth,
           child: ElevatedButton.icon(
-            onPressed: _showSwitchModeDialog,
+            onPressed: () {
+              if (!isSetupComplete) {
+                // 🚀 First time provider setup
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ServicesScreen(
+                      themeNotifier: Provider.of<ThemeNotifier>(
+                        context,
+                        listen: false,
+                      ),
+                      isEdit: false,
+                      initialData: null,
+                    ),
+                  ),
+                );
+              } else {
+                // 🔄 Existing provider switching mode
+                _showSwitchModeDialog(context, userNotifier);
+              }
+            },
+
             icon: Icon(icon, size: 20),
             label: Text(
               label,
@@ -1065,15 +1097,24 @@ class _ProviderInfoSection extends StatelessWidget {
             context,
             'My Services',
             Icons.miscellaneous_services_outlined,
-            providerData.selectedServices.isEmpty
+            providerData.selectedServices.entries
+                    .where((entry) => entry.value.isNotEmpty)
+                    .map(
+                      (entry) => '**${entry.key}**: ${entry.value.join(', ')}',
+                    )
+                    .toList()
+                    .cast<String>()
+                    .isEmpty
                 ? ['No services selected.']
                 : providerData.selectedServices.entries
+                      .where((entry) => entry.value.isNotEmpty)
                       .map(
                         (entry) =>
                             '**${entry.key}**: ${entry.value.join(', ')}',
                       )
                       .toList(),
           ),
+
           _buildProviderField(
             context,
             'My Locations',
