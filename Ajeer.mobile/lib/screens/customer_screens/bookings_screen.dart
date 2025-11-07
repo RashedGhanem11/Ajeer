@@ -37,7 +37,8 @@ class _BookingsScreenState extends State<BookingsScreen>
   late TabController _tabController;
 
   bool _isSelectionMode = false;
-  final Set<int> _selectedBookingIndices = {};
+  final Set<int> _selectedActiveIndices = {};
+  final Set<int> _selectedClosedIndices = {};
 
   final List<Booking> _realPendingBookings = [];
 
@@ -99,7 +100,8 @@ class _BookingsScreenState extends State<BookingsScreen>
     if (_isSelectionMode) {
       setState(() {
         _isSelectionMode = false;
-        _selectedBookingIndices.clear();
+        _selectedActiveIndices.clear();
+        _selectedClosedIndices.clear();
       });
     }
   }
@@ -108,7 +110,8 @@ class _BookingsScreenState extends State<BookingsScreen>
     if (_isSelectionMode) {
       setState(() {
         _isSelectionMode = false;
-        _selectedBookingIndices.clear();
+        _selectedActiveIndices.clear();
+        _selectedClosedIndices.clear();
       });
     }
 
@@ -147,41 +150,58 @@ class _BookingsScreenState extends State<BookingsScreen>
   }
 
   void _onBookingLongPress(int index) {
-    if (_tabController.index == 2) {
-      setState(() {
-        _isSelectionMode = true;
-        _selectedBookingIndices.add(index);
-      });
-    }
+    setState(() {
+      _isSelectionMode = true;
+
+      switch (_tabController.index) {
+        case 0:
+          _selectedActiveIndices.add(index);
+          break;
+        case 2:
+          _selectedClosedIndices.add(index);
+          break;
+      }
+    });
   }
 
   void _onBookingTap(int index) {
-    if (_isSelectionMode) {
-      setState(() {
-        if (_selectedBookingIndices.contains(index)) {
-          _selectedBookingIndices.remove(index);
-        } else {
-          _selectedBookingIndices.add(index);
-        }
-        if (_selectedBookingIndices.isEmpty) {
-          _isSelectionMode = false;
-        }
-      });
-    }
+    setState(() {
+      switch (_tabController.index) {
+        case 0: // Active
+          if (_selectedActiveIndices.contains(index)) {
+            _selectedActiveIndices.remove(index);
+          } else {
+            _selectedActiveIndices.add(index);
+          }
+          _isSelectionMode = _selectedActiveIndices.isNotEmpty;
+          break;
+
+        case 2: // Closed
+          if (_selectedClosedIndices.contains(index)) {
+            _selectedClosedIndices.remove(index);
+          } else {
+            _selectedClosedIndices.add(index);
+          }
+          _isSelectionMode = _selectedClosedIndices.isNotEmpty;
+          break;
+      }
+    });
   }
 
   void _deleteSelectedBookings() {
     if (_tabController.index != 2) return;
 
-    final sortedIndices = _selectedBookingIndices.toList()
+    final sortedIndices = _selectedClosedIndices.toList()
       ..sort((a, b) => b.compareTo(a));
 
     setState(() {
       for (final index in sortedIndices) {
-        _closedBookings.removeAt(index);
+        if (index >= 0 && index < _closedBookings.length) {
+          _closedBookings.removeAt(index);
+        }
       }
       _isSelectionMode = false;
-      _selectedBookingIndices.clear();
+      _selectedClosedIndices.clear();
     });
   }
 
@@ -215,10 +235,12 @@ class _BookingsScreenState extends State<BookingsScreen>
         if (_isSelectionMode) {
           setState(() {
             _isSelectionMode = false;
-            _selectedBookingIndices.clear();
+            _selectedActiveIndices.clear();
+            _selectedClosedIndices.clear();
           });
           return false;
         }
+
         return true;
       },
       child: Scaffold(
@@ -732,7 +754,11 @@ class _BookingsScreenState extends State<BookingsScreen>
 
       for (int index = 0; index < bookings.length; index++) {
         final booking = bookings[index];
-        final bool isSelected = _selectedBookingIndices.contains(index);
+        final bool isSelected = status == _BookingStatus.closed
+            ? _selectedClosedIndices.contains(index)
+            : status == _BookingStatus.active
+            ? _selectedActiveIndices.contains(index)
+            : false;
 
         widgets.add(
           _BookingItem(
@@ -1145,28 +1171,7 @@ class _BookingItem extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: serviceName.split(' - ')[0],
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: subtitleColor,
-                            ),
-                          ),
-                          TextSpan(
-                            text: ' - ${serviceName.split(' - ')[1]}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.normal,
-                              fontSize: 14,
-                              color: subtitleColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildServiceText(serviceName, subtitleColor),
                   ],
                 ),
               ),
@@ -1190,6 +1195,35 @@ class _BookingItem extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildServiceText(String serviceName, Color color) {
+    final parts = serviceName.split(' - ');
+    final first = parts.isNotEmpty ? parts[0] : serviceName;
+    final second = parts.length > 1 ? ' - ${parts[1]}' : '';
+
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: first,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: color,
+            ),
+          ),
+          TextSpan(
+            text: second,
+            style: TextStyle(
+              fontWeight: FontWeight.normal,
+              fontSize: 14,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
