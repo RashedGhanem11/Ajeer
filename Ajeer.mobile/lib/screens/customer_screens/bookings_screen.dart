@@ -526,7 +526,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                             ? _BookingsConstants.subtleLighterDark
                             : Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(35),
                         ),
                         title: Center(
                           child: Text(
@@ -541,27 +541,76 @@ class _BookingsScreenState extends State<BookingsScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Provider: ${booking.provider}'),
-                              Text('Phone: ${booking.phone}'),
-                              Text('Location: ${booking.location}'),
-                              Text('Service: ${booking.serviceName}'),
-                              Text('Unit Type: ${booking.unitType}'),
-                              Text('Date: ${booking.selectedDate.toLocal()}'),
-                              Text(
-                                'Time: ${booking.selectedTime.format(context)}',
+                              _buildRichInfoText(
+                                'Provider',
+                                booking.provider,
+                                isDarkMode,
+                                context,
                               ),
-                              Text('Mode: ${booking.selectionMode}'),
-                              Text(
-                                'Duration: ${booking.totalTimeMinutes} mins',
+                              _buildRichInfoText(
+                                'Phone',
+                                booking.phone,
+                                isDarkMode,
+                                context,
                               ),
-                              Text(
-                                'Cost: JOD ${booking.totalPrice.toStringAsFixed(2)}',
+                              _buildRichInfoText(
+                                'Location',
+                                booking.location,
+                                isDarkMode,
+                                context,
+                              ),
+                              _buildRichInfoText(
+                                'Service',
+                                booking.serviceName,
+                                isDarkMode,
+                                context,
+                              ),
+                              _buildRichInfoText(
+                                'Unit Type',
+                                booking.unitType,
+                                isDarkMode,
+                                context,
+                              ),
+                              _buildRichInfoText(
+                                'Date',
+                                booking.selectedDate.toLocal().toString(),
+                                isDarkMode,
+                                context,
+                              ),
+                              _buildRichInfoText(
+                                'Time',
+                                booking.selectedTime.format(context),
+                                isDarkMode,
+                                context,
+                              ),
+                              _buildRichInfoText(
+                                'Mode',
+                                booking.selectionMode,
+                                isDarkMode,
+                                context,
+                              ),
+                              _buildRichInfoText(
+                                'Duration',
+                                '${booking.totalTimeMinutes} mins',
+                                isDarkMode,
+                                context,
+                              ),
+                              _buildRichInfoText(
+                                'Cost',
+                                'JOD ${booking.totalPrice.toStringAsFixed(2)}',
+                                isDarkMode,
+                                context,
                               ),
 
                               const SizedBox(height: 12),
 
                               if (booking.userDescription?.isNotEmpty == true)
-                                Text('Note: ${booking.userDescription}'),
+                                _buildRichInfoText(
+                                  'Note',
+                                  booking.userDescription!,
+                                  isDarkMode,
+                                  context,
+                                ),
 
                               if (booking.uploadedFiles != null &&
                                   booking.uploadedFiles!.isNotEmpty) ...[
@@ -645,7 +694,15 @@ class _BookingsScreenState extends State<BookingsScreen>
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(),
-                            child: const Text('Close'),
+                            child: Text(
+                              'Close',
+                              style: TextStyle(
+                                color: isDarkMode
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -696,6 +753,28 @@ class _BookingsScreenState extends State<BookingsScreen>
     return ListView(
       padding: EdgeInsets.fromLTRB(20, 10, 20, bottomPadding),
       children: widgets,
+    );
+  }
+
+  Widget _buildRichInfoText(
+    String label,
+    String value,
+    bool isDarkMode,
+    BuildContext context,
+  ) {
+    return RichText(
+      text: TextSpan(
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: isDarkMode ? Colors.white70 : Colors.black87,
+        ),
+        children: [
+          TextSpan(
+            text: '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          TextSpan(text: value),
+        ],
+      ),
     );
   }
 }
