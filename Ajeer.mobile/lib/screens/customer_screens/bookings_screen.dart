@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
-import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
+import 'package:provider/provider.dart';
+import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'home_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
-// Removed: import '../../main.dart'; // Imports themeNotifier
+import '../../models/booking.dart';
+import 'dart:io';
 
 enum _BookingStatus { active, pending, closed }
 
 class BookingsScreen extends StatefulWidget {
-  const BookingsScreen({super.key});
+  final Booking? newBooking;
+  const BookingsScreen({super.key, this.newBooking});
 
   @override
   State<BookingsScreen> createState() => _BookingsScreenState();
@@ -37,10 +39,8 @@ class _BookingsScreenState extends State<BookingsScreen>
   bool _isSelectionMode = false;
   final Set<int> _selectedBookingIndices = {};
 
-  final List<Map<String, dynamic>> _pendingBookings = [
-    {'provider': 'Ahmad M.', 'service': 'Cleaning, Deep cleaning'},
-    {'provider': 'Sara B.', 'service': 'Gardening, Grass cutting'},
-  ];
+  final List<Booking> _realPendingBookings = [];
+
   final List<Map<String, dynamic>> _activeBookings = [
     {'provider': 'Fatima K.', 'service': 'Plumbing, Pipe fix'},
   ];
@@ -77,9 +77,13 @@ class _BookingsScreenState extends State<BookingsScreen>
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  @override
   void initState() {
     super.initState();
+
+    if (widget.newBooking != null) {
+      _realPendingBookings.add(widget.newBooking!);
+    }
+
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChange);
   }
@@ -367,7 +371,7 @@ class _BookingsScreenState extends State<BookingsScreen>
               child: _CustomTabBar(
                 tabController: _tabController,
                 activeCount: _activeBookings.length,
-                pendingCount: _pendingBookings.length,
+                pendingCount: _realPendingBookings.length,
                 closedCount: _closedBookings.length,
                 isDarkMode: isDarkMode,
               ),
@@ -384,7 +388,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                     isDarkMode: isDarkMode,
                   ),
                   _buildBookingList(
-                    bookings: _pendingBookings,
+                    bookings: const [],
                     status: _BookingStatus.pending,
                     bottomPadding: bottomNavClearance,
                     isDarkMode: isDarkMode,
@@ -410,41 +414,288 @@ class _BookingsScreenState extends State<BookingsScreen>
     required double bottomPadding,
     required bool isDarkMode,
   }) {
-    if (bookings.isEmpty) {
-      return Center(
-        child: Text(
-          'No bookings here.',
-          style: TextStyle(
-            color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade600,
-            fontSize: 16,
+    final List<Widget> widgets = [];
+
+    // ✅ 1. Show real bookings in Pending tab only
+    if (status == _BookingStatus.pending) {
+      if (_realPendingBookings.isEmpty) {
+        return Center(
+          child: Text(
+            'No pending bookings.',
+            style: TextStyle(
+              color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade600,
+              fontSize: 16,
+            ),
           ),
-        ),
-      );
+        );
+      }
+
+      for (final booking in _realPendingBookings) {
+        widgets.add(
+          _BookingItem(
+            providerName: booking.provider,
+            serviceName: '${booking.serviceName} - ${booking.unitType}',
+            status: _BookingStatus.pending,
+            isSelected: false,
+            onTap: () {},
+            onLongPress: () {},
+            isDarkMode: isDarkMode,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Cancel button
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDarkMode
+                        ? Colors.red.shade900
+                        : Colors.red.shade100,
+                    foregroundColor: isDarkMode
+                        ? Colors.red.shade100
+                        : _BookingsConstants.primaryRed,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                  ),
+                  onPressed: () {
+                    // Confirmation dialog for cancel
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: isDarkMode
+                            ? _BookingsConstants.subtleLighterDark
+                            : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        title: const Text(
+                          'Cancel Booking',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        content: const Text(
+                          'Are you sure you want to cancel this booking?',
+                          textAlign: TextAlign.center,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            child: const Text('Back'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+
+                              // ✅ Move booking from pending to closed
+                              setState(() {
+                                _realPendingBookings.remove(booking);
+                                _closedBookings.insert(0, {
+                                  'provider': booking.provider,
+                                  'service':
+                                      '${booking.serviceName}, ${booking.unitType}',
+                                  'status': 'Cancelled',
+                                });
+                              });
+                            },
+                            child: const Text(
+                              'Confirm',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
+
+                const SizedBox(width: 6),
+
+                // Info button
+                IconButton(
+                  icon: const Icon(Icons.info_outline, color: Colors.blue),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: isDarkMode
+                            ? _BookingsConstants.subtleLighterDark
+                            : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        title: Center(
+                          child: Text(
+                            booking.serviceName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Provider: ${booking.provider}'),
+                              Text('Phone: ${booking.phone}'),
+                              Text('Location: ${booking.location}'),
+                              Text('Service: ${booking.serviceName}'),
+                              Text('Unit Type: ${booking.unitType}'),
+                              Text('Date: ${booking.selectedDate.toLocal()}'),
+                              Text(
+                                'Time: ${booking.selectedTime.format(context)}',
+                              ),
+                              Text('Mode: ${booking.selectionMode}'),
+                              Text(
+                                'Duration: ${booking.totalTimeMinutes} mins',
+                              ),
+                              Text(
+                                'Cost: JOD ${booking.totalPrice.toStringAsFixed(2)}',
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              if (booking.userDescription?.isNotEmpty == true)
+                                Text('Note: ${booking.userDescription}'),
+
+                              if (booking.uploadedFiles != null &&
+                                  booking.uploadedFiles!.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Uploaded Media:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8),
+
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: booking.uploadedFiles!.map((file) {
+                                    final path = file.path;
+                                    final isImage =
+                                        path.endsWith('.jpg') ||
+                                        path.endsWith('.jpeg') ||
+                                        path.endsWith('.png') ||
+                                        path.endsWith('.gif');
+                                    final isVideo =
+                                        path.endsWith('.mp4') ||
+                                        path.endsWith('.mov') ||
+                                        path.endsWith('.avi');
+                                    final isAudio =
+                                        path.endsWith('.mp3') ||
+                                        path.endsWith('.m4a') ||
+                                        path.endsWith('.wav');
+
+                                    if (isImage) {
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Image.file(
+                                          File(path),
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      );
+                                    } else if (isVideo) {
+                                      return Container(
+                                        width: 80,
+                                        height: 80,
+                                        alignment: Alignment.center,
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black12,
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.videocam,
+                                          size: 30,
+                                        ),
+                                      );
+                                    } else if (isAudio) {
+                                      return Container(
+                                        width: 80,
+                                        height: 80,
+                                        alignment: Alignment.center,
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade100,
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        child: const Icon(Icons.mic, size: 30),
+                                      );
+                                    } else {
+                                      return const SizedBox.shrink();
+                                    }
+                                  }).toList(),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            child: const Text('Close'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      }
     }
 
-    final double finalBottomPadding =
-        _isSelectionMode && status == _BookingStatus.closed
-        ? bottomPadding + 80
-        : bottomPadding;
+    // ✅ 2. Show dummy bookings ONLY in Active and Closed tabs
+    if (status != _BookingStatus.pending) {
+      if (bookings.isEmpty) {
+        return Center(
+          child: Text(
+            'No bookings here.',
+            style: TextStyle(
+              color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade600,
+              fontSize: 16,
+            ),
+          ),
+        );
+      }
 
-    return ListView.builder(
-      padding: EdgeInsets.fromLTRB(20, 10, 20, finalBottomPadding),
-      itemCount: bookings.length,
-      itemBuilder: (context, index) {
+      for (int index = 0; index < bookings.length; index++) {
         final booking = bookings[index];
         final bool isSelected = _selectedBookingIndices.contains(index);
 
-        return _BookingItem(
-          providerName: booking['provider'],
-          serviceName: booking['service'],
-          status: status,
-          closedStatusText: booking['status'],
-          isSelected: isSelected,
-          onTap: () => _onBookingTap(index),
-          onLongPress: () => _onBookingLongPress(index),
-          isDarkMode: isDarkMode,
+        widgets.add(
+          _BookingItem(
+            providerName: booking['provider'],
+            serviceName: booking['service'],
+            status: status,
+            closedStatusText: booking['status'],
+            isSelected: isSelected,
+            onTap: () => _onBookingTap(index),
+            onLongPress: () => _onBookingLongPress(index),
+            isDarkMode: isDarkMode,
+          ),
         );
-      },
+      }
+    }
+
+    // ✅ Return list of items
+    return ListView(
+      padding: EdgeInsets.fromLTRB(20, 10, 20, bottomPadding),
+      children: widgets,
     );
   }
 }
@@ -631,6 +882,8 @@ class _BookingItem extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onLongPress;
   final bool isDarkMode;
+  final Widget? trailing;
+  final VoidCallback? onInfoTap;
 
   const _BookingItem({
     required this.providerName,
@@ -641,6 +894,8 @@ class _BookingItem extends StatelessWidget {
     required this.onTap,
     required this.onLongPress,
     required this.isDarkMode,
+    this.trailing,
+    this.onInfoTap,
   });
 
   static const double _minActionWidth = 80.0;
@@ -811,15 +1066,48 @@ class _BookingItem extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      serviceName,
-                      style: TextStyle(color: subtitleColor, fontSize: 14),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: serviceName.split(' - ')[0],
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: subtitleColor,
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' - ${serviceName.split(' - ')[1]}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.normal,
+                              fontSize: 14,
+                              color: subtitleColor,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              _buildTrailingWidget(context),
+              trailing ??
+                  (status == _BookingStatus.pending
+                      ? Row(
+                          children: [
+                            _buildTrailingWidget(context),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.info_outline,
+                                color: Colors.blue,
+                              ),
+                              onPressed: onInfoTap,
+                            ),
+                          ],
+                        )
+                      : _buildTrailingWidget(context)),
             ],
           ),
         ),

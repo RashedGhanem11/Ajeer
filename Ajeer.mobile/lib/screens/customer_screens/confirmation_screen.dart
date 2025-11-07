@@ -9,6 +9,7 @@ import 'bookings_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
+import '../../models/booking.dart';
 // Removed: import '../../main.dart';
 
 class ConfirmationScreen extends StatefulWidget {
@@ -161,6 +162,28 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         backgroundColor: _ConfirmationConstants.confirmGreen,
       ),
     );
+    final booking = Booking(
+      provider: 'Khalid S.',
+      phone: '0796753640',
+      location: 'Amman - Khalda',
+      serviceName: widget.serviceName,
+      unitType: widget.unitType,
+      selectedDate: widget.selectedDate,
+      selectedTime: widget.selectedTime,
+      selectionMode: widget.selectionMode,
+      userDescription: widget.userDescription,
+      uploadedFiles: widget.pickedMediaFiles,
+      totalTimeMinutes: widget.totalTimeMinutes,
+      totalPrice: widget.totalPrice,
+    );
+    Future.delayed(const Duration(seconds: 1), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BookingsScreen(newBooking: booking),
+        ),
+      );
+    });
   }
 
   Widget _buildBackgroundGradient(double containerTop) {
