@@ -438,7 +438,7 @@ class _ProviderServiceGridView extends StatelessWidget {
         padding: EdgeInsets.only(bottom: bottomPadding),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          childAspectRatio: 1.0,
+          childAspectRatio: 0.75,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
         ),
@@ -615,7 +615,7 @@ class _ProviderServiceGridItem extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Flexible(
+          Expanded(
             child: Text(
               name,
               style: TextStyle(
@@ -626,6 +626,7 @@ class _ProviderServiceGridItem extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
+              softWrap: true,
             ),
           ),
         ],
