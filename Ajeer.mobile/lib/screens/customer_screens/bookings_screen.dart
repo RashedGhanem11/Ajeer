@@ -78,6 +78,7 @@ class _BookingsScreenState extends State<BookingsScreen>
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
+  @override
   void initState() {
     super.initState();
 
@@ -117,7 +118,6 @@ class _BookingsScreenState extends State<BookingsScreen>
 
     if (index == _selectedIndex) return;
 
-    // 💡 FIX 3: Retrieve themeNotifier using Provider (listen: false for navigation)
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
     switch (index) {
@@ -125,7 +125,6 @@ class _BookingsScreenState extends State<BookingsScreen>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            // FIX: Pass the required 'themeNotifier' to ProfileScreen
             builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
           ),
         );
@@ -167,7 +166,7 @@ class _BookingsScreenState extends State<BookingsScreen>
   void _onBookingTap(int index) {
     setState(() {
       switch (_tabController.index) {
-        case 0: // Active
+        case 0:
           if (_selectedActiveIndices.contains(index)) {
             _selectedActiveIndices.remove(index);
           } else {
@@ -176,7 +175,7 @@ class _BookingsScreenState extends State<BookingsScreen>
           _isSelectionMode = _selectedActiveIndices.isNotEmpty;
           break;
 
-        case 2: // Closed
+        case 2:
           if (_selectedClosedIndices.contains(index)) {
             _selectedClosedIndices.remove(index);
           } else {
@@ -207,7 +206,6 @@ class _BookingsScreenState extends State<BookingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    // 💡 FIX 4: Retrieve isDarkMode via Provider for build
     final bool isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -249,7 +247,7 @@ class _BookingsScreenState extends State<BookingsScreen>
         body: Stack(
           children: [
             _buildBackgroundGradient(whiteContainerTop),
-            _buildBookingsHeader(context, isDarkMode), // Passed isDarkMode
+            _buildBookingsHeader(context, isDarkMode),
             _buildContentContainer(
               containerTop: whiteContainerTop,
               bottomNavClearance: bottomNavClearance,
@@ -294,7 +292,6 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  // 💡 FIX 5: Updated method signature to accept isDarkMode
   Widget _buildAjeerTitle(BuildContext context, bool isDarkMode) {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 5,
@@ -322,7 +319,6 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  // 💡 FIX 6: Updated method to pass isDarkMode from the build method
   Widget _buildBookingsHeader(BuildContext context, bool isDarkMode) {
     return _buildAjeerTitle(context, isDarkMode);
   }
@@ -438,7 +434,6 @@ class _BookingsScreenState extends State<BookingsScreen>
   }) {
     final List<Widget> widgets = [];
 
-    // ✅ 1. Show real bookings in Pending tab only
     if (status == _BookingStatus.pending) {
       if (_realPendingBookings.isEmpty) {
         return Center(
@@ -465,7 +460,6 @@ class _BookingsScreenState extends State<BookingsScreen>
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Cancel button
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isDarkMode
@@ -481,7 +475,6 @@ class _BookingsScreenState extends State<BookingsScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                   ),
                   onPressed: () {
-                    // Confirmation dialog for cancel
                     showDialog(
                       context: context,
                       builder: (ctx) => AlertDialog(
@@ -495,8 +488,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                           child: Text(
                             'Cancel Booking',
                             style: TextStyle(
-                              color: _BookingsConstants
-                                  .primaryBlue, // 💙 Blue title
+                              color: _BookingsConstants.primaryBlue,
                               fontWeight: FontWeight.bold,
                               fontSize: 20,
                             ),
@@ -506,10 +498,8 @@ class _BookingsScreenState extends State<BookingsScreen>
                           'Are you sure you want to cancel this booking?',
                           textAlign: TextAlign.center,
                         ),
-                        actionsAlignment:
-                            MainAxisAlignment.center, // ✅ Center the buttons
+                        actionsAlignment: MainAxisAlignment.center,
                         actions: [
-                          // 🔙 Back button
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(),
                             child: Text(
@@ -522,8 +512,6 @@ class _BookingsScreenState extends State<BookingsScreen>
                               ),
                             ),
                           ),
-
-                          // ✅ Confirm button in red container
                           Container(
                             decoration: BoxDecoration(
                               color: _BookingsConstants.primaryRed,
@@ -550,8 +538,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                                 child: Text(
                                   'Confirm',
                                   style: TextStyle(
-                                    color:
-                                        Colors.white, // White text inside red
+                                    color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -567,10 +554,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
-
                 const SizedBox(width: 6),
-
-                // Info button
                 IconButton(
                   icon: const Icon(Icons.info_outline, color: Colors.blue),
                   onPressed: () {
@@ -656,9 +640,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                                 isDarkMode,
                                 context,
                               ),
-
                               const SizedBox(height: 12),
-
                               if (booking.userDescription?.isNotEmpty == true)
                                 _buildRichInfoText(
                                   'Note',
@@ -666,7 +648,6 @@ class _BookingsScreenState extends State<BookingsScreen>
                                   isDarkMode,
                                   context,
                                 ),
-
                               if (booking.uploadedFiles != null &&
                                   booking.uploadedFiles!.isNotEmpty) ...[
                                 const SizedBox(height: 16),
@@ -675,7 +656,6 @@ class _BookingsScreenState extends State<BookingsScreen>
                                   style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 8),
-
                                 Wrap(
                                   spacing: 10,
                                   runSpacing: 10,
@@ -745,7 +725,6 @@ class _BookingsScreenState extends State<BookingsScreen>
                             ],
                           ),
                         ),
-
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(),
@@ -771,7 +750,6 @@ class _BookingsScreenState extends State<BookingsScreen>
       }
     }
 
-    // ✅ 2. Show dummy bookings ONLY in Active and Closed tabs
     if (status != _BookingStatus.pending) {
       if (bookings.isEmpty) {
         return Center(
@@ -808,7 +786,6 @@ class _BookingsScreenState extends State<BookingsScreen>
       }
     }
 
-    // ✅ Return list of items
     return ListView(
       padding: EdgeInsets.fromLTRB(20, 10, 20, bottomPadding),
       children: widgets,
@@ -1303,7 +1280,6 @@ class _BookingItem extends StatelessWidget {
             ? Colors.red.shade900
             : Colors.red.shade100;
 
-        // FIXED: Lightened the text color for better visibility in Dark Mode
         final Color buttonFg = isDarkMode
             ? Colors.red.shade100
             : _BookingsConstants.primaryRed;
@@ -1348,7 +1324,6 @@ class _BookingItem extends StatelessWidget {
             ? (isDarkMode ? Colors.green.shade900 : Colors.green.shade100)
             : (isDarkMode ? Colors.red.shade900 : Colors.red.shade100);
 
-        // FIXED: Lightened the text color for better visibility in Dark Mode
         Color textColor = isCompleted
             ? (isDarkMode ? Colors.green.shade100 : Colors.green.shade800)
             : (isDarkMode ? Colors.red.shade100 : Colors.red.shade800);
