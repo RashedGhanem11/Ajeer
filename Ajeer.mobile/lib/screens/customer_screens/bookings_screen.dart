@@ -489,40 +489,73 @@ class _BookingsScreenState extends State<BookingsScreen>
                             ? _BookingsConstants.subtleLighterDark
                             : Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(28),
                         ),
-                        title: const Text(
-                          'Cancel Booking',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.center,
+                        title: Center(
+                          child: Text(
+                            'Cancel Booking',
+                            style: TextStyle(
+                              color: _BookingsConstants
+                                  .primaryBlue, // 💙 Blue title
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            ),
+                          ),
                         ),
                         content: const Text(
                           'Are you sure you want to cancel this booking?',
                           textAlign: TextAlign.center,
                         ),
+                        actionsAlignment:
+                            MainAxisAlignment.center, // ✅ Center the buttons
                         actions: [
+                          // 🔙 Back button
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(),
-                            child: const Text('Back'),
+                            child: Text(
+                              'Back',
+                              style: TextStyle(
+                                color: isDarkMode
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(ctx).pop();
 
-                              // ✅ Move booking from pending to closed
-                              setState(() {
-                                _realPendingBookings.remove(booking);
-                                _closedBookings.insert(0, {
-                                  'provider': booking.provider,
-                                  'service':
-                                      '${booking.serviceName}, ${booking.unitType}',
-                                  'status': 'Cancelled',
+                          // ✅ Confirm button in red container
+                          Container(
+                            decoration: BoxDecoration(
+                              color: _BookingsConstants.primaryRed,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                setState(() {
+                                  _realPendingBookings.remove(booking);
+                                  _closedBookings.insert(0, {
+                                    'provider': booking.provider,
+                                    'service':
+                                        '${booking.serviceName}, ${booking.unitType}',
+                                    'status': 'Cancelled',
+                                  });
                                 });
-                              });
-                            },
-                            child: const Text(
-                              'Confirm',
-                              style: TextStyle(color: Colors.red),
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                child: Text(
+                                  'Confirm',
+                                  style: TextStyle(
+                                    color:
+                                        Colors.white, // White text inside red
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ],
