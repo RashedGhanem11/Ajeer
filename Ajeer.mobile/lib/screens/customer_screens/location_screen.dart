@@ -167,6 +167,8 @@ class _LocationScreenState extends State<LocationScreen> {
   }
 
   void _showMaximizedMap(BuildContext context, bool isDarkMode) {
+    if (_customerLocation == null) return; // Safety check
+
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -177,6 +179,7 @@ class _LocationScreenState extends State<LocationScreen> {
           mapBorderRadius: _mapBorderRadius,
           primaryColor: _primaryBlue,
           isDarkMode: isDarkMode,
+          customerLocation: _customerLocation!, // 👈 Add this
         );
       },
       transitionBuilder: (context, a1, a2, child) {
@@ -452,11 +455,13 @@ class _MaximizedMapDialog extends StatelessWidget {
   final double mapBorderRadius;
   final Color primaryColor;
   final bool isDarkMode;
+  final LatLng customerLocation;
 
   const _MaximizedMapDialog({
     required this.mapBorderRadius,
     required this.primaryColor,
     required this.isDarkMode,
+    required this.customerLocation,
   });
   @override
   Widget build(BuildContext context) {
@@ -464,53 +469,48 @@ class _MaximizedMapDialog extends StatelessWidget {
         ? const Color(0xFF1E1E1E)
         : Colors.white;
 
-    final _LocationScreenState? parentState = context
-        .findAncestorStateOfType<_LocationScreenState>();
-    final customerLocation = parentState?._customerLocation;
-
     return Scaffold(
       backgroundColor: backgroundColor,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            customerLocation == null
-                ? const Center(child: CircularProgressIndicator())
-                : FlutterMap(
-                    options: MapOptions(center: customerLocation, zoom: 16.0),
-                    children: [
-                      TileLayer(
-                        urlTemplate:
-                            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        subdomains: const ['a', 'b', 'c'],
+      body: Stack(
+        children: [
+          // Fullscreen map
+          Positioned.fill(
+            child: FlutterMap(
+              options: MapOptions(center: customerLocation, zoom: 16.0),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  subdomains: const ['a', 'b', 'c'],
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: customerLocation,
+                      width: 50,
+                      height: 50,
+                      child: const Icon(
+                        Icons.location_pin,
+                        color: Colors.red,
+                        size: 40,
                       ),
-                      MarkerLayer(
-                        markers: [
-                          Marker(
-                            point: customerLocation,
-                            width: 50,
-                            height: 50,
-                            child: const Icon(
-                              Icons.location_pin,
-                              color: Colors.red,
-                              size: 40,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-            Positioned(
-              top: 10,
-              left: 10,
-              child: FloatingActionButton(
-                mini: true,
-                backgroundColor: primaryColor,
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Icon(Icons.close_fullscreen, color: Colors.white),
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 10,
+            child: FloatingActionButton(
+              mini: true,
+              backgroundColor: primaryColor,
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Icon(Icons.close_fullscreen, color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }
