@@ -8,6 +8,10 @@ import 'media_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+
 // Removed: import '../../main.dart';
 
 class LocationScreen extends StatefulWidget {
@@ -36,6 +40,7 @@ class LocationScreen extends StatefulWidget {
 
 class _LocationScreenState extends State<LocationScreen> {
   int _selectedIndex = 3;
+  LatLng? _customerLocation;
 
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
@@ -107,6 +112,37 @@ class _LocationScreenState extends State<LocationScreen> {
         );
         break;
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _getCustomerLocation();
+  }
+
+  Future<void> _getCustomerLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await Geolocator.openLocationSettings();
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+    }
+
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    setState(() {
+      _customerLocation = LatLng(position.latitude, position.longitude);
+    });
   }
 
   void _onBackTap() {
@@ -326,16 +362,12 @@ class _LocationScreenState extends State<LocationScreen> {
   }
 
   Widget _buildMapPlaceholder(double bottomNavClearance, bool isDarkMode) {
-    // UPDATED: Use Colors.grey[100] in light mode and _subtleLighterDark in dark mode
     final Color mapBgColor = isDarkMode
         ? _subtleLighterDark
         : Colors.grey[100]!;
     final Color mapBorderColor = isDarkMode
         ? Colors.grey[700]!
         : Colors.grey[400]!;
-    final Color mapIconColor = isDarkMode
-        ? Colors.red.shade300
-        : Colors.red.shade100;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -364,9 +396,39 @@ class _LocationScreenState extends State<LocationScreen> {
           child: AspectRatio(
             aspectRatio: 1 / 1.5,
             child: Stack(
-              alignment: Alignment.center,
               children: [
-                Icon(Icons.location_on, size: 150, color: mapIconColor),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(_mapBorderRadius),
+                  child: _customerLocation == null
+                      ? const Center(child: CircularProgressIndicator())
+                      : FlutterMap(
+                          options: MapOptions(
+                            center: _customerLocation,
+                            zoom: 15.0,
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate:
+                                  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              subdomains: const ['a', 'b', 'c'],
+                            ),
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: _customerLocation!,
+                                  width: 50,
+                                  height: 50,
+                                  child: const Icon(
+                                    Icons.location_pin,
+                                    color: Colors.red,
+                                    size: 40,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                ),
                 Positioned(
                   top: 15,
                   right: 15,
@@ -396,37 +458,59 @@ class _MaximizedMapDialog extends StatelessWidget {
     required this.primaryColor,
     required this.isDarkMode,
   });
-
-  static const Color _subtleDark = Color(0xFF1E1E1E);
-
   @override
   Widget build(BuildContext context) {
-    final Color backgroundColor = isDarkMode ? _subtleDark : Colors.white;
-    final Color mapIconColor = isDarkMode
-        ? Colors.red.shade300
-        : Colors.red.shade100;
+    final Color backgroundColor = isDarkMode
+        ? const Color(0xFF1E1E1E)
+        : Colors.white;
+
+    final _LocationScreenState? parentState = context
+        .findAncestorStateOfType<_LocationScreenState>();
+    final customerLocation = parentState?._customerLocation;
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      body: Stack(
-        children: [
-          Container(
-            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-            child: Center(
-              child: Icon(Icons.location_on, size: 200, color: mapIconColor),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            customerLocation == null
+                ? const Center(child: CircularProgressIndicator())
+                : FlutterMap(
+                    options: MapOptions(center: customerLocation, zoom: 16.0),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        subdomains: const ['a', 'b', 'c'],
+                      ),
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: customerLocation,
+                            width: 50,
+                            height: 50,
+                            child: const Icon(
+                              Icons.location_pin,
+                              color: Colors.red,
+                              size: 40,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+            Positioned(
+              top: 10,
+              left: 10,
+              child: FloatingActionButton(
+                mini: true,
+                backgroundColor: primaryColor,
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Icon(Icons.close_fullscreen, color: Colors.white),
+              ),
             ),
-          ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            left: 10,
-            child: FloatingActionButton(
-              mini: true,
-              backgroundColor: primaryColor,
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Icon(Icons.close_fullscreen, color: Colors.white),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
