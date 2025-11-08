@@ -1,18 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.ajeer_mobile"> <!-- Add your package name if missing -->
+    package="com.example.ajeer_mobile"> 
 
-    <!-- ✅ ADD THIS SECTION: Location Permissions -->
+    <!-- ✅ Add this -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- ✅ Already Correct -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-
-    <!-- 🛑 Do NOT put permissions inside <application> -->
 
     <application
         android:label="ajeer_mobile"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         
-        <!-- Your activity and metadata stay as-is -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -22,10 +22,12 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
+
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
-              />
+            />
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -37,7 +39,7 @@
             android:value="2" />
     </application>
 
-    <!-- Optional: allow geolocator to query other apps for location -->
+    <!-- Optional query permissions -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
