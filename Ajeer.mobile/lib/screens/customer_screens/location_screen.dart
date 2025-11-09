@@ -12,6 +12,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class LocationScreen extends StatefulWidget {
   final String serviceName;
@@ -41,9 +43,11 @@ class _LocationScreenState extends State<LocationScreen> {
   int _selectedIndex = 3;
   LatLng? _customerLocation;
   String? _resolvedAddress;
+  String? _fullResolvedAddress;
   bool _isEditingLocation = false;
   MapController _mapController = MapController();
   LatLng? _mapCenterDuringEdit;
+  String? _resolvedArea;
 
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
@@ -159,12 +163,62 @@ class _LocationScreenState extends State<LocationScreen> {
       if (placemarks.isNotEmpty) {
         final Placemark place = placemarks.first;
 
+        final city = place.locality?.trim();
+        String? area = place.subLocality?.trim();
+
+        // 🔄 fallback if area is missing
+        if (area == null || area.isEmpty) {
+          area = place.subAdministrativeArea?.trim();
+        }
+
+        // 🔍 Try Google Geocoding API for more accurate city/area
+        final googleData = await getAreaFromCoordinates(
+          location,
+          'AIzaSyCXvl-cyD8q4HwtM7QblvHOe45d_83su9I',
+        );
+
+        String? googleCity = googleData['city'];
+        String? googleArea = googleData['area'];
+        String? googleGovernorate = googleData['governorate'];
+
+        // ✅ Use Google’s data to fix wrong city names or missing area
+        String finalCity = (googleCity != null && googleCity.isNotEmpty)
+            ? googleCity
+            : (city ?? '');
+        String finalArea = (googleArea != null && googleArea.isNotEmpty)
+            ? googleArea
+            : (area ?? '');
+        String finalGovernorate =
+            (googleGovernorate != null && googleGovernorate.isNotEmpty)
+            ? googleGovernorate
+            : '';
+
+        final street = place.street?.trim();
+        final building = place.name?.trim();
+
+        String visibleAddress = '';
+        if (finalCity.isNotEmpty) visibleAddress += finalCity;
+        if (finalArea.isNotEmpty)
+          visibleAddress += ', $finalArea';
+        else if (finalGovernorate.isNotEmpty)
+          visibleAddress += ', $finalGovernorate';
+        else
+          visibleAddress += ', Unnamed location';
+
+        String fullAddress = '';
+        if (finalCity.isNotEmpty) fullAddress += finalCity;
+        if (finalArea.isNotEmpty) fullAddress += ', $finalArea';
+        if (street != null && street.isNotEmpty) fullAddress += ', $street';
+        if (building != null && building.isNotEmpty)
+          fullAddress += ' $building';
+
         setState(() {
-          _resolvedAddress =
-              '${place.locality ?? ''}, ${place.subLocality ?? ''}';
+          _resolvedAddress = visibleAddress;
+          _fullResolvedAddress = fullAddress;
         });
 
-        debugPrint('📍 Resolved address: $_resolvedAddress');
+        debugPrint('📍 Visible: $_resolvedAddress');
+        debugPrint('🏠 Full: $_fullResolvedAddress');
       }
     } catch (e) {
       debugPrint('❌ Failed to resolve address: $e');
@@ -271,6 +325,57 @@ class _LocationScreenState extends State<LocationScreen> {
         onIndexChanged: _onNavItemTapped,
       ),
     );
+  }
+
+  Future<Map<String, String?>> getAreaFromCoordinates(
+    LatLng location,
+    String apiKey,
+  ) async {
+    final url =
+        'https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.latitude},${location.longitude}&key=$apiKey&language=en';
+
+    String? city;
+    String? area;
+    String? governorate;
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == 'OK') {
+          final results = data['results'] as List<dynamic>;
+
+          for (final result in results) {
+            for (final component in result['address_components']) {
+              final types = component['types'] as List<dynamic>;
+
+              if (types.contains('sublocality') ||
+                  types.contains('neighborhood')) {
+                area ??= component['long_name'];
+              }
+
+              if (types.contains('administrative_area_level_2')) {
+                city ??= component['long_name'];
+              }
+
+              if (types.contains('administrative_area_level_1')) {
+                governorate ??= component['long_name'];
+              }
+            }
+          }
+        } else {
+          debugPrint('⚠️ Geocoding API error: ${data['status']}');
+        }
+      } else {
+        debugPrint('❌ HTTP error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Exception: $e');
+    }
+
+    return {'city': city, 'area': area, 'governorate': governorate};
   }
 
   Widget _buildBackgroundGradient(double containerTop) {
