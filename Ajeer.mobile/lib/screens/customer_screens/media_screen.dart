@@ -20,6 +20,8 @@ class MediaScreen extends StatefulWidget {
   final String selectionMode;
   final int totalTimeMinutes;
   final double totalPrice;
+  final String resolvedCityArea;
+  final String resolvedAddress;
 
   const MediaScreen({
     super.key,
@@ -30,6 +32,8 @@ class MediaScreen extends StatefulWidget {
     required this.selectionMode,
     required this.totalTimeMinutes,
     required this.totalPrice,
+    required this.resolvedAddress,
+    required this.resolvedCityArea,
   });
 
   @override
@@ -177,7 +181,8 @@ class _MediaScreenState extends State<MediaScreen> {
           pickedMediaFiles: allPickedFiles,
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
-          // ConfirmationScreen does not require themeNotifier, so it's omitted
+          resolvedCityArea: widget.resolvedCityArea,
+          resolvedAddress: widget.resolvedAddress,
         ),
       ),
     );

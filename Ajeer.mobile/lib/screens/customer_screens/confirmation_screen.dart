@@ -22,6 +22,8 @@ class ConfirmationScreen extends StatefulWidget {
   final List<File> pickedMediaFiles;
   final int totalTimeMinutes;
   final double totalPrice;
+  final String resolvedCityArea;
+  final String resolvedAddress;
 
   const ConfirmationScreen({
     super.key,
@@ -34,6 +36,8 @@ class ConfirmationScreen extends StatefulWidget {
     required this.pickedMediaFiles,
     required this.totalTimeMinutes,
     required this.totalPrice,
+    required this.resolvedCityArea,
+    required this.resolvedAddress,
   });
 
   @override
@@ -338,8 +342,8 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
           ),
           _DetailItem(
             icon: Icons.location_on_outlined,
-            title: 'Amman',
-            subtitle: 'Khalda',
+            title: widget.resolvedCityArea,
+            subtitle: widget.resolvedAddress,
             isDarkMode: isDarkMode,
           ),
           _DetailItem(

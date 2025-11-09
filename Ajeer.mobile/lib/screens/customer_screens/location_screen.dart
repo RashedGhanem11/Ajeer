@@ -206,11 +206,17 @@ class _LocationScreenState extends State<LocationScreen> {
           visibleAddress += ', Unnamed location';
 
         String fullAddress = '';
-        if (finalCity.isNotEmpty) fullAddress += finalCity;
-        if (finalArea.isNotEmpty) fullAddress += ', $finalArea';
-        if (street != null && street.isNotEmpty) fullAddress += ', $street';
-        if (building != null && building.isNotEmpty)
+
+        if (street != null && street.isNotEmpty) {
+          fullAddress = street;
+        }
+
+        if (building != null &&
+            building.isNotEmpty &&
+            (street == null || !building.contains(street))) {
           fullAddress += ' $building';
+        }
+        fullAddress = fullAddress.trim().replaceAll(RegExp(r',\s+'), ', ');
 
         setState(() {
           _resolvedAddress = visibleAddress;
@@ -241,6 +247,8 @@ class _LocationScreenState extends State<LocationScreen> {
           selectionMode: widget.selectionMode,
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
+          resolvedAddress: _fullResolvedAddress ?? '',
+          resolvedCityArea: _resolvedAddress ?? '',
         ),
       ),
     );
