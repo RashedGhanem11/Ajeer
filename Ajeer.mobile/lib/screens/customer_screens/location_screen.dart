@@ -41,6 +41,9 @@ class LocationScreen extends StatefulWidget {
 class _LocationScreenState extends State<LocationScreen> {
   int _selectedIndex = 3;
   LatLng? _customerLocation;
+  bool _isEditingLocation = false;
+  MapController _mapController = MapController();
+  LatLng? _mapCenterDuringEdit;
 
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
@@ -166,26 +169,33 @@ class _LocationScreenState extends State<LocationScreen> {
     );
   }
 
-  void _showMaximizedMap(BuildContext context, bool isDarkMode) {
-    if (_customerLocation == null) return; // Safety check
+  void _showMaximizedMap(BuildContext context, bool isDarkMode) async {
+    if (_customerLocation == null) return;
 
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Close Map',
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (context, a1, a2) {
-        return _MaximizedMapDialog(
-          mapBorderRadius: _mapBorderRadius,
-          primaryColor: _primaryBlue,
-          isDarkMode: isDarkMode,
-          customerLocation: _customerLocation!, // 👈 Add this
-        );
-      },
-      transitionBuilder: (context, a1, a2, child) {
-        return FadeTransition(opacity: a1, child: child);
-      },
+    final updatedLocation = await Navigator.of(context).push<LatLng>(
+      PageRouteBuilder(
+        opaque: true,
+        barrierDismissible: true,
+        fullscreenDialog: true,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            _MaximizedMapDialog(
+              mapBorderRadius: _mapBorderRadius,
+              primaryColor: _primaryBlue,
+              isDarkMode: isDarkMode,
+              customerLocation: _customerLocation!,
+            ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
     );
+
+    if (updatedLocation != null) {
+      setState(() {
+        _customerLocation = updatedLocation;
+      });
+    }
   }
 
   @override
@@ -405,9 +415,19 @@ class _LocationScreenState extends State<LocationScreen> {
                   child: _customerLocation == null
                       ? const Center(child: CircularProgressIndicator())
                       : FlutterMap(
+                          mapController: _mapController,
                           options: MapOptions(
-                            center: _customerLocation,
+                            center: _isEditingLocation
+                                ? _mapCenterDuringEdit ?? _customerLocation
+                                : _customerLocation,
                             zoom: 15.0,
+                            onPositionChanged: _isEditingLocation
+                                ? (MapPosition pos, _) {
+                                    setState(() {
+                                      _mapCenterDuringEdit = pos.center!;
+                                    });
+                                  }
+                                : null,
                           ),
                           children: [
                             TileLayer(
@@ -415,31 +435,107 @@ class _LocationScreenState extends State<LocationScreen> {
                                   'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                               subdomains: const ['a', 'b', 'c'],
                             ),
-                            MarkerLayer(
-                              markers: [
-                                Marker(
-                                  point: _customerLocation!,
-                                  width: 50,
-                                  height: 50,
-                                  child: const Icon(
-                                    Icons.location_pin,
-                                    color: Colors.red,
-                                    size: 40,
+                            if (!_isEditingLocation)
+                              MarkerLayer(
+                                markers: [
+                                  Marker(
+                                    point: _customerLocation!,
+                                    width: 50,
+                                    height: 50,
+                                    child: const Icon(
+                                      Icons.location_pin,
+                                      color: Colors.red,
+                                      size: 40,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
                           ],
                         ),
                 ),
+
+                // 📍 Center pin when editing
+                if (_isEditingLocation)
+                  const Align(
+                    alignment: Alignment.center,
+                    child: IgnorePointer(
+                      child: Icon(
+                        Icons.location_pin,
+                        size: 50,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ),
+
+                // 🔁 Top-right button cluster (Save, Edit, Maximize)
                 Positioned(
                   top: 15,
                   right: 15,
-                  child: FloatingActionButton(
-                    mini: true,
-                    backgroundColor: _primaryBlue,
-                    onPressed: () => _showMaximizedMap(context, isDarkMode),
-                    child: const Icon(Icons.open_in_full, color: Colors.white),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ✅ Save (only in edit mode)
+                      if (_isEditingLocation)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: FloatingActionButton(
+                            mini: true,
+                            backgroundColor: Colors.green,
+                            onPressed: () {
+                              setState(() {
+                                _customerLocation = _mapCenterDuringEdit!;
+                                _isEditingLocation = false;
+                              });
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Location updated',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  backgroundColor: Color(
+                                    0xFF1976D2,
+                                  ), // Your primary blue
+                                  behavior: SnackBarBehavior.fixed,
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            child: const Icon(Icons.check, color: Colors.white),
+                          ),
+                        ),
+
+                      // ✏ Edit
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: FloatingActionButton(
+                          mini: true,
+                          backgroundColor: _primaryBlue,
+                          onPressed: () {
+                            setState(() {
+                              _isEditingLocation = true;
+                              _mapCenterDuringEdit = _customerLocation;
+                              _mapController.move(_customerLocation!, 15.0);
+                            });
+                          },
+                          child: const Icon(
+                            Icons.edit_location_alt,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+
+                      // ⛶ Maximize
+                      FloatingActionButton(
+                        mini: true,
+                        backgroundColor: _primaryBlue,
+                        onPressed: () => _showMaximizedMap(context, isDarkMode),
+                        child: const Icon(
+                          Icons.open_in_full,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -451,7 +547,7 @@ class _LocationScreenState extends State<LocationScreen> {
   }
 }
 
-class _MaximizedMapDialog extends StatelessWidget {
+class _MaximizedMapDialog extends StatefulWidget {
   final double mapBorderRadius;
   final Color primaryColor;
   final bool isDarkMode;
@@ -463,9 +559,26 @@ class _MaximizedMapDialog extends StatelessWidget {
     required this.isDarkMode,
     required this.customerLocation,
   });
+
+  @override
+  State<_MaximizedMapDialog> createState() => _MaximizedMapDialogState();
+}
+
+class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
+  late MapController _mapController;
+  bool _isEditing = false;
+  late LatLng _editingCenter;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+    _editingCenter = widget.customerLocation;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Color backgroundColor = isDarkMode
+    final Color backgroundColor = widget.isDarkMode
         ? const Color(0xFF1E1E1E)
         : Colors.white;
 
@@ -473,41 +586,110 @@ class _MaximizedMapDialog extends StatelessWidget {
       backgroundColor: backgroundColor,
       body: Stack(
         children: [
-          // Fullscreen map
           Positioned.fill(
             child: FlutterMap(
-              options: MapOptions(center: customerLocation, zoom: 16.0),
+              mapController: _mapController,
+              options: MapOptions(
+                center: _editingCenter,
+                zoom: 16.0,
+                onPositionChanged: _isEditing
+                    ? (pos, _) {
+                        setState(() {
+                          _editingCenter = pos.center!;
+                        });
+                      }
+                    : null,
+              ),
               children: [
                 TileLayer(
                   urlTemplate:
                       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                   subdomains: const ['a', 'b', 'c'],
                 ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: customerLocation,
-                      width: 50,
-                      height: 50,
-                      child: const Icon(
-                        Icons.location_pin,
-                        color: Colors.red,
-                        size: 40,
+                if (!_isEditing)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: widget.customerLocation,
+                        width: 50,
+                        height: 50,
+                        child: const Icon(
+                          Icons.location_pin,
+                          color: Colors.red,
+                          size: 40,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
               ],
             ),
           ),
+
+          if (_isEditing)
+            const Align(
+              alignment: Alignment.center,
+              child: IgnorePointer(
+                child: Icon(Icons.location_pin, size: 50, color: Colors.red),
+              ),
+            ),
+
+          // Top-right button row
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
-            left: 10,
-            child: FloatingActionButton(
-              mini: true,
-              backgroundColor: primaryColor,
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Icon(Icons.close_fullscreen, color: Colors.white),
+            right: 10,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isEditing)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: FloatingActionButton(
+                      mini: true,
+                      backgroundColor: Colors.green,
+                      onPressed: () {
+                        Navigator.of(context).pop(_editingCenter);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Location updated',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            backgroundColor: Colors.blue,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      child: const Icon(Icons.check, color: Colors.white),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: FloatingActionButton(
+                    mini: true,
+                    backgroundColor: widget.primaryColor,
+                    onPressed: () {
+                      setState(() {
+                        _isEditing = true;
+                        _editingCenter = widget.customerLocation;
+                      });
+                    },
+                    child: const Icon(
+                      Icons.edit_location_alt,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                FloatingActionButton(
+                  mini: true,
+                  backgroundColor: widget.primaryColor,
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Icon(
+                    Icons.close_fullscreen,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
