@@ -273,7 +273,19 @@ class _LocationScreenState extends State<LocationScreen> {
         _customerLocation = updatedLocation;
       });
 
+      // ✅ Force map to move to the new location
+      _mapController.move(updatedLocation, 15.0);
+
+      // ✅ Also re-resolve address
       await _resolveAddressFromCoordinates(updatedLocation);
+
+      // (Optional) Show a confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Location updated'),
+          backgroundColor: Color(0xFF1976D2),
+        ),
+      );
     }
   }
 
@@ -808,20 +820,6 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
                       backgroundColor: Colors.green,
                       onPressed: () {
                         Navigator.of(context).pop(_editingCenter);
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Location updated',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            backgroundColor: Color(
-                              0xFF1976D2,
-                            ), // match _primaryBlue
-                            behavior: SnackBarBehavior.fixed,
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
                       },
                       child: const Icon(Icons.check, color: Colors.white),
                     ),
