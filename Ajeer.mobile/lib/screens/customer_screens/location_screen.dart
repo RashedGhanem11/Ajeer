@@ -219,7 +219,7 @@ class _LocationScreenState extends State<LocationScreen> {
         fullAddress = fullAddress.trim().replaceAll(RegExp(r',\s+'), ', ');
 
         setState(() {
-          _resolvedAddress = visibleAddress;
+          _resolvedAddress = visibleAddress; // Amman, Area
           _fullResolvedAddress = fullAddress;
         });
 

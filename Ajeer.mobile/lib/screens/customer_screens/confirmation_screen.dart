@@ -184,7 +184,11 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => BookingsScreen(newBooking: booking),
+          builder: (context) => BookingsScreen(
+            newBooking: booking,
+            resolvedCityArea: widget.resolvedCityArea,
+            resolvedAddress: widget.resolvedAddress,
+          ),
         ),
       );
     });

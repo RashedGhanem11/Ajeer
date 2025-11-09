@@ -8,12 +8,20 @@ import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import '../../models/booking.dart';
 import 'dart:io';
+import 'package:intl/intl.dart';
 
 enum _BookingStatus { active, pending, closed }
 
 class BookingsScreen extends StatefulWidget {
   final Booking? newBooking;
-  const BookingsScreen({super.key, this.newBooking});
+  final String? resolvedCityArea;
+  final String? resolvedAddress;
+  const BookingsScreen({
+    super.key,
+    this.newBooking,
+    this.resolvedCityArea,
+    this.resolvedAddress,
+  });
 
   @override
   State<BookingsScreen> createState() => _BookingsScreenState();
@@ -560,186 +568,228 @@ class _BookingsScreenState extends State<BookingsScreen>
                   onPressed: () {
                     showDialog(
                       context: context,
-                      builder: (ctx) => AlertDialog(
-                        backgroundColor: isDarkMode
-                            ? _BookingsConstants.subtleLighterDark
-                            : Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(35),
-                        ),
-                        title: Center(
-                          child: Text(
-                            booking.serviceName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
+                      builder: (ctx) {
+                        final formattedDate = DateFormat(
+                          'MMMM d, yyyy',
+                        ).format(booking.selectedDate);
+
+                        final formattedTime = DateFormat('h:mm a').format(
+                          DateTime(
+                            0,
+                            1,
+                            1,
+                            booking.selectedTime.hour,
+                            booking.selectedTime.minute,
+                          ),
+                        );
+
+                        final int totalMinutes = booking.totalTimeMinutes;
+                        final int hours = totalMinutes ~/ 60;
+                        final int minutes = totalMinutes % 60;
+
+                        String formattedDuration = '';
+                        if (hours > 0) {
+                          formattedDuration +=
+                              '$hours hr${hours > 1 ? 's' : ''}';
+                        }
+                        if (minutes > 0) {
+                          if (formattedDuration.isNotEmpty)
+                            formattedDuration += ' ';
+                          formattedDuration +=
+                              '$minutes min${minutes > 1 ? 's' : ''}';
+                        }
+
+                        return AlertDialog(
+                          backgroundColor: isDarkMode
+                              ? _BookingsConstants.subtleLighterDark
+                              : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(35),
+                          ),
+                          title: Center(
+                            child: Text(
+                              booking.serviceName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
                             ),
                           ),
-                        ),
-                        content: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildRichInfoText(
-                                'Provider',
-                                booking.provider,
-                                isDarkMode,
-                                context,
-                              ),
-                              _buildRichInfoText(
-                                'Phone',
-                                booking.phone,
-                                isDarkMode,
-                                context,
-                              ),
-                              _buildRichInfoText(
-                                'Location',
-                                booking.location,
-                                isDarkMode,
-                                context,
-                              ),
-                              _buildRichInfoText(
-                                'Service',
-                                booking.serviceName,
-                                isDarkMode,
-                                context,
-                              ),
-                              _buildRichInfoText(
-                                'Unit Type',
-                                booking.unitType,
-                                isDarkMode,
-                                context,
-                              ),
-                              _buildRichInfoText(
-                                'Date',
-                                booking.selectedDate.toLocal().toString(),
-                                isDarkMode,
-                                context,
-                              ),
-                              _buildRichInfoText(
-                                'Time',
-                                booking.selectedTime.format(context),
-                                isDarkMode,
-                                context,
-                              ),
-                              _buildRichInfoText(
-                                'Mode',
-                                booking.selectionMode,
-                                isDarkMode,
-                                context,
-                              ),
-                              _buildRichInfoText(
-                                'Duration',
-                                '${booking.totalTimeMinutes} mins',
-                                isDarkMode,
-                                context,
-                              ),
-                              _buildRichInfoText(
-                                'Cost',
-                                'JOD ${booking.totalPrice.toStringAsFixed(2)}',
-                                isDarkMode,
-                                context,
-                              ),
-                              const SizedBox(height: 12),
-                              if (booking.userDescription?.isNotEmpty == true)
+                          content: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 _buildRichInfoText(
-                                  'Note',
-                                  booking.userDescription!,
+                                  'Provider',
+                                  booking.provider,
                                   isDarkMode,
-                                  context,
+                                  ctx,
                                 ),
-                              if (booking.uploadedFiles != null &&
-                                  booking.uploadedFiles!.isNotEmpty) ...[
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Uploaded Media:',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                _buildRichInfoText(
+                                  'Phone',
+                                  booking.phone,
+                                  isDarkMode,
+                                  ctx,
                                 ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 10,
-                                  runSpacing: 10,
-                                  children: booking.uploadedFiles!.map((file) {
-                                    final path = file.path;
-                                    final isImage =
-                                        path.endsWith('.jpg') ||
-                                        path.endsWith('.jpeg') ||
-                                        path.endsWith('.png') ||
-                                        path.endsWith('.gif');
-                                    final isVideo =
-                                        path.endsWith('.mp4') ||
-                                        path.endsWith('.mov') ||
-                                        path.endsWith('.avi');
-                                    final isAudio =
-                                        path.endsWith('.mp3') ||
-                                        path.endsWith('.m4a') ||
-                                        path.endsWith('.wav');
+                                _buildRichInfoText(
+                                  'Location',
+                                  '${widget.resolvedCityArea ?? booking.location}'
+                                      '${widget.resolvedAddress != null ? ', ${widget.resolvedAddress}' : ''}',
+                                  isDarkMode,
+                                  ctx,
+                                ),
+                                _buildRichInfoText(
+                                  'Service',
+                                  booking.serviceName,
+                                  isDarkMode,
+                                  ctx,
+                                ),
+                                _buildRichInfoText(
+                                  'Unit Type',
+                                  booking.unitType,
+                                  isDarkMode,
+                                  ctx,
+                                ),
+                                _buildRichInfoText(
+                                  'Date',
+                                  formattedDate,
+                                  isDarkMode,
+                                  ctx,
+                                ),
+                                _buildRichInfoText(
+                                  'Time',
+                                  formattedTime,
+                                  isDarkMode,
+                                  ctx,
+                                ),
+                                _buildRichInfoText(
+                                  'Mode',
+                                  booking.selectionMode,
+                                  isDarkMode,
+                                  ctx,
+                                ),
+                                _buildRichInfoText(
+                                  'Duration',
+                                  formattedDuration,
+                                  isDarkMode,
+                                  ctx,
+                                ),
+                                _buildRichInfoText(
+                                  'Cost',
+                                  'JOD ${booking.totalPrice.toStringAsFixed(2)}',
+                                  isDarkMode,
+                                  ctx,
+                                ),
+                                const SizedBox(height: 12),
+                                if (booking.userDescription?.isNotEmpty == true)
+                                  _buildRichInfoText(
+                                    'Note',
+                                    booking.userDescription!,
+                                    isDarkMode,
+                                    ctx,
+                                  ),
+                                if (booking.uploadedFiles != null &&
+                                    booking.uploadedFiles!.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Uploaded Media:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 10,
+                                    runSpacing: 10,
+                                    children: booking.uploadedFiles!.map((
+                                      file,
+                                    ) {
+                                      final path = file.path;
+                                      final isImage =
+                                          path.endsWith('.jpg') ||
+                                          path.endsWith('.jpeg') ||
+                                          path.endsWith('.png') ||
+                                          path.endsWith('.gif');
+                                      final isVideo =
+                                          path.endsWith('.mp4') ||
+                                          path.endsWith('.mov') ||
+                                          path.endsWith('.avi');
+                                      final isAudio =
+                                          path.endsWith('.mp3') ||
+                                          path.endsWith('.m4a') ||
+                                          path.endsWith('.wav');
 
-                                    if (isImage) {
-                                      return ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: Image.file(
-                                          File(path),
+                                      if (isImage) {
+                                        return ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          child: Image.file(
+                                            File(path),
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        );
+                                      } else if (isVideo) {
+                                        return Container(
                                           width: 80,
                                           height: 80,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      );
-                                    } else if (isVideo) {
-                                      return Container(
-                                        width: 80,
-                                        height: 80,
-                                        alignment: Alignment.center,
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black12,
-                                          borderRadius: BorderRadius.circular(
-                                            10,
+                                          alignment: Alignment.center,
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black12,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                           ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.videocam,
-                                          size: 30,
-                                        ),
-                                      );
-                                    } else if (isAudio) {
-                                      return Container(
-                                        width: 80,
-                                        height: 80,
-                                        alignment: Alignment.center,
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.shade100,
-                                          borderRadius: BorderRadius.circular(
-                                            10,
+                                          child: const Icon(
+                                            Icons.videocam,
+                                            size: 30,
                                           ),
-                                        ),
-                                        child: const Icon(Icons.mic, size: 30),
-                                      );
-                                    } else {
-                                      return const SizedBox.shrink();
-                                    }
-                                  }).toList(),
-                                ),
+                                        );
+                                      } else if (isAudio) {
+                                        return Container(
+                                          width: 80,
+                                          height: 80,
+                                          alignment: Alignment.center,
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.shade100,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.mic,
+                                            size: 30,
+                                          ),
+                                        );
+                                      } else {
+                                        return const SizedBox.shrink();
+                                      }
+                                    }).toList(),
+                                  ),
+                                ],
                               ],
-                            ],
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(),
-                            child: Text(
-                              'Close',
-                              style: TextStyle(
-                                color: isDarkMode
-                                    ? Colors.grey.shade400
-                                    : Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              ),
                             ),
                           ),
-                        ],
-                      ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: Text(
+                                'Close',
+                                style: TextStyle(
+                                  color: isDarkMode
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     );
                   },
                 ),
