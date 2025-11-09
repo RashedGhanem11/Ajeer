@@ -272,6 +272,8 @@ class _LocationScreenState extends State<LocationScreen> {
       setState(() {
         _customerLocation = updatedLocation;
       });
+
+      await _resolveAddressFromCoordinates(updatedLocation);
     }
   }
 
@@ -349,19 +351,28 @@ class _LocationScreenState extends State<LocationScreen> {
 
           for (final result in results) {
             for (final component in result['address_components']) {
-              final types = component['types'] as List<dynamic>;
+              final types = List<String>.from(component['types']);
 
-              if (types.contains('sublocality') ||
-                  types.contains('neighborhood')) {
-                area ??= component['long_name'];
+              // ✅ Prioritize most specific area
+              if (area == null &&
+                  (types.contains('point_of_interest') ||
+                      types.contains('premise') ||
+                      types.contains('neighborhood') ||
+                      types.contains('sublocality'))) {
+                area = component['long_name'];
               }
 
-              if (types.contains('administrative_area_level_2')) {
-                city ??= component['long_name'];
+              // ✅ City: prefer locality, fall back to level_2
+              if (city == null &&
+                  (types.contains('locality') ||
+                      types.contains('administrative_area_level_2'))) {
+                city = component['long_name'];
               }
 
-              if (types.contains('administrative_area_level_1')) {
-                governorate ??= component['long_name'];
+              // ✅ Governorate: level 1
+              if (governorate == null &&
+                  types.contains('administrative_area_level_1')) {
+                governorate = component['long_name'];
               }
             }
           }
