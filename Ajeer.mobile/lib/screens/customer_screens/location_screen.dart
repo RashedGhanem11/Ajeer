@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider
-import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
+import 'package:provider/provider.dart';
+import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'media_screen.dart';
@@ -11,8 +11,7 @@ import 'home_screen.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-
-// Removed: import '../../main.dart';
+import 'package:geocoding/geocoding.dart';
 
 class LocationScreen extends StatefulWidget {
   final String serviceName;
@@ -41,6 +40,7 @@ class LocationScreen extends StatefulWidget {
 class _LocationScreenState extends State<LocationScreen> {
   int _selectedIndex = 3;
   LatLng? _customerLocation;
+  String? _resolvedAddress;
   bool _isEditingLocation = false;
   MapController _mapController = MapController();
   LatLng? _mapCenterDuringEdit;
@@ -146,6 +146,29 @@ class _LocationScreenState extends State<LocationScreen> {
     setState(() {
       _customerLocation = LatLng(position.latitude, position.longitude);
     });
+    await _resolveAddressFromCoordinates(_customerLocation!);
+  }
+
+  Future<void> _resolveAddressFromCoordinates(LatLng location) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        location.latitude,
+        location.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final Placemark place = placemarks.first;
+
+        setState(() {
+          _resolvedAddress =
+              '${place.locality ?? ''}, ${place.subLocality ?? ''}';
+        });
+
+        debugPrint('📍 Resolved address: $_resolvedAddress');
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to resolve address: $e');
+    }
   }
 
   void _onBackTap() {
@@ -365,6 +388,25 @@ class _LocationScreenState extends State<LocationScreen> {
                 ),
               ),
             ),
+
+            // ✅ Add this block right BELOW the "Pick a location" text:
+            if (_resolvedAddress != null)
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: _horizontalPadding,
+                  top: 8.0,
+                  right: _horizontalPadding,
+                ),
+                child: Text(
+                  _resolvedAddress!,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+              ),
+
+            // 🗺️ Keep your map section as is
             Expanded(
               child: _buildMapPlaceholder(bottomNavClearance, isDarkMode),
             ),
@@ -481,11 +523,15 @@ class _LocationScreenState extends State<LocationScreen> {
                           child: FloatingActionButton(
                             mini: true,
                             backgroundColor: Colors.green,
-                            onPressed: () {
+                            onPressed: () async {
                               setState(() {
                                 _customerLocation = _mapCenterDuringEdit!;
                                 _isEditingLocation = false;
                               });
+
+                              await _resolveAddressFromCoordinates(
+                                _customerLocation!,
+                              );
 
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -493,9 +539,7 @@ class _LocationScreenState extends State<LocationScreen> {
                                     'Location updated',
                                     style: TextStyle(color: Colors.white),
                                   ),
-                                  backgroundColor: Color(
-                                    0xFF1976D2,
-                                  ), // Your primary blue
+                                  backgroundColor: Color(0xFF1976D2),
                                   behavior: SnackBarBehavior.fixed,
                                   duration: Duration(seconds: 2),
                                 ),
@@ -655,8 +699,11 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
                               'Location updated',
                               style: TextStyle(color: Colors.white),
                             ),
-                            backgroundColor: Colors.blue,
-                            behavior: SnackBarBehavior.floating,
+                            backgroundColor: Color(
+                              0xFF1976D2,
+                            ), // match _primaryBlue
+                            behavior: SnackBarBehavior.fixed,
+                            duration: Duration(seconds: 2),
                           ),
                         );
                       },
