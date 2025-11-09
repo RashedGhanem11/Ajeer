@@ -272,14 +272,8 @@ class _LocationScreenState extends State<LocationScreen> {
       setState(() {
         _customerLocation = updatedLocation;
       });
-
-      // ✅ Force map to move to the new location
       _mapController.move(updatedLocation, 15.0);
-
-      // ✅ Also re-resolve address
       await _resolveAddressFromCoordinates(updatedLocation);
-
-      // (Optional) Show a confirmation
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Location updated'),
@@ -710,6 +704,41 @@ class _LocationScreenState extends State<LocationScreen> {
                     ],
                   ),
                 ),
+                // 🔍 Zoom buttons (bottom right)
+                Positioned(
+                  bottom: 15,
+                  right: 15,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FloatingActionButton(
+                        heroTag: 'zoom_in',
+                        mini: true,
+                        backgroundColor: Colors.white,
+                        onPressed: () {
+                          _mapController.move(
+                            _mapController.center,
+                            _mapController.zoom + 1,
+                          );
+                        },
+                        child: const Icon(Icons.zoom_in, color: Colors.black),
+                      ),
+                      const SizedBox(width: 10),
+                      FloatingActionButton(
+                        heroTag: 'zoom_out',
+                        mini: true,
+                        backgroundColor: Colors.white,
+                        onPressed: () {
+                          _mapController.move(
+                            _mapController.center,
+                            _mapController.zoom - 1,
+                          );
+                        },
+                        child: const Icon(Icons.zoom_out, color: Colors.black),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -849,6 +878,41 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
                     Icons.close_fullscreen,
                     color: Colors.white,
                   ),
+                ),
+              ],
+            ),
+          ),
+          // 🔍 Zoom buttons in maximized map
+          Positioned(
+            bottom: 20,
+            right: 15,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FloatingActionButton(
+                  heroTag: 'max_zoom_in',
+                  mini: true,
+                  backgroundColor: Colors.white,
+                  onPressed: () {
+                    _mapController.move(
+                      _mapController.center,
+                      _mapController.zoom + 1,
+                    );
+                  },
+                  child: const Icon(Icons.zoom_in, color: Colors.black),
+                ),
+                const SizedBox(width: 10),
+                FloatingActionButton(
+                  heroTag: 'max_zoom_out',
+                  mini: true,
+                  backgroundColor: Colors.white,
+                  onPressed: () {
+                    _mapController.move(
+                      _mapController.center,
+                      _mapController.zoom - 1,
+                    );
+                  },
+                  child: const Icon(Icons.zoom_out, color: Colors.black),
                 ),
               ],
             ),
