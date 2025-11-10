@@ -13,6 +13,8 @@ import '../../widgets/shared_widgets/settings_menu.dart';
 import '../service_provider_screens/services_screen.dart';
 import '../../notifiers/user_notifier.dart';
 import '../../models/provider_data.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -133,6 +135,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _emailController = TextEditingController(text: _email);
     _passwordController = TextEditingController(text: _password);
     _addListenersToControllers();
+
+    _loadUserData(); // 👈 Add this line right here
+  }
+
+  // 👇 Paste the function directly after initState()
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString('currentUser');
+
+    if (userJson != null) {
+      final user = jsonDecode(userJson);
+
+      setState(() {
+        _firstName = user['firstName'] ?? '';
+        _lastName = user['lastName'] ?? '';
+        _mobileNumber = user['phone'] ?? '';
+        _email = user['email'] ?? '';
+        _password = user['password'] ?? '';
+      });
+
+      _firstNameController.text = _firstName;
+      _lastNameController.text = _lastName;
+      _mobileController.text = _mobileNumber;
+      _emailController.text = _email;
+      _passwordController.text = _password;
+    }
   }
 
   @override
@@ -214,20 +242,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _saveProfile() {
+  void _saveProfile() async {
+    // Update the state variables first
     setState(() {
       _firstName = _firstNameController.text;
       _lastName = _lastNameController.text;
       _mobileNumber = _mobileController.text;
       _email = _emailController.text;
+
       if (_passwordController.text != '********') {
         _password = _passwordController.text;
       }
+
       _originalProfileImage = _profileImage;
       _dataHasChanged = false;
       _isEditing = false;
     });
-    _passwordController.text = '********';
+
+    // ✅ Update SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString('currentUser');
+    if (userJson != null) {
+      final user = jsonDecode(userJson);
+
+      // Update fields in the saved user object
+      user['firstName'] = _firstName;
+      user['lastName'] = _lastName;
+      user['phone'] = _mobileNumber;
+      user['email'] = _email;
+      user['password'] = _password;
+
+      // Update the saved list of all users too
+      final usersJsonList = prefs.getStringList('users') ?? [];
+      final List<Map<String, dynamic>> users = usersJsonList
+          .map((u) => Map<String, dynamic>.from(jsonDecode(u)))
+          .toList();
+
+      // Find and replace the user record
+      for (int i = 0; i < users.length; i++) {
+        if (users[i]['email'] == user['email'] ||
+            users[i]['phone'] == user['phone']) {
+          users[i] = user;
+          break;
+        }
+      }
+
+      await prefs.setStringList(
+        'users',
+        users.map((u) => jsonEncode(u)).toList(),
+      );
+      await prefs.setString('currentUser', jsonEncode(user));
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -374,7 +439,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              onPressed: () {
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('currentUser');
+
                 Navigator.of(context).pop();
                 Navigator.pushAndRemoveUntil(
                   context,

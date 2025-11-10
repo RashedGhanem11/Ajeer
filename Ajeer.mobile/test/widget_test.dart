@@ -25,7 +25,7 @@ void main() {
           ChangeNotifierProvider<UserNotifier>.value(value: dummyUserNotifier),
         ],
         // MyApp is now called without any parameters.
-        child: const MyApp(),
+        child: const MyApp(isLoggedIn: false),
       ),
     );
 

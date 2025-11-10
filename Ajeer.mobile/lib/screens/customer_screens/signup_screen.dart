@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -44,13 +47,77 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  void _handleSignUp() {
+  void _handleSignUp() async {
     if (_formKey.currentState!.validate()) {
+      final authService = AuthService();
+
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Sign Up Successful!')));
-      debugPrint("Sign Up Successful!");
-      // Optionally navigate to Home or Login after successful sign up
+      ).showSnackBar(const SnackBar(content: Text('Creating account...')));
+
+      try {
+        final result = await authService.mockSignUp(
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        if (result['success']) {
+          final prefs = await SharedPreferences.getInstance();
+
+          // Retrieve existing users list (or create a new one)
+          final usersJsonList = prefs.getStringList('users') ?? [];
+
+          // Convert each stored string into a Map
+          final users = usersJsonList.map((u) => jsonDecode(u)).toList();
+
+          // Check if the email or phone already exists
+          final email = _emailController.text.trim();
+          final phone = _phoneController.text.trim();
+
+          final alreadyExists = users.any(
+            (user) => user['email'] == email || user['phone'] == phone,
+          );
+
+          if (alreadyExists) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Account already exists')),
+            );
+            return;
+          }
+
+          // Add the new user
+          final newUser = {
+            'firstName': _firstNameController.text.trim(),
+            'lastName': _lastNameController.text.trim(),
+            'phone': phone,
+            'email': email,
+            'password': _passwordController.text.trim(),
+          };
+
+          users.add(newUser);
+
+          // Save updated list
+          final updatedList = users.map((user) => jsonEncode(user)).toList();
+          await prefs.setStringList('users', updatedList);
+
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Sign-up successful!')));
+
+          Navigator.pop(context); // go back to login screen
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['message'] ?? 'Sign-up failed')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 

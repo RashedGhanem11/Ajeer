@@ -4,6 +4,9 @@ import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier d
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import 'home_screen.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+
 // Removed: import '../../main.dart'; // Accesses the global themeNotifier
 
 class LoginScreen extends StatefulWidget {
@@ -38,19 +41,74 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _validateAndLogin() {
-    debugPrint("Validation bypassed for testing! Navigating to Home Screen...");
+  void _validateAndLogin() async {
+    // Reset previous error messages
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+    });
 
-    // 💡 FIX 3: Retrieve themeNotifier using Provider (listen: false for navigation)
-    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+    final input = _emailController.text.trim(); // email OR phone
+    final password = _passwordController.text.trim();
 
-    // FIX: Navigate to the correct class (HomeScreen) and pass the required themeNotifier instance.
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomeScreen(themeNotifier: themeNotifier),
-      ),
+    bool hasError = false;
+
+    // Validate empty fields
+    if (input.isEmpty) {
+      setState(() {
+        _emailError = 'Enter a valid phone number or email';
+      });
+      hasError = true;
+    }
+
+    if (password.isEmpty) {
+      setState(() {
+        _passwordError = 'Enter a valid password';
+      });
+      hasError = true;
+    }
+
+    if (hasError) return; // stop if there are validation errors
+
+    final prefs = await SharedPreferences.getInstance();
+    final usersJsonList = prefs.getStringList('users') ?? [];
+
+    if (usersJsonList.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No accounts found. Please sign up first.'),
+        ),
+      );
+      return;
+    }
+
+    // Decode all users
+    final users = usersJsonList.map((u) => jsonDecode(u)).toList();
+
+    // Search for a match
+    final matchedUser = users.firstWhere(
+      (user) =>
+          (user['email'] == input || user['phone'] == input) &&
+          user['password'] == password,
+      orElse: () => {},
     );
+
+    if (matchedUser.isNotEmpty) {
+      // ✅ Login successful
+      await prefs.setString('currentUser', jsonEncode(matchedUser));
+
+      final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Invalid credentials')));
+    }
   }
 
   @override
