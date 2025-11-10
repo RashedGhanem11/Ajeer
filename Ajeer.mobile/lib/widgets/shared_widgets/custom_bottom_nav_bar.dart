@@ -39,91 +39,94 @@ class CustomBottomNavBar extends StatelessWidget {
     const double labelFontSize = 12.0;
     const double notificationSize = 8.0;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        horizontalPadding,
-        0,
-        horizontalPadding,
-        outerBottomMargin,
-      ),
-      child: Container(
-        height: kBottomNavigationBarHeight + verticalPadding * 2,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(50.0),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor,
-              spreadRadius: 2,
-              blurRadius: 7,
-              offset: const Offset(0, 5),
-            ),
-          ],
+    return MediaQuery.removePadding(
+      context: context,
+      removeBottom: true, // Prevent SafeArea from pushing bar upward
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          horizontalPadding,
+          0,
+          horizontalPadding,
+          outerBottomMargin, // Keeps your original position
         ),
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: List.generate(items.length * 2 - 1, (i) {
-              if (i.isOdd) {
-                // Insert spacing between items
-                return const SizedBox(
-                  width: 25,
-                ); // Adjust this value as you like
-              }
-              final int index = i ~/ 2;
-              final Map<String, dynamic> item = items[index];
-              final bool isSelected = index == selectedIndex;
-              final bool hasNotification = (item['notificationCount'] ?? 0) > 0;
-              final Color itemColor = isSelected
-                  ? selectedColor
-                  : defaultIconTextColor;
+        child: Container(
+          height: kBottomNavigationBarHeight + verticalPadding * 2,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(50.0),
+            boxShadow: [
+              BoxShadow(
+                color: shadowColor,
+                spreadRadius: 2,
+                blurRadius: 7,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: List.generate(items.length * 2 - 1, (i) {
+                if (i.isOdd) {
+                  return const SizedBox(width: 25);
+                }
 
-              return GestureDetector(
-                onTap: () => onIndexChanged(index),
-                behavior: HitTestBehavior.translucent,
-                child: Container(
-                  width: 70, // optional: fixed width per item
-                  padding: const EdgeInsets.symmetric(vertical: 5.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Icon(
-                            isSelected ? item['activeIcon'] : item['icon'],
-                            size: iconSize,
-                            color: itemColor,
-                          ),
-                          if (hasNotification)
-                            Positioned(
-                              top: -2,
-                              right: -4,
-                              child: Container(
-                                width: notificationSize,
-                                height: notificationSize,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
+                final int index = i ~/ 2;
+                final Map<String, dynamic> item = items[index];
+                final bool isSelected = index == selectedIndex;
+                final bool hasNotification =
+                    (item['notificationCount'] ?? 0) > 0;
+                final Color itemColor = isSelected
+                    ? selectedColor
+                    : defaultIconTextColor;
+
+                return GestureDetector(
+                  onTap: () => onIndexChanged(index),
+                  behavior: HitTestBehavior.translucent,
+                  child: Container(
+                    width: 70,
+                    padding: const EdgeInsets.symmetric(vertical: 5.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Icon(
+                              isSelected ? item['activeIcon'] : item['icon'],
+                              size: iconSize,
+                              color: itemColor,
+                            ),
+                            if (hasNotification)
+                              Positioned(
+                                top: -2,
+                                right: -4,
+                                child: Container(
+                                  width: notificationSize,
+                                  height: notificationSize,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item['label'],
-                        style: TextStyle(
-                          fontSize: labelFontSize,
-                          color: itemColor,
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          item['label'],
+                          style: TextStyle(
+                            fontSize: labelFontSize,
+                            color: itemColor,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
         ),
       ),
