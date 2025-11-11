@@ -36,5 +36,7 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
             .WithMany()
             .HasForeignKey(a => a.UploaderId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasData(SeedData.GetAttachments());
     }
 }

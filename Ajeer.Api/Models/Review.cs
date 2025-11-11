@@ -8,7 +8,7 @@ public class Review
     public int ServiceProviderId { get; set; }
     public int Rating { get; set; }
     public string? Comment { get; set; } = null!;
-    public DateTime ReviewDate { get; set; } = DateTime.Now;
+    public DateTime ReviewDate { get; set; }
 
     public Booking Booking { get; set; } = null!;
     public User User { get; set; } = null!;

@@ -23,5 +23,7 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             .WithOne(s => s.Payment)
             .HasForeignKey<Payment>(p => p.SubscriptionId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasData(SeedData.GetPayments());
     }
 }

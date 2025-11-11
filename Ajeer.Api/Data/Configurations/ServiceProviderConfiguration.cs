@@ -87,5 +87,7 @@ public class ServiceProviderConfiguration : IEntityTypeConfiguration<Models.Serv
                     j.HasKey(psa => new { psa.ServiceProviderId, psa.ServiceAreaId });
                 }
             );
+
+        builder.HasData(SeedData.GetServiceProviders());
     }
 }

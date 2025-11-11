@@ -19,5 +19,7 @@ public class ServiceAreaConfiguration : IEntityTypeConfiguration<ServiceArea>
         builder.Property(sa => sa.CityName)
             .IsRequired()
             .HasMaxLength(50);
+
+        builder.HasData(SeedData.GetServiceAreas());
     }
 }

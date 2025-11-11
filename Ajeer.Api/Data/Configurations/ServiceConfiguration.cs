@@ -28,5 +28,7 @@ public class ServiceConfiguration : IEntityTypeConfiguration<Service>
             .WithMany(c => c.Services)
             .HasForeignKey(s => s.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasData(SeedData.GetServices());
     }
 }

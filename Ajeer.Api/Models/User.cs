@@ -13,8 +13,8 @@ public class User
     public bool IsActive { get; set; }
     public UserRole Role { get; set; }
     public string? ProfilePictureUrl { get; set; }
-    public DateTime LastLoginAt { get; set; } = DateTime.Now;
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime LastLoginAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 
     public ServiceProvider? ServiceProvider { get; set; }
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

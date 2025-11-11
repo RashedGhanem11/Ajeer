@@ -7,7 +7,7 @@ public class Subscription
     public decimal Price { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public bool IsActive { get; set; } = default!;
+    public bool IsActive { get; set; }
 
     public ServiceProvider ServiceProvider { get; set; } = null!;
     public Payment? Payment { get; set; }

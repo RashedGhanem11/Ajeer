@@ -7,8 +7,8 @@ public class Message
     public int SenderId { get; set; }
     public int ReceiverId { get; set; }
     public string Content { get; set; } = null!;
-    public DateTime SentAt { get; set; } = DateTime.Now;
-    public bool IsRead { get; set; } = false;
+    public DateTime SentAt { get; set; }
+    public bool IsRead { get; set; }
 
     public User Sender { get; set; } = null!;
     public User Receiver { get; set; } = null!;

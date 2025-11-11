@@ -39,7 +39,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.Role)
             .IsRequired()
-            .HasColumnType("tinyint");
+            .HasColumnType("tinyint")
+            .HasDefaultValueSql("0");
 
         builder.Property(u => u.ProfilePictureUrl)
             .IsRequired(false)
@@ -78,7 +79,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasMany(u => u.Bookings)
             .WithOne(b => b.User)
-            .HasForeignKey(b => b.User)
+            .HasForeignKey(b => b.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasData(SeedData.GetUsers());
     }
 }

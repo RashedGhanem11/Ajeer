@@ -25,5 +25,7 @@ public class BookingServiceItemConfiguration : IEntityTypeConfiguration<BookingS
             .WithMany()
             .HasForeignKey(bsi => bsi.ServiceId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasData(SeedData.GetBookingServiceItems());
     }
 }

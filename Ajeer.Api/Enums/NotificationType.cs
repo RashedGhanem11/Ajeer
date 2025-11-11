@@ -6,5 +6,6 @@ public enum NotificationType
     BookingRejected,
     BookingCancelled,
     ServiceProviderApproved,
-    ServiceProviderRejected
+    ServiceProviderRejected,
+    Chat
 }

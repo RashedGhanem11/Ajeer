@@ -3,5 +3,5 @@ namespace Ajeer.Api.Enums;
 public enum UserRole
 {
     Customer,
-    Provider
+    ServiceProvider
 }
