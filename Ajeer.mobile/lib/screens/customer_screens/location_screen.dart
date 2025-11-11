@@ -47,7 +47,7 @@ class _LocationScreenState extends State<LocationScreen> {
   bool _isEditingLocation = false;
   MapController _mapController = MapController();
   LatLng? _mapCenterDuringEdit;
-  String? _resolvedArea;
+  //String? _resolvedArea;
 
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
