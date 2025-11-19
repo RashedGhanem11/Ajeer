@@ -1,23 +1,20 @@
 using Ajeer.Api.Data;
-using Microsoft.EntityFrameworkCore;
+using Ajeer.Api.Extensions;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    options.UseSqlServer(connectionString);
-});
+builder.Services.AddApplicationServices(builder.Configuration);
 
 var app = builder.Build();
 
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(
-        Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads")),
-    RequestPath = "/uploads"
-});
+app.UseStaticFiles();
+
+app.UseAuthentication();
+
+app.UseAuthorization();
+
+app.MapControllers();
 
 app.MapGet("/", (AppDbContext context) => {
 

@@ -1,0 +1,67 @@
+
+@host = http://localhost:5289
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiI0IiwidW5pcXVlX25hbWUiOiJBaG1lZCBLaGFsaWQiLCJlbWFpbCI6ImFobWVka2hhbGlkQGdtYWlsLmNvbSIsInJvbGUiOiJDdXN0b21lciIsIm5iZiI6MTc2MzU3Nzc2MSwiZXhwIjoxNzYzNTc3ODIxLCJpYXQiOjE3NjM1Nzc3NjEsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.aVwWXofKGg-JBnwz-34oIkT3oCxjx2Do5nYERJ0CID4
+
+GET {{host}}/uploads/profilePictures/ProfilePicture_4.jpg
+###
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+    "Name": "Ahmed Khalid",
+    "Email": "ahmedkhalid@gmail.com",
+    "Phone": "0770000001",
+    "Password": "Password"
+}
+###
+
+###
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+"name": "Duplicate User",
+"email": "janedoe@example.com",
+"phone": "962779999999",
+"password": "TestPassword123",
+"role": "Customer"
+}
+###
+
+@email_user = ahmedkhalid@gmail.com
+@email_pass = Password
+###
+POST {{host}}/api/auth/login/email
+Content-Type: application/json
+
+{
+"email": "{{email_user}}",
+"password": "{{email_pass}}"
+}
+###
+@phone_number = 0770000001
+@phone_pass = Password
+
+POST {{host}}/api/auth/login/phone
+Content-Type: application/json
+
+{
+"phoneNumber": "{{phone_number}}",
+"password": "{{phone_pass}}"
+}
+
+###
+POST {{host}}/api/auth/login/email
+Content-Type: application/json
+
+{
+"email": "janedoe@example.com",
+"password": "WrongPassword123"
+}
+
+###
+GET {{host}}/api/auth/test-auth
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/api/auth/test-auth

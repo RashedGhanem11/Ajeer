@@ -10,7 +10,7 @@ public class User
     public string Email { get; set; } = null!;
     public string Phone { get; set; } = null!;
     public string Password { get; set; } = null!;
-    public bool IsActive { get; set; }
+    public bool IsActive { get; set; } = true;
     public UserRole Role { get; set; }
     public string? ProfilePictureUrl { get; set; }
     public DateTime LastLoginAt { get; set; }
