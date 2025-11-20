@@ -92,41 +92,11 @@ public class AuthService(AppDbContext context, IConfiguration configuration) : I
         };
     }
 
-    public async Task<AuthResponse?> LoginWithEmailAsync(EmailLoginRequest dto)
+    public async Task<AuthResponse?> LoginAsync(LoginRequest dto)
     {
         var user = await context.Users
-            .SingleOrDefaultAsync(u => u.Email.ToLower() == dto.Email.ToLower());
-
-        if (user == null)
-        {
-            return null;
-        }
-
-        bool passwordValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.Password);
-
-        if (!passwordValid)
-        {
-            return null;
-        }
-
-        string token = GenerateJwtToken(user);
-
-        return new AuthResponse
-        {
-            Token = token,
-            UserId = user.Id,
-            Name = user.Name,
-            Email = user.Email,
-            Phone = user.Phone,
-            Role = user.Role.ToString(),
-            ProfilePictureUrl = GetPublicImageUrl(user)
-        };
-    }
-
-    public async Task<AuthResponse?> LoginWithPhoneAsync(PhoneLoginRequest dto)
-    {
-        var user = await context.Users
-            .SingleOrDefaultAsync(u => u.Phone == dto.PhoneNumber);
+            .SingleOrDefaultAsync(u => u.Email.ToLower() == dto.Identifier.ToLower()
+                                    || u.Phone == dto.Identifier);
 
         if (user == null)
         {

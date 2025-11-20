@@ -31,22 +31,22 @@ Content-Type: application/json
 @email_user = ahmedkhalid@gmail.com
 @email_pass = Password
 ###
-POST {{host}}/api/auth/login/email
+POST {{host}}/api/auth/login
 Content-Type: application/json
 
 {
-"email": "{{email_user}}",
+"Identifier": "{{email_user}}",
 "password": "{{email_pass}}"
 }
 ###
 @phone_number = 0770000001
 @phone_pass = Password
 
-POST {{host}}/api/auth/login/phone
+POST {{host}}/api/auth/login
 Content-Type: application/json
 
 {
-"phoneNumber": "{{phone_number}}",
+"Identifier": "{{phone_number}}",
 "password": "{{phone_pass}}"
 }
 

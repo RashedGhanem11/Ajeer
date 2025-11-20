@@ -7,9 +7,7 @@ public interface IAuthService
 {
     Task<AuthResponse?> RegisterUserAsync(UserRegisterRequest dto);
 
-    Task<AuthResponse?> LoginWithEmailAsync(EmailLoginRequest dto);
-
-    Task<AuthResponse?> LoginWithPhoneAsync(PhoneLoginRequest dto);
+    Task<AuthResponse?> LoginAsync(LoginRequest dto);
 
     string GenerateJwtToken(User user);
 }

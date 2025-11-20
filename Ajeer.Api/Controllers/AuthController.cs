@@ -26,33 +26,17 @@ public class AuthController(IAuthService _authService) : ControllerBase
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
-    [HttpPost("login/email")]
+    [HttpPost("login")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> LoginWithEmail([FromBody] EmailLoginRequest dto)
+    public async Task<IActionResult> Login([FromBody] LoginRequest dto)
     {
-        var result = await _authService.LoginWithEmailAsync(dto);
+        var result = await _authService.LoginAsync(dto);
 
         if (result == null)
         {
-            return Unauthorized(new { message = "Login failed: Invalid email or password." });
-        }
-
-        return Ok(result);
-    }
-
-    [HttpPost("login/phone")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthResponse))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> LoginWithPhone([FromBody] PhoneLoginRequest dto)
-    {
-        var result = await _authService.LoginWithPhoneAsync(dto);
-
-        if (result == null)
-        {
-            return Unauthorized(new { message = "Login failed: Invalid phone number or password." });
+            return Unauthorized(new { message = "Login failed: Invalid identifier or password." });
         }
 
         return Ok(result);
