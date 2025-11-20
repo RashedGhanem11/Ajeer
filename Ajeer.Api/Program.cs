@@ -8,6 +8,16 @@ builder.Services.AddApplicationServices(builder.Configuration);
 
 var app = builder.Build();
 
+/*if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        // Sets the default page title and description
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ajeer API v1");
+    });
+}*/
+
 app.UseStaticFiles();
 
 app.UseAuthentication();

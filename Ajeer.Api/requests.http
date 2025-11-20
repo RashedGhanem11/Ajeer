@@ -2,7 +2,20 @@
 @host = http://localhost:5289
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiI0IiwidW5pcXVlX25hbWUiOiJBaG1lZCBLaGFsaWQiLCJlbWFpbCI6ImFobWVka2hhbGlkQGdtYWlsLmNvbSIsInJvbGUiOiJDdXN0b21lciIsIm5iZiI6MTc2MzU3Nzc2MSwiZXhwIjoxNzYzNTc3ODIxLCJpYXQiOjE3NjM1Nzc3NjEsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.aVwWXofKGg-JBnwz-34oIkT3oCxjx2Do5nYERJ0CID4
 
-GET {{host}}/uploads/profilePictures/ProfilePicture_4.jpg
+###
+
+GET  {{host}}/api/ServiceCategories
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/uploads/categories/carpentry.png
+
+###
+GET {{host}}/uploads/profilePictures/ProfilePicture_-3.jpg
+###
+###
+GET {{host}}/api/Services?categoryId=-1
+Authorization: Bearer {{token}}
 ###
 POST {{host}}/api/auth/register
 Content-Type: application/json

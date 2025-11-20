@@ -5,6 +5,8 @@ namespace Ajeer.Api.Data;
 
 public static class SeedData
 {
+    static string testPasswordHash = "$2a$11$E8c1z9.I.d4dO2jXf1z6S.u7W0f1o.g1R5O9V4f1e4I0f1t.s0z4"; // Hashed value of "Password@123";
+
     public static List<User> GetUsers() => new()
     {
         new User
@@ -13,7 +15,7 @@ public static class SeedData
             Name = "Rashed Ghanem",
             Email = "rashed@example.com",
             Phone = "0791111111",
-            Password = "hashed_password_1",
+            Password = testPasswordHash,
             Role = UserRole.ServiceProvider
         },
         new User
@@ -22,7 +24,7 @@ public static class SeedData
             Name = "Sara Ahmad",
             Email = "sara@example.com",
             Phone = "0792222222",
-            Password = "hashed_password_2",
+            Password = testPasswordHash,
         },
         new User
         {
@@ -30,8 +32,9 @@ public static class SeedData
             Name = "Ali Saleh",
             Email = "ali@example.com",
             Phone = "0793333333",
-            Password = "hashed_password_3",
-            Role = UserRole.ServiceProvider
+            Password = testPasswordHash,
+            Role = UserRole.ServiceProvider,
+            ProfilePictureUrl = "ProfilePicture_-3.jpg"
         }
     };
 
@@ -138,15 +141,15 @@ public static class SeedData
 
     public static List<ServiceCategory> GetServiceCategories() => new()
     {
-        new ServiceCategory { Id = -1, Name = "Plumbing", Description = "Leak repair, pipe installation, and maintenance.", IconUrl = "icons/plumbing.png" },
-        new ServiceCategory { Id = -2, Name = "Electrical", Description = "Electrical repairs, wiring, and installations.", IconUrl = "icons/electrical.png" },
-        new ServiceCategory { Id = -3, Name = "Cleaning", Description = "Home, office, and carpet cleaning.", IconUrl = "icons/cleaning.png" },
-        new ServiceCategory { Id = -4, Name = "Painting", Description = "Interior and exterior wall painting.", IconUrl = "icons/painting.png" },
-        new ServiceCategory { Id = -5, Name = "Carpentry", Description = "Wood furniture and door repair or installation.", IconUrl = "icons/carpentry.png" },
-        new ServiceCategory { Id = -6, Name = "Appliance Repair", Description = "Fixing washing machines, fridges, and ACs.", IconUrl = "icons/appliance.png" },
-        new ServiceCategory { Id = -7, Name = "Gardening", Description = "Lawn care, trimming, and garden design.", IconUrl = "icons/gardening.png" },
-        new ServiceCategory { Id = -8, Name = "IT Support", Description = "Computer setup, repair, and software help.", IconUrl = "icons/it.png" },
-        new ServiceCategory { Id = -9, Name = "Moving & Delivery", Description = "Home and office moving or furniture delivery.", IconUrl = "icons/moving.png" }
+        new ServiceCategory { Id = -1, Name = "Plumbing", Description = "Leak repair, pipe installation, and maintenance.", IconUrl = "plumbing.png" },
+        new ServiceCategory { Id = -2, Name = "Electrical", Description = "Electrical repairs, wiring, and installations.", IconUrl = "electrical.png" },
+        new ServiceCategory { Id = -3, Name = "Cleaning", Description = "Home, office, and carpet cleaning.", IconUrl = "cleaning.png" },
+        new ServiceCategory { Id = -4, Name = "Painting", Description = "Interior and exterior wall painting.", IconUrl = "painting.png" },
+        new ServiceCategory { Id = -5, Name = "Carpentry", Description = "Wood furniture and door repair or installation.", IconUrl = "carpentry.png" },
+        new ServiceCategory { Id = -6, Name = "Appliance Repair", Description = "Fixing washing machines, fridges, and ACs.", IconUrl = "appliance_repair.png" },
+        new ServiceCategory { Id = -7, Name = "Gardening", Description = "Lawn care, trimming, and garden design.", IconUrl = "gardening.png" },
+        new ServiceCategory { Id = -8, Name = "IT Support", Description = "Computer setup, repair, and software help.", IconUrl = "it_support.png" },
+        new ServiceCategory { Id = -9, Name = "Moving & Delivery", Description = "Home and office moving or furniture delivery.", IconUrl = "moving_and_delivery.png" }
     };
 
     public static List<Service> GetServices() => new()

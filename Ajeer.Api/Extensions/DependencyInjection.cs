@@ -2,11 +2,14 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Ajeer.Api.Data;
 using Ajeer.Api.Services.Auth;
+using Ajeer.Api.Services.ServiceCategories;
+using Ajeer.Api.Services.Services;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 namespace Ajeer.Api.Extensions;
 
@@ -20,6 +23,9 @@ public static class DependencyInjection
             .AddValidation()
             .AddJwtAuthentication(configuration)
             .AddAuthorization()
+            //.AddApiDocumentation()
+            //.AddEndpointsApiExplorer()
+            //.AddSwaggerGen()
             .AddBusinessServices();
 
         return services;
@@ -81,8 +87,8 @@ public static class DependencyInjection
     public static IServiceCollection AddBusinessServices(this IServiceCollection services)
     {
         services.AddScoped<IAuthService, AuthService>();
-
-        //services.AddScoped<IBookingService, BookingService>();
+        services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
+        services.AddScoped<IServiceService, ServiceService>();
 
         return services;
     }
@@ -93,6 +99,42 @@ public static class DependencyInjection
         {
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
             options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddApiDocumentation(this IServiceCollection services)
+    {
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Ajeer API", Version = "v1" });
+
+            // Define the JWT Bearer security scheme for Swagger UI
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer"
+            });
+
+            // Apply the security requirement globally
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    new string[] {}
+                }
+            });
         });
 
         return services;
