@@ -1,0 +1,333 @@
+
+@host = http://localhost:5289
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiI0IiwidW5pcXVlX25hbWUiOiJBaG1lZCBLaGFsaWQiLCJlbWFpbCI6ImFobWVka2hhbGlkQGdtYWlsLmNvbSIsInJvbGUiOiJDdXN0b21lciIsIm5iZiI6MTc2MzU3Nzc2MSwiZXhwIjoxNzYzNTc3ODIxLCJpYXQiOjE3NjM1Nzc3NjEsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.aVwWXofKGg-JBnwz-34oIkT3oCxjx2Do5nYERJ0CID4
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiI1IiwidW5pcXVlX25hbWUiOiJBaG1lZCBLaGFsaWQiLCJlbWFpbCI6ImFobWVka2hhbGlkQGdtYWlsLmNvbSIsInJvbGUiOiJDdXN0b21lciIsIm5iZiI6MTc2NDEwMDg1NywiZXhwIjoxNzY0MTg3MjU3LCJpYXQiOjE3NjQxMDA4NTcsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.FIGDgYLEvUuIArAu-OGRbXmXdtM4EVFA75FVksgAe3s
+###
+
+GET  {{host}}/api/ServiceCategories
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/uploads/categories/appliance_repair.png
+
+###
+GET {{host}}/uploads/profilePictures/ProfilePicture_-3.jpg
+###
+###
+GET {{host}}/api/Services?categoryId=-1
+Authorization: Bearer {{token}}
+###
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+    "Name": "Ahmed Khalid",
+    "Email": "ahmedkhalid@gmail.com",
+    "Phone": "0770000001",
+    "Password": "Password"
+}
+###
+
+###
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+"name": "Duplicate User",
+"email": "janedoe@example.com",
+"phone": "962779999999",
+"password": "TestPassword123",
+"role": "Customer"
+}
+###
+
+@email_user = ali@example.com
+@email_pass = Password@123
+###
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+"Identifier": "{{email_user}}",
+"password": "{{email_pass}}"
+}
+###
+@phone_number = 0770000001
+@phone_pass = Password
+
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+"Identifier": "{{phone_number}}",
+"password": "{{phone_pass}}"
+}
+
+###
+POST {{host}}/api/auth/login/email
+Content-Type: application/json
+
+{
+"email": "janedoe@example.com",
+"password": "WrongPassword123"
+}
+
+###
+GET {{host}}/api/auth/test-auth
+Authorization: Bearer {{authToken}}
+
+###
+GET {{host}}/api/auth/test-auth
+
+### Booking Test
+
+# ==============================================================================
+# 1. SETUP: LOGIN
+# ==============================================================================
+
+### Login as Customer (Sara Ahmad)
+# We need a token to make authorized booking requests.
+# User ID: -2
+# Password Hash used in seed: "Password@123"
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "sara@example.com",
+  "password": "Password@123"
+}
+
+# ==============================================================================
+# 2. SUCCESS SCENARIOS (Based on your Seed Data)
+# ==============================================================================
+
+### A. Successful Booking: Plumbing in Abdoun (Provider -1)
+# Provider: -1 (Rashed)
+# Services: -1 (Leak Repair), -2 (Pipe Installation) matches Rashed's services.
+# Area: -1 (Abdoun) matches Rashed's area.
+# Schedule: Monday (Dec 1, 2025) at 10:00 AM is within Rashed's Mon 9-5 slot.
+POST {{host}}/api/bookings
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="ServiceIds"
+
+-1
+--boundary123
+Content-Disposition: form-data; name="ServiceIds"
+
+-2
+--boundary123
+Content-Disposition: form-data; name="ServiceAreaId"
+
+-1
+--boundary123
+Content-Disposition: form-data; name="ScheduledDate"
+
+2025-12-1T10:00:00
+--boundary123
+Content-Disposition: form-data; name="Address"
+
+Abdoun Circle, Amman
+--boundary123
+Content-Disposition: form-data; name="Latitude"
+
+31.9500
+--boundary123
+Content-Disposition: form-data; name="Longitude"
+
+35.9333
+--boundary123
+Content-Disposition: form-data; name="Notes"
+
+Fix the kitchen sink leak.
+--boundary123
+Content-Disposition: form-data; name="Attachments"; filename="test-image.jpg"
+Content-Type: image/jpeg
+
+< ./test-image.jpg
+--boundary123--
+
+
+### B. Successful Booking: Cleaning in Al-Rabieh (Provider -3)
+# Provider: -3 (Ali)
+# Service: -6 (Home Deep Cleaning) matches Ali's service.
+# Area: -4 (Al-Rabieh) matches Ali's area.
+# Schedule: Saturday (Nov 29, 2025) at 11:00 AM is within Ali's Sat 10-6 slot.
+POST {{host}}/api/bookings
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=boundaryXYZ
+
+--boundaryXYZ
+Content-Disposition: form-data; name="ServiceIds"
+
+-6
+--boundaryXYZ
+Content-Disposition: form-data; name="ServiceAreaId"
+
+-4
+--boundaryXYZ
+Content-Disposition: form-data; name="ScheduledDate"
+
+2025-11-29T11:00:00
+--boundaryXYZ
+Content-Disposition: form-data; name="Address"
+
+Al-Rabieh Street
+--boundaryXYZ
+Content-Disposition: form-data; name="Latitude"
+
+31.9800
+--boundaryXYZ
+Content-Disposition: form-data; name="Longitude"
+
+35.8900
+--boundaryXYZ--
+
+
+# ==============================================================================
+# 3. FAILURE SCENARIOS (Validation & Business Logic)
+# ==============================================================================
+
+### C. Fail: Area Not Covered (No Provider)
+# Requesting Plumbing (-1) in Al-Rabieh (-4).
+# Rashed (-1) does plumbing but is NOT in Al-Rabieh.
+# Ali (-3) is in Al-Rabieh but does NOT do plumbing.
+# Expected: 400 Bad Request ("No service providers are currently available...")
+POST {{host}}/api/bookings
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=boundaryFail1
+
+--boundaryFail1
+Content-Disposition: form-data; name="ServiceIds"
+
+-1
+--boundaryFail1
+Content-Disposition: form-data; name="ServiceAreaId"
+
+-4
+--boundaryFail1
+Content-Disposition: form-data; name="ScheduledDate"
+
+2025-11-29T10:00:00
+--boundaryFail1
+Content-Disposition: form-data; name="Address"
+
+Test Address
+--boundaryFail1
+Content-Disposition: form-data; name="Latitude"
+
+31.0
+--boundaryFail1
+Content-Disposition: form-data; name="Longitude"
+
+35.0
+--boundaryFail1--
+
+
+### D. Fail: Schedule Mismatch (Wrong Day)
+# Requesting Plumbing (-1) in Abdoun (-1).
+# Rashed covers this, BUT the date is Friday (Nov 28, 2025).
+# Rashed only works Mon/Tue.
+# Expected: 400 Bad Request ("No service providers... at this time")
+POST {{host}}/api/bookings
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=boundaryFail2
+
+--boundaryFail2
+Content-Disposition: form-data; name="ServiceIds"
+
+-1
+--boundaryFail2
+Content-Disposition: form-data; name="ServiceAreaId"
+
+-1
+--boundaryFail2
+Content-Disposition: form-data; name="ScheduledDate"
+
+2025-11-28T10:00:00
+--boundaryFail2
+Content-Disposition: form-data; name="Address"
+
+Test Address
+--boundaryFail2
+Content-Disposition: form-data; name="Latitude"
+
+31.0
+--boundaryFail2
+Content-Disposition: form-data; name="Longitude"
+
+35.0
+--boundaryFail2--
+
+
+### E. Fail: Schedule Mismatch (Wrong Time)
+# Requesting Plumbing (-1) in Abdoun (-1).
+# Date is Monday (Correct Day), but Time is 08:00 AM.
+# Rashed starts at 09:00 AM.
+# Expected: 400 Bad Request
+POST {{host}}/api/bookings
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=boundaryFail3
+
+--boundaryFail3
+Content-Disposition: form-data; name="ServiceIds"
+
+-1
+--boundaryFail3
+Content-Disposition: form-data; name="ServiceAreaId"
+
+-1
+--boundaryFail3
+Content-Disposition: form-data; name="ScheduledDate"
+
+2025-12-1T08:00:00
+--boundaryFail3
+Content-Disposition: form-data; name="Address"
+
+Test Address
+--boundaryFail3
+Content-Disposition: form-data; name="Latitude"
+
+31.0
+--boundaryFail3
+Content-Disposition: form-data; name="Longitude"
+
+35.0
+--boundaryFail3--
+
+
+### F. Fail: Validation Error (Past Date)
+# Date is in 2020.
+# Expected: 400 Bad Request (Validation Error: "Scheduled date must be in the future")
+POST {{host}}/api/bookings
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=boundaryFail4
+
+--boundaryFail4
+Content-Disposition: form-data; name="ServiceIds"
+
+-1
+--boundaryFail4
+Content-Disposition: form-data; name="ServiceAreaId"
+
+-1
+--boundaryFail4
+Content-Disposition: form-data; name="ScheduledDate"
+
+2020-01-01T10:00:00
+--boundaryFail4
+Content-Disposition: form-data; name="Address"
+
+Test Address
+--boundaryFail4
+Content-Disposition: form-data; name="Latitude"
+
+31.0
+--boundaryFail4
+Content-Disposition: form-data; name="Longitude"
+
+35.0
+--boundaryFail4--

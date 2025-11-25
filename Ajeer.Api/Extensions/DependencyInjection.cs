@@ -1,7 +1,9 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using Ajeer.Api.Data;
+using Ajeer.Api.Middlewares;
 using Ajeer.Api.Services.Auth;
+using Ajeer.Api.Services.Bookings;
 using Ajeer.Api.Services.ServiceCategories;
 using Ajeer.Api.Services.Services;
 using FluentValidation;
@@ -26,6 +28,7 @@ public static class DependencyInjection
             //.AddApiDocumentation()
             //.AddEndpointsApiExplorer()
             //.AddSwaggerGen()
+            .AddExceptionHandling()
             .AddBusinessServices();
 
         return services;
@@ -87,6 +90,7 @@ public static class DependencyInjection
     public static IServiceCollection AddBusinessServices(this IServiceCollection services)
     {
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IBookingService, BookingService>();
         services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
         services.AddScoped<IServiceService, ServiceService>();
 
@@ -137,6 +141,13 @@ public static class DependencyInjection
             });
         });
 
+        return services;
+    }
+
+    public static IServiceCollection AddExceptionHandling(this IServiceCollection services)
+    {
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+        services.AddProblemDetails();
         return services;
     }
 }

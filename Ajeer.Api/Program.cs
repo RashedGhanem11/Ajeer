@@ -1,6 +1,5 @@
 using Ajeer.Api.Data;
 using Ajeer.Api.Extensions;
-using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +16,8 @@ var app = builder.Build();
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ajeer API v1");
     });
 }*/
+
+app.UseExceptionHandler();
 
 app.UseStaticFiles();
 

@@ -4,5 +4,7 @@ public enum FileType
 {
     ProfilePicture,
     IdCard,
-    BookingDocument
+    BookingImage,
+    BookingVideo,
+    BookingAudio
 }

@@ -27,5 +27,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        modelBuilder.Entity<ProviderService>().HasData(SeedData.GetProviderServices());
+        modelBuilder.Entity<ProviderServiceArea>().HasData(SeedData.GetProviderServiceAreas());
     }
 }

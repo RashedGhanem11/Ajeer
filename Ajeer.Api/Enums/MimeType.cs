@@ -4,5 +4,11 @@ public enum MimeType
 {
     Jpeg,
     Png,
-    Pdf
+    Webp,
+    Mp4,
+    Mov,
+    Mp3,
+    Wav,
+    M4a,
+    Other
 }
