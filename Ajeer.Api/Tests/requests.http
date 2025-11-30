@@ -1,124 +1,90 @@
+###
+@host = https://localhost:7012
+@contentType = application/json
 
-@host = http://localhost:5289
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiI0IiwidW5pcXVlX25hbWUiOiJBaG1lZCBLaGFsaWQiLCJlbWFpbCI6ImFobWVka2hhbGlkQGdtYWlsLmNvbSIsInJvbGUiOiJDdXN0b21lciIsIm5iZiI6MTc2MzU3Nzc2MSwiZXhwIjoxNzYzNTc3ODIxLCJpYXQiOjE3NjM1Nzc3NjEsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.aVwWXofKGg-JBnwz-34oIkT3oCxjx2Do5nYERJ0CID4
-@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiI1IiwidW5pcXVlX25hbWUiOiJBaG1lZCBLaGFsaWQiLCJlbWFpbCI6ImFobWVka2hhbGlkQGdtYWlsLmNvbSIsInJvbGUiOiJDdXN0b21lciIsIm5iZiI6MTc2NDEwMDg1NywiZXhwIjoxNzY0MTg3MjU3LCJpYXQiOjE3NjQxMDA4NTcsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.FIGDgYLEvUuIArAu-OGRbXmXdtM4EVFA75FVksgAe3s
-###
+# ==============================================================================
+# 1. AUTHENTICATION (Get Tokens for Everyone)
+# ==============================================================================
 
-GET  {{host}}/api/ServiceCategories
-Authorization: Bearer {{token}}
-
-###
-GET {{host}}/uploads/categories/appliance_repair.png
-
-###
-GET {{host}}/uploads/profilePictures/ProfilePicture_-3.jpg
-###
-###
-GET {{host}}/api/Services?categoryId=-1
-Authorization: Bearer {{token}}
-###
-POST {{host}}/api/auth/register
-Content-Type: application/json
-
-{
-    "Name": "Ahmed Khalid",
-    "Email": "ahmedkhalid@gmail.com",
-    "Phone": "0770000001",
-    "Password": "Password"
-}
-###
-
-###
-POST {{host}}/api/auth/register
-Content-Type: application/json
-
-{
-"name": "Duplicate User",
-"email": "janedoe@example.com",
-"phone": "962779999999",
-"password": "TestPassword123",
-"role": "Customer"
-}
-###
-
-@email_user = ali@example.com
-@email_pass = Password@123
-###
+### 1.1 Login Customer (Sara)
+# We will use this token to create the booking.
+# @name loginCustomer
 POST {{host}}/api/auth/login
-Content-Type: application/json
+Content-Type: {{contentType}}
 
 {
-"Identifier": "{{email_user}}",
-"password": "{{email_pass}}"
+    "identifier": "sara@example.com",
+    "password": "Password"
 }
 ###
-@phone_number = 0770000001
-@phone_pass = Password
+@tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiItMiIsInVuaXF1ZV9uYW1lIjoiU2FyYSBBaG1hZCIsImVtYWlsIjoic2FyYUBleGFtcGxlLmNvbSIsInJvbGUiOiJDdXN0b21lciIsIm5iZiI6MTc2NDUzMDExOCwiZXhwIjoxNzY0NjE2NTE3LCJpYXQiOjE3NjQ1MzAxMTgsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.63RHyCNH2vCz_GnenEpQkBCGyYjbRZ2mDH-Krj8hNKM
 
+### 1.2 Login Provider 1 (Rashed - -1)
+# @name loginPro1
 POST {{host}}/api/auth/login
-Content-Type: application/json
+Content-Type: {{contentType}}
 
 {
-"Identifier": "{{phone_number}}",
-"password": "{{phone_pass}}"
+    "identifier": "rashed@example.com",
+    "password": "Password"
 }
-
 ###
-POST {{host}}/api/auth/login/email
-Content-Type: application/json
+@tokenPro1 = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiItMSIsInVuaXF1ZV9uYW1lIjoiUmFzaGVkIEdoYW5lbSIsImVtYWlsIjoicmFzaGVkQGV4YW1wbGUuY29tIiwicm9sZSI6IlNlcnZpY2VQcm92aWRlciIsIm5iZiI6MTc2NDUzMDE0NSwiZXhwIjoxNzY0NjE2NTQ1LCJpYXQiOjE3NjQ1MzAxNDUsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.uK6vXbP_1j1z3FceCDyYqGQiVElt5HNGjbHHgr9vd9s
 
-{
-"email": "janedoe@example.com",
-"password": "WrongPassword123"
-}
-
-###
-GET {{host}}/api/auth/test-auth
-Authorization: Bearer {{authToken}}
-
-###
-GET {{host}}/api/auth/test-auth
-
-### Booking Test
-
-# ==============================================================================
-# 1. SETUP: LOGIN
-# ==============================================================================
-
-### Login as Customer (Sara Ahmad)
-# We need a token to make authorized booking requests.
-# User ID: -2
-# Password Hash used in seed: "Password@123"
-# @name login
+### 1.3 Login Provider 2 (Hothifah - -4)
+# @name loginPro2
 POST {{host}}/api/auth/login
-Content-Type: application/json
+Content-Type: {{contentType}}
 
 {
-  "identifier": "sara@example.com",
-  "password": "Password@123"
+    "identifier": "hothifah@example.com",
+    "password": "Password"
 }
+###
+@tokenPro2 = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiItNCIsInVuaXF1ZV9uYW1lIjoiSG90aGlmYWggTWFlbiIsImVtYWlsIjoiaG90aGlmYWhAZXhhbXBsZS5jb20iLCJyb2xlIjoiU2VydmljZVByb3ZpZGVyIiwibmJmIjoxNzY0NTMwMTcwLCJleHAiOjE3NjQ2MTY1NzAsImlhdCI6MTc2NDUzMDE3MCwiaXNzIjoiQWplZXJCYWNrZW5kQVBJIiwiYXVkIjoiQWplZXJDbGllbnRzIn0.NrJtscD_4v6ryA3m9DxM3SOitHpH7YArRWWJJ_3Gzuo
+
+### 1.4 Login Provider 3 (Saad - -5)
+# @name loginPro3
+POST {{host}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+    "identifier": "saad@example.com",
+    "password": "Password"
+}
+###
+@tokenPro3 = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiItNSIsInVuaXF1ZV9uYW1lIjoiU2FhZCBKYmFyYWgiLCJlbWFpbCI6InNhYWRAZXhhbXBsZS5jb20iLCJyb2xlIjoiU2VydmljZVByb3ZpZGVyIiwibmJmIjoxNzY0NTMwMjAwLCJleHAiOjE3NjQ2MTY2MDAsImlhdCI6MTc2NDUzMDIwMCwiaXNzIjoiQWplZXJCYWNrZW5kQVBJIiwiYXVkIjoiQWplZXJDbGllbnRzIn0.-Ki4WNILC5-L-PXpdT7ABjJOCvaab2UwBp2EEE2Rnl0
+
 
 # ==============================================================================
-# 2. SUCCESS SCENARIOS (Based on your Seed Data)
+# 2. CUSTOMER JOURNEY: CREATE BOOKING
 # ==============================================================================
 
-### A. Successful Booking: Plumbing in Abdoun (Provider -1)
-# Provider: -1 (Rashed)
-# Services: -1 (Leak Repair), -2 (Pipe Installation) matches Rashed's services.
-# Area: -1 (Abdoun) matches Rashed's area.
-# Schedule: Monday (Dec 1, 2025) at 10:00 AM is within Rashed's Mon 9-5 slot.
+### 2.1 Get Service Areas (To find "Abdoun")
+# Expect: A list of cities and areas. We want Area ID -1 (Abdoun).
+GET {{host}}/api/service-areas
+Authorization: Bearer {{tokenCustomer}}
+
+### 2.2 Get Services (To find "Leak Repair")
+# Expect: List of services. We want Service ID -1.
+GET {{host}}/api/services?categoryId=-1
+Authorization: Bearer {{tokenCustomer}}
+
+### 2.3 Create Booking (Leak Repair in Abdoun)
+# Scenario: 
+# - Service: -1 (Leak Repair)
+# - Area: -1 (Abdoun) -> Covered by Rashed, Hothifah, and Saad.
+# - Date: A Monday (e.g., Dec 1, 2025) -> All are available.
+# Result: The system will randomly pick one of the 3 providers.
+# @name createBooking
 POST {{host}}/api/bookings
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{tokenCustomer}}
 Content-Type: multipart/form-data; boundary=boundary123
 
 --boundary123
 Content-Disposition: form-data; name="ServiceIds"
 
 -1
---boundary123
-Content-Disposition: form-data; name="ServiceIds"
-
--2
 --boundary123
 Content-Disposition: form-data; name="ServiceAreaId"
 
@@ -130,7 +96,7 @@ Content-Disposition: form-data; name="ScheduledDate"
 --boundary123
 Content-Disposition: form-data; name="Address"
 
-Abdoun Circle, Amman
+Abdoun Circle, Villa 5
 --boundary123
 Content-Disposition: form-data; name="Latitude"
 
@@ -142,192 +108,88 @@ Content-Disposition: form-data; name="Longitude"
 --boundary123
 Content-Disposition: form-data; name="Notes"
 
-Fix the kitchen sink leak.
+Urgent leak in the main bathroom.
 --boundary123
-Content-Disposition: form-data; name="Attachments"; filename="test-image.jpg"
+Content-Disposition: form-data; name="Attachments"; filename="test.jpg"
 Content-Type: image/jpeg
 
-< ./test-image.jpg
+< ./test.jpg
 --boundary123--
-
-
-### B. Successful Booking: Cleaning in Al-Rabieh (Provider -3)
-# Provider: -3 (Ali)
-# Service: -6 (Home Deep Cleaning) matches Ali's service.
-# Area: -4 (Al-Rabieh) matches Ali's area.
-# Schedule: Saturday (Nov 29, 2025) at 11:00 AM is within Ali's Sat 10-6 slot.
-POST {{host}}/api/bookings
-Authorization: Bearer {{authToken}}
-Content-Type: multipart/form-data; boundary=boundaryXYZ
-
---boundaryXYZ
-Content-Disposition: form-data; name="ServiceIds"
-
--6
---boundaryXYZ
-Content-Disposition: form-data; name="ServiceAreaId"
-
--4
---boundaryXYZ
-Content-Disposition: form-data; name="ScheduledDate"
-
-2025-11-29T11:00:00
---boundaryXYZ
-Content-Disposition: form-data; name="Address"
-
-Al-Rabieh Street
---boundaryXYZ
-Content-Disposition: form-data; name="Latitude"
-
-31.9800
---boundaryXYZ
-Content-Disposition: form-data; name="Longitude"
-
-35.8900
---boundaryXYZ--
+###
+@bookingId = 1
 
 
 # ==============================================================================
-# 3. FAILURE SCENARIOS (Validation & Business Logic)
+# 3. PROVIDER JOURNEY: CHECK & REJECT (Re-assignment Test)
 # ==============================================================================
 
-### C. Fail: Area Not Covered (No Provider)
-# Requesting Plumbing (-1) in Al-Rabieh (-4).
-# Rashed (-1) does plumbing but is NOT in Al-Rabieh.
-# Ali (-3) is in Al-Rabieh but does NOT do plumbing.
-# Expected: 400 Bad Request ("No service providers are currently available...")
-POST {{host}}/api/bookings
-Authorization: Bearer {{authToken}}
-Content-Type: multipart/form-data; boundary=boundaryFail1
+# -------------------------------------------------------
+# MANUAL STEP:
+# Since assignment is random, check your Database or the logs 
+# to see which provider got the job (Rashed, Hothifah, or Saad).
+# Use the corresponding Token below.
+# -------------------------------------------------------
 
---boundaryFail1
-Content-Disposition: form-data; name="ServiceIds"
+### 3.1 Get Bookings (As Provider 1 - Rashed)
+# Check if Rashed got it.
+GET {{host}}/api/bookings?role=ServiceProvider
+Authorization: Bearer {{tokenPro1}}
 
--1
---boundaryFail1
-Content-Disposition: form-data; name="ServiceAreaId"
+### 3.2 Get Bookings (As Provider 2 - Hothifah)
+# Check if Hothifah got it.
+GET {{host}}/api/bookings?role=ServiceProvider
+Authorization: Bearer {{tokenPro2}}
 
--4
---boundaryFail1
-Content-Disposition: form-data; name="ScheduledDate"
+### 3.3 Get Bookings (As Provider 3 - Saad)
+# Check if Saad got it.
+GET {{host}}/api/bookings?role=ServiceProvider
+Authorization: Bearer {{tokenPro3}}
 
-2025-11-29T10:00:00
---boundaryFail1
-Content-Disposition: form-data; name="Address"
-
-Test Address
---boundaryFail1
-Content-Disposition: form-data; name="Latitude"
-
-31.0
---boundaryFail1
-Content-Disposition: form-data; name="Longitude"
-
-35.0
---boundaryFail1--
+### 3.4 REJECT BOOKING (As the Assigned Provider)
+# REPLACE {{tokenPro1}} with the token of the provider who ACTUALLY got the job.
+# Result: The booking status stays 'Pending', but ServiceProviderId changes to one of the others.
+PUT {{host}}/api/bookings/{{bookingId}}/reject
+Authorization: Bearer {{tokenPro2}}
 
 
-### D. Fail: Schedule Mismatch (Wrong Day)
-# Requesting Plumbing (-1) in Abdoun (-1).
-# Rashed covers this, BUT the date is Friday (Nov 28, 2025).
-# Rashed only works Mon/Tue.
-# Expected: 400 Bad Request ("No service providers... at this time")
-POST {{host}}/api/bookings
-Authorization: Bearer {{authToken}}
-Content-Type: multipart/form-data; boundary=boundaryFail2
+# ==============================================================================
+# 4. PROVIDER JOURNEY: ACCEPT & COMPLETE
+# ==============================================================================
 
---boundaryFail2
-Content-Disposition: form-data; name="ServiceIds"
+# -------------------------------------------------------
+# MANUAL STEP:
+# Check who the NEW provider is (it should be different from the one who rejected).
+# Use their token below.
+# -------------------------------------------------------
 
--1
---boundaryFail2
-Content-Disposition: form-data; name="ServiceAreaId"
+### 4.1 Accept Booking (As the New Provider)
+# Result: Status changes to 'Active'.
+PUT {{host}}/api/bookings/{{bookingId}}/accept
+Authorization: Bearer {{tokenPro1}}
 
--1
---boundaryFail2
-Content-Disposition: form-data; name="ScheduledDate"
-
-2025-11-28T10:00:00
---boundaryFail2
-Content-Disposition: form-data; name="Address"
-
-Test Address
---boundaryFail2
-Content-Disposition: form-data; name="Latitude"
-
-31.0
---boundaryFail2
-Content-Disposition: form-data; name="Longitude"
-
-35.0
---boundaryFail2--
+### 4.2 Complete Booking (As the New Provider)
+# Result: Status changes to 'Completed'.
+PUT {{host}}/api/bookings/{{bookingId}}/complete
+Authorization: Bearer {{tokenPro1}}
 
 
-### E. Fail: Schedule Mismatch (Wrong Time)
-# Requesting Plumbing (-1) in Abdoun (-1).
-# Date is Monday (Correct Day), but Time is 08:00 AM.
-# Rashed starts at 09:00 AM.
-# Expected: 400 Bad Request
-POST {{host}}/api/bookings
-Authorization: Bearer {{authToken}}
-Content-Type: multipart/form-data; boundary=boundaryFail3
+# ==============================================================================
+# 5. CUSTOMER JOURNEY: REVIEW
+# ==============================================================================
 
---boundaryFail3
-Content-Disposition: form-data; name="ServiceIds"
+### 5.1 Leave a Review (As Customer Sara)
+# Only possible because status is now 'Completed'.
+POST {{host}}/api/reviews
+Authorization: Bearer {{tokenCustomer}}
+Content-Type: {{contentType}}
 
--1
---boundaryFail3
-Content-Disposition: form-data; name="ServiceAreaId"
+{
+    "bookingId": 1,
+    "rating": 5,
+    "comment": "Excellent service! The replacement provider was very fast."
+}
 
--1
---boundaryFail3
-Content-Disposition: form-data; name="ScheduledDate"
-
-2025-12-1T08:00:00
---boundaryFail3
-Content-Disposition: form-data; name="Address"
-
-Test Address
---boundaryFail3
-Content-Disposition: form-data; name="Latitude"
-
-31.0
---boundaryFail3
-Content-Disposition: form-data; name="Longitude"
-
-35.0
---boundaryFail3--
-
-
-### F. Fail: Validation Error (Past Date)
-# Date is in 2020.
-# Expected: 400 Bad Request (Validation Error: "Scheduled date must be in the future")
-POST {{host}}/api/bookings
-Authorization: Bearer {{authToken}}
-Content-Type: multipart/form-data; boundary=boundaryFail4
-
---boundaryFail4
-Content-Disposition: form-data; name="ServiceIds"
-
--1
---boundaryFail4
-Content-Disposition: form-data; name="ServiceAreaId"
-
--1
---boundaryFail4
-Content-Disposition: form-data; name="ScheduledDate"
-
-2020-01-01T10:00:00
---boundaryFail4
-Content-Disposition: form-data; name="Address"
-
-Test Address
---boundaryFail4
-Content-Disposition: form-data; name="Latitude"
-
-31.0
---boundaryFail4
-Content-Disposition: form-data; name="Longitude"
-
-35.0
---boundaryFail4--
+### 5.2 Verify Review & Provider Rating Update
+# Check the booking details to see the review attached.
+GET {{host}}/api/bookings/{{bookingId}}
+Authorization: Bearer {{tokenCustomer}}

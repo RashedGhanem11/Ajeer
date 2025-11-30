@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ajeer.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251124142917_UpdateSeedDataForProviderServicesAndAreas")]
-    partial class UpdateSeedDataForProviderServicesAndAreas
+    [Migration("20251130190727_AddNewProviders")]
+    partial class AddNewProviders
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -64,18 +64,11 @@ namespace Ajeer.Api.Data.Migrations
                         new
                         {
                             Id = -1,
-                            FileType = "IdCard",
-                            FileUrl = "uploads/idcards/1_Id.png",
-                            MimeType = "Png",
-                            UploaderId = -1
-                        },
-                        new
-                        {
-                            Id = -2,
-                            FileType = "IdCard",
-                            FileUrl = "uploads/idcards/3_Id.png",
-                            MimeType = "Png",
-                            UploaderId = -3
+                            BookingId = -1,
+                            FileType = "Image",
+                            FileUrl = "7c5c6692-c684-486a-a41f-eb5ad0ffcda7_test-image",
+                            MimeType = "Jpeg",
+                            UploaderId = -2
                         });
                 });
 
@@ -113,6 +106,9 @@ namespace Ajeer.Api.Data.Migrations
                     b.Property<DateTime>("ScheduledDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("ServiceAreaId")
+                        .HasColumnType("int");
+
                     b.Property<int>("ServiceProviderId")
                         .HasColumnType("int");
 
@@ -128,6 +124,8 @@ namespace Ajeer.Api.Data.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ServiceAreaId");
 
                     b.HasIndex("ServiceProviderId");
 
@@ -146,6 +144,7 @@ namespace Ajeer.Api.Data.Migrations
                             Longitude = 35.9106m,
                             Notes = "Water leaking under the sink.",
                             ScheduledDate = new DateTime(2025, 11, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ServiceAreaId = -1,
                             ServiceProviderId = -1,
                             Status = "Active",
                             TotalAmount = 25m,
@@ -154,13 +153,14 @@ namespace Ajeer.Api.Data.Migrations
                         new
                         {
                             Id = -2,
-                            Address = "Shmeisani, Amman",
+                            Address = "Dabouq, Amman",
                             CreatedAt = new DateTime(2025, 11, 6, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             EstimatedHours = 4m,
                             Latitude = 31.9762m,
                             Longitude = 35.9105m,
                             Notes = "Deep cleaning before guests arrive.",
                             ScheduledDate = new DateTime(2025, 11, 8, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ServiceAreaId = -5,
                             ServiceProviderId = -3,
                             Status = "Completed",
                             TotalAmount = 40m,
@@ -426,6 +426,36 @@ namespace Ajeer.Api.Data.Migrations
                         {
                             ServiceProviderId = -3,
                             ServiceId = -8
+                        },
+                        new
+                        {
+                            ServiceProviderId = -4,
+                            ServiceId = -1
+                        },
+                        new
+                        {
+                            ServiceProviderId = -4,
+                            ServiceId = -2
+                        },
+                        new
+                        {
+                            ServiceProviderId = -4,
+                            ServiceId = -3
+                        },
+                        new
+                        {
+                            ServiceProviderId = -5,
+                            ServiceId = -1
+                        },
+                        new
+                        {
+                            ServiceProviderId = -5,
+                            ServiceId = -2
+                        },
+                        new
+                        {
+                            ServiceProviderId = -5,
+                            ServiceId = -3
                         });
                 });
 
@@ -463,6 +493,26 @@ namespace Ajeer.Api.Data.Migrations
                         {
                             ServiceProviderId = -3,
                             ServiceAreaId = -5
+                        },
+                        new
+                        {
+                            ServiceProviderId = -4,
+                            ServiceAreaId = -1
+                        },
+                        new
+                        {
+                            ServiceProviderId = -4,
+                            ServiceAreaId = -2
+                        },
+                        new
+                        {
+                            ServiceProviderId = -5,
+                            ServiceAreaId = -1
+                        },
+                        new
+                        {
+                            ServiceProviderId = -5,
+                            ServiceAreaId = -2
                         });
                 });
 
@@ -569,6 +619,38 @@ namespace Ajeer.Api.Data.Migrations
                             EndTime = new TimeSpan(0, 18, 0, 0, 0),
                             ServiceProviderId = -3,
                             StartTime = new TimeSpan(0, 10, 0, 0, 0)
+                        },
+                        new
+                        {
+                            Id = -4,
+                            DayOfWeek = (byte)1,
+                            EndTime = new TimeSpan(0, 17, 0, 0, 0),
+                            ServiceProviderId = -4,
+                            StartTime = new TimeSpan(0, 9, 0, 0, 0)
+                        },
+                        new
+                        {
+                            Id = -5,
+                            DayOfWeek = (byte)2,
+                            EndTime = new TimeSpan(0, 17, 0, 0, 0),
+                            ServiceProviderId = -4,
+                            StartTime = new TimeSpan(0, 9, 0, 0, 0)
+                        },
+                        new
+                        {
+                            Id = -6,
+                            DayOfWeek = (byte)1,
+                            EndTime = new TimeSpan(0, 17, 0, 0, 0),
+                            ServiceProviderId = -5,
+                            StartTime = new TimeSpan(0, 9, 0, 0, 0)
+                        },
+                        new
+                        {
+                            Id = -7,
+                            DayOfWeek = (byte)2,
+                            EndTime = new TimeSpan(0, 17, 0, 0, 0),
+                            ServiceProviderId = -5,
+                            StartTime = new TimeSpan(0, 9, 0, 0, 0)
                         });
                 });
 
@@ -963,7 +1045,7 @@ namespace Ajeer.Api.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int>("IdCardAttachmentId")
+                    b.Property<int?>("IdCardAttachmentId")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsVerified")
@@ -984,7 +1066,8 @@ namespace Ajeer.Api.Data.Migrations
                     b.HasKey("UserId");
 
                     b.HasIndex("IdCardAttachmentId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IdCardAttachmentId] IS NOT NULL");
 
                     b.ToTable("ServiceProviders", (string)null);
 
@@ -993,7 +1076,6 @@ namespace Ajeer.Api.Data.Migrations
                         {
                             UserId = -1,
                             Bio = "Experienced plumber with 10 years in Riyadh.",
-                            IdCardAttachmentId = -1,
                             IsVerified = true,
                             Rating = 0m,
                             TotalReviews = 0
@@ -1002,10 +1084,25 @@ namespace Ajeer.Api.Data.Migrations
                         {
                             UserId = -3,
                             Bio = "Professional cleaning services, available weekends.",
-                            IdCardAttachmentId = -2,
                             IsVerified = false,
                             Rating = 5m,
                             TotalReviews = 1
+                        },
+                        new
+                        {
+                            UserId = -4,
+                            Bio = "Experienced plumber with 10 years in Cairo.",
+                            IsVerified = true,
+                            Rating = 0m,
+                            TotalReviews = 0
+                        },
+                        new
+                        {
+                            UserId = -5,
+                            Bio = "Experienced plumber with 10 years in Amman.",
+                            IsVerified = true,
+                            Rating = 0m,
+                            TotalReviews = 0
                         });
                 });
 
@@ -1134,7 +1231,7 @@ namespace Ajeer.Api.Data.Migrations
                             IsActive = true,
                             LastLoginAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Rashed Ghanem",
-                            Password = "$2a$11$E8c1z9.I.d4dO2jXf1z6S.u7W0f1o.g1R5O9V4f1e4I0f1t.s0z4",
+                            Password = "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe",
                             Phone = "0791111111",
                             Role = (byte)1
                         },
@@ -1146,7 +1243,7 @@ namespace Ajeer.Api.Data.Migrations
                             IsActive = true,
                             LastLoginAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Sara Ahmad",
-                            Password = "$2a$11$E8c1z9.I.d4dO2jXf1z6S.u7W0f1o.g1R5O9V4f1e4I0f1t.s0z4",
+                            Password = "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe",
                             Phone = "0792222222",
                             Role = (byte)0
                         },
@@ -1158,9 +1255,33 @@ namespace Ajeer.Api.Data.Migrations
                             IsActive = true,
                             LastLoginAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "Ali Saleh",
-                            Password = "$2a$11$E8c1z9.I.d4dO2jXf1z6S.u7W0f1o.g1R5O9V4f1e4I0f1t.s0z4",
+                            Password = "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe",
                             Phone = "0793333333",
                             ProfilePictureUrl = "ProfilePicture_-3.jpg",
+                            Role = (byte)1
+                        },
+                        new
+                        {
+                            Id = -4,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "hothifah@example.com",
+                            IsActive = true,
+                            LastLoginAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Hothifah Maen",
+                            Password = "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe",
+                            Phone = "0794444444",
+                            Role = (byte)1
+                        },
+                        new
+                        {
+                            Id = -5,
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "saad@example.com",
+                            IsActive = true,
+                            LastLoginAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Saad Jbarah",
+                            Password = "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe",
+                            Phone = "0795555555",
                             Role = (byte)1
                         });
                 });
@@ -1185,6 +1306,12 @@ namespace Ajeer.Api.Data.Migrations
 
             modelBuilder.Entity("Ajeer.Api.Models.Booking", b =>
                 {
+                    b.HasOne("Ajeer.Api.Models.ServiceArea", "ServiceArea")
+                        .WithMany("Bookings")
+                        .HasForeignKey("ServiceAreaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Ajeer.Api.Models.ServiceProvider", "ServiceProvider")
                         .WithMany("Bookings")
                         .HasForeignKey("ServiceProviderId")
@@ -1196,6 +1323,8 @@ namespace Ajeer.Api.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ServiceArea");
 
                     b.Navigation("ServiceProvider");
 
@@ -1361,9 +1490,7 @@ namespace Ajeer.Api.Data.Migrations
                 {
                     b.HasOne("Ajeer.Api.Models.Attachment", "IdCardAttachment")
                         .WithOne()
-                        .HasForeignKey("Ajeer.Api.Models.ServiceProvider", "IdCardAttachmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("Ajeer.Api.Models.ServiceProvider", "IdCardAttachmentId");
 
                     b.HasOne("Ajeer.Api.Models.User", "User")
                         .WithOne("ServiceProvider")
@@ -1396,6 +1523,11 @@ namespace Ajeer.Api.Data.Migrations
                     b.Navigation("Messages");
 
                     b.Navigation("Review");
+                });
+
+            modelBuilder.Entity("Ajeer.Api.Models.ServiceArea", b =>
+                {
+                    b.Navigation("Bookings");
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.ServiceCategory", b =>

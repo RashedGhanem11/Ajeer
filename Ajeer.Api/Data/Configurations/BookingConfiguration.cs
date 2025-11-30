@@ -57,6 +57,11 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .HasForeignKey(b => b.ServiceProviderId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(b => b.ServiceArea)
+            .WithMany(sa => sa.Bookings)
+            .HasForeignKey(b => b.ServiceAreaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne(b => b.Review)
             .WithOne(r => r.Booking)
             .HasForeignKey<Review>(r => r.BookingId)

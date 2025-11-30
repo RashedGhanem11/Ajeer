@@ -7,4 +7,5 @@ public class ServiceArea
     public string CityName { get; set; } = null!;
 
     public ICollection<ServiceProvider> ServiceProviders { get; set; } = new List<ServiceProvider>();
+    public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }

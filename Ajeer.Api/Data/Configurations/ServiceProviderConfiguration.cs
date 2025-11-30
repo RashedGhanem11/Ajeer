@@ -34,7 +34,8 @@ public class ServiceProviderConfiguration : IEntityTypeConfiguration<Models.Serv
         builder.HasOne(sp => sp.IdCardAttachment)
             .WithOne()
             .HasForeignKey<Models.ServiceProvider>(sp => sp.IdCardAttachmentId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.ClientSetNull);
 
         builder.HasMany(sp => sp.Bookings)
             .WithOne(b => b.ServiceProvider)

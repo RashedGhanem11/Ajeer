@@ -8,7 +8,7 @@ namespace Ajeer.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IAuthService _authService) : ControllerBase
+public class AuthController(IAuthService _authService) : BaseApiController
 {
     [HttpPost("register")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(AuthResponse))]

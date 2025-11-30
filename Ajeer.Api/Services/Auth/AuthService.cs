@@ -4,23 +4,14 @@ using System.Text;
 using Ajeer.Api.Data;
 using Ajeer.Api.DTOs.Auth;
 using Ajeer.Api.Models;
+using Ajeer.Api.Services.Files;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Ajeer.Api.Services.Auth;
 
-public class AuthService(AppDbContext context, IConfiguration configuration) : IAuthService
+public class AuthService(AppDbContext context, IConfiguration configuration, IFileService fileService) : IAuthService
 {
-    private string? GetPublicImageUrl(User user)
-    {
-        if (string.IsNullOrEmpty(user.ProfilePictureUrl))
-        {
-            return null;
-        }
-
-        return $"/uploads/profilePictures/{user.ProfilePictureUrl}";
-    }
-
     public string GenerateJwtToken(User user)
     {
         var claims = new List<Claim>
@@ -112,6 +103,8 @@ public class AuthService(AppDbContext context, IConfiguration configuration) : I
 
         string token = GenerateJwtToken(user);
 
+        string? profilePictureUrl = fileService.GetPublicUrl("profilePictures", user.ProfilePictureUrl);
+
         return new AuthResponse
         {
             Token = token,
@@ -120,7 +113,7 @@ public class AuthService(AppDbContext context, IConfiguration configuration) : I
             Email = user.Email,
             Phone = user.Phone,
             Role = user.Role.ToString(),
-            ProfilePictureUrl = GetPublicImageUrl(user)
+            ProfilePictureUrl = profilePictureUrl
         };
     }
 }

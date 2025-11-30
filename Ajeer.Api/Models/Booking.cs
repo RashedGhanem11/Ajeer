@@ -7,6 +7,7 @@ public class Booking
     public int Id { get; set; }
     public int UserId { get; set; }
     public int ServiceProviderId { get; set; }
+    public int ServiceAreaId { get; set; }
     public BookingStatus Status { get; set; }
     public DateTime ScheduledDate { get; set; }
     public decimal EstimatedHours { get; set; }
@@ -19,6 +20,7 @@ public class Booking
 
     public User User { get; set; } = null!;
     public ServiceProvider ServiceProvider { get; set; } = null!;
+    public ServiceArea ServiceArea { get; set; } = null!;
     public Review? Review { get; set; }
 
     public ICollection<BookingServiceItem> BookingServiceItems { get; set; } = new List<BookingServiceItem>();

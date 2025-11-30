@@ -5,7 +5,7 @@ namespace Ajeer.Api.Data;
 
 public static class SeedData
 {
-    static string testPasswordHash = "$2a$11$E8c1z9.I.d4dO2jXf1z6S.u7W0f1o.g1R5O9V4f1e4I0f1t.s0z4"; // Hashed value of "Password@123";
+    static string testPasswordHash = "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe"; // Hashed value of "Password";
 
     public static List<User> GetUsers() => new()
     {
@@ -35,6 +35,26 @@ public static class SeedData
             Password = testPasswordHash,
             Role = UserRole.ServiceProvider,
             ProfilePictureUrl = "ProfilePicture_-3.jpg"
+        },
+        new User
+        {
+            Id = -4,
+            Name = "Hothifah Maen",
+            Email = "hothifah@example.com",
+            Phone = "0794444444",
+            Password = testPasswordHash,
+            Role = UserRole.ServiceProvider,
+            IsActive = true,
+        },
+        new User
+        {
+            Id = -5,
+            Name = "Saad Jbarah",
+            Email = "saad@example.com",
+            Phone = "0795555555",
+            Password = testPasswordHash,
+            Role = UserRole.ServiceProvider,
+            IsActive = true,
         }
     };
 
@@ -43,17 +63,26 @@ public static class SeedData
         new Models.ServiceProvider
         {
             UserId = -1,
-            IdCardAttachmentId = -1,
             Bio = "Experienced plumber with 10 years in Riyadh.",
             IsVerified = true
         },
         new Models.ServiceProvider
         {
             UserId = -3,
-            IdCardAttachmentId = -2,
             Bio = "Professional cleaning services, available weekends.",
             Rating = 5,
             TotalReviews = 1
+        }, new Models.ServiceProvider
+        {
+            UserId = -4,
+            Bio = "Experienced plumber with 10 years in Cairo.",
+            IsVerified = true
+        },
+        new Models.ServiceProvider
+        {
+            UserId = -5,
+            Bio = "Experienced plumber with 10 years in Amman.",
+            IsVerified = true
         }
     };
 
@@ -82,7 +111,39 @@ public static class SeedData
             DayOfWeek = DayOfWeek.Saturday,
             StartTime = new TimeSpan(10, 0, 0),
             EndTime = new TimeSpan(18, 0, 0)
-        }
+        },
+        new Schedule
+        {
+            Id = -4,
+            ServiceProviderId = -4,
+            DayOfWeek = DayOfWeek.Monday,
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(17, 0, 0)
+        },
+        new Schedule
+        {
+            Id = -5,
+            ServiceProviderId = -4,
+            DayOfWeek = DayOfWeek.Tuesday,
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(17, 0, 0)
+        },
+        new Schedule
+        {
+            Id = -6,
+            ServiceProviderId = -5,
+            DayOfWeek = DayOfWeek.Monday,
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(17, 0, 0)
+        },
+        new Schedule
+        {
+            Id = -7,
+            ServiceProviderId = -5,
+            DayOfWeek = DayOfWeek.Tuesday,
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(17, 0, 0)
+        },
     };
 
     public static List<Message> GetMessages()
@@ -206,7 +267,13 @@ public static class SeedData
         new ProviderService { ServiceProviderId = -1, ServiceId = -3 },
         new ProviderService { ServiceProviderId = -3, ServiceId = -6 },
         new ProviderService { ServiceProviderId = -3, ServiceId = -7 },
-        new ProviderService { ServiceProviderId = -3, ServiceId = -8 }
+        new ProviderService { ServiceProviderId = -3, ServiceId = -8 },
+        new ProviderService { ServiceProviderId = -4, ServiceId = -1 },
+        new ProviderService { ServiceProviderId = -4, ServiceId = -2 },
+        new ProviderService { ServiceProviderId = -4, ServiceId = -3 },
+        new ProviderService { ServiceProviderId = -5, ServiceId = -1 },
+        new ProviderService { ServiceProviderId = -5, ServiceId = -2 },
+        new ProviderService { ServiceProviderId = -5, ServiceId = -3 },
     };
 
     public static List<ProviderServiceArea> GetProviderServiceAreas() => new()
@@ -214,7 +281,11 @@ public static class SeedData
         new ProviderServiceArea { ServiceProviderId = -1, ServiceAreaId = -1 },
         new ProviderServiceArea { ServiceProviderId = -1, ServiceAreaId = -2 },
         new ProviderServiceArea { ServiceProviderId = -3, ServiceAreaId = -4 },
-        new ProviderServiceArea { ServiceProviderId = -3, ServiceAreaId = -5 }
+        new ProviderServiceArea { ServiceProviderId = -3, ServiceAreaId = -5 },
+        new ProviderServiceArea { ServiceProviderId = -4, ServiceAreaId = -1 },
+        new ProviderServiceArea { ServiceProviderId = -4, ServiceAreaId = -2 },
+        new ProviderServiceArea { ServiceProviderId = -5, ServiceAreaId = -1 },
+        new ProviderServiceArea { ServiceProviderId = -5, ServiceAreaId = -2 },
     };
 
     public static List<Attachment> GetAttachments() => new()
@@ -222,19 +293,12 @@ public static class SeedData
         new Attachment
         {
             Id = -1,
-            FileUrl = "uploads/idcards/1_Id.png",
-            MimeType = MimeType.Png,
-            FileType = FileType.IdCard,
-            UploaderId = -1
-        },
-        new Attachment
-        {
-            Id = -2,
-            FileUrl = "uploads/idcards/3_Id.png",
-            MimeType = MimeType.Png,
-            FileType = FileType.IdCard,
-            UploaderId = -3
-        },
+            FileUrl = "7c5c6692-c684-486a-a41f-eb5ad0ffcda7_test-image",
+            MimeType = MimeType.Jpeg,
+            FileType = FileType.Image,
+            UploaderId = -2,
+            BookingId = -1
+        }
     };
 
     public static List<Booking> GetBookings() => new()
@@ -244,6 +308,7 @@ public static class SeedData
             Id = -1,
             UserId = -2,
             ServiceProviderId = -1,
+            ServiceAreaId = -1,
             Status = BookingStatus.Active,
             ScheduledDate = new DateTime(2025, 11, 12),
             EstimatedHours = 2,
@@ -259,11 +324,12 @@ public static class SeedData
             Id = -2,
             UserId = -2,
             ServiceProviderId = -3,
+            ServiceAreaId = -5,
             Status = BookingStatus.Completed,
             ScheduledDate = new DateTime(2025, 11, 8),
             EstimatedHours = 4,
             TotalAmount = 40,
-            Address = "Shmeisani, Amman",
+            Address = "Dabouq, Amman",
             Latitude = 31.9762m,
             Longitude = 35.9105m,
             Notes = "Deep cleaning before guests arrive.",

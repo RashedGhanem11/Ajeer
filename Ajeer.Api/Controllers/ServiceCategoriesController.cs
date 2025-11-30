@@ -8,7 +8,7 @@ namespace Ajeer.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class ServiceCategoriesController(IServiceCategoryService _service) : ControllerBase
+public class ServiceCategoriesController(IServiceCategoryService _service) : BaseApiController
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ServiceCategoryResponse>))]

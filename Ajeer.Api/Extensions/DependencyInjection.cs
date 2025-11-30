@@ -4,6 +4,10 @@ using Ajeer.Api.Data;
 using Ajeer.Api.Middlewares;
 using Ajeer.Api.Services.Auth;
 using Ajeer.Api.Services.Bookings;
+using Ajeer.Api.Services.Files;
+using Ajeer.Api.Services.Formatting;
+using Ajeer.Api.Services.Reviews;
+using Ajeer.Api.Services.ServiceAreas;
 using Ajeer.Api.Services.ServiceCategories;
 using Ajeer.Api.Services.Services;
 using FluentValidation;
@@ -91,6 +95,10 @@ public static class DependencyInjection
     {
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IBookingService, BookingService>();
+        services.AddScoped<IFileService, FileService>();
+        services.AddScoped<IFormattingService, FormattingService>();
+        services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<IServiceAreaService, ServiceAreaService>();
         services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
         services.AddScoped<IServiceService, ServiceService>();
 
