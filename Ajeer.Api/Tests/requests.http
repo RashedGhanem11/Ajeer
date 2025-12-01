@@ -1,5 +1,5 @@
 ###
-@host = https://localhost:7012
+@host = http://localhost:5289
 @contentType = application/json
 
 # ==============================================================================
@@ -92,7 +92,7 @@ Content-Disposition: form-data; name="ServiceAreaId"
 --boundary123
 Content-Disposition: form-data; name="ScheduledDate"
 
-2025-12-1T10:00:00
+2025-12-8T10:00:00
 --boundary123
 Content-Disposition: form-data; name="Address"
 
@@ -110,10 +110,10 @@ Content-Disposition: form-data; name="Notes"
 
 Urgent leak in the main bathroom.
 --boundary123
-Content-Disposition: form-data; name="Attachments"; filename="test.jpg"
+Content-Disposition: form-data; name="Attachments"; filename="test-image.jpg"
 Content-Type: image/jpeg
 
-< ./test.jpg
+< ./test-image.jpg
 --boundary123--
 ###
 @bookingId = 1
@@ -149,7 +149,7 @@ Authorization: Bearer {{tokenPro3}}
 # REPLACE {{tokenPro1}} with the token of the provider who ACTUALLY got the job.
 # Result: The booking status stays 'Pending', but ServiceProviderId changes to one of the others.
 PUT {{host}}/api/bookings/{{bookingId}}/reject
-Authorization: Bearer {{tokenPro2}}
+Authorization: Bearer {{tokenPro1}}
 
 
 # ==============================================================================
@@ -165,12 +165,12 @@ Authorization: Bearer {{tokenPro2}}
 ### 4.1 Accept Booking (As the New Provider)
 # Result: Status changes to 'Active'.
 PUT {{host}}/api/bookings/{{bookingId}}/accept
-Authorization: Bearer {{tokenPro1}}
+Authorization: Bearer {{tokenPro3}}
 
 ### 4.2 Complete Booking (As the New Provider)
 # Result: Status changes to 'Completed'.
 PUT {{host}}/api/bookings/{{bookingId}}/complete
-Authorization: Bearer {{tokenPro1}}
+Authorization: Bearer {{tokenPro3}}
 
 
 # ==============================================================================
