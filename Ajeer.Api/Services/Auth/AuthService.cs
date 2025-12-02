@@ -78,7 +78,7 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IFi
             Name = newUser.Name,
             Email = newUser.Email,
             Phone = newUser.Phone,
-            Role = newUser.Role.ToString(),
+            Role = newUser.Role,
             ProfilePictureUrl = null
         };
     }
@@ -112,7 +112,7 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IFi
             Name = user.Name,
             Email = user.Email,
             Phone = user.Phone,
-            Role = user.Role.ToString(),
+            Role = user.Role,
             ProfilePictureUrl = profilePictureUrl
         };
     }

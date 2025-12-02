@@ -9,6 +9,7 @@ using Ajeer.Api.Services.Formatting;
 using Ajeer.Api.Services.Reviews;
 using Ajeer.Api.Services.ServiceAreas;
 using Ajeer.Api.Services.ServiceCategories;
+using Ajeer.Api.Services.ServiceProviders;
 using Ajeer.Api.Services.Services;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -100,6 +101,7 @@ public static class DependencyInjection
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IServiceAreaService, ServiceAreaService>();
         services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
+        services.AddScoped<IServiceProviderService, ServiceProviderService>();
         services.AddScoped<IServiceService, ServiceService>();
 
         return services;

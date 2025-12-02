@@ -13,7 +13,7 @@ public class ServiceProviderConfiguration : IEntityTypeConfiguration<Models.Serv
         builder.HasKey(sp => sp.UserId);
 
         builder.Property(sp => sp.Bio)
-            .IsRequired()
+            .IsRequired(false)
             .HasMaxLength(500);
 
         builder.Property(sp => sp.Rating)
@@ -60,34 +60,26 @@ public class ServiceProviderConfiguration : IEntityTypeConfiguration<Models.Serv
         builder.HasMany(sp => sp.Services)
             .WithMany(s => s.ServiceProviders)
             .UsingEntity<ProviderService>(
-                j => j.HasOne(ps => ps.Service)
-                      .WithMany()
-                      .HasForeignKey(ps => ps.ServiceId),
+                j => j.HasOne(ps => ps.Service).WithMany().HasForeignKey(ps => ps.ServiceId),
                 j => j.HasOne(ps => ps.ServiceProvider)
-                      .WithMany()
-                      .HasForeignKey(ps => ps.ServiceProviderId),
-                j =>
-                {
+                    .WithMany(sp => sp.ProviderServices)
+                    .HasForeignKey(ps => ps.ServiceProviderId),
+                j => {
                     j.ToTable("ProviderServices");
                     j.HasKey(ps => new { ps.ServiceProviderId, ps.ServiceId });
-                }
-            );
+                });
 
         builder.HasMany(sp => sp.ServiceAreas)
             .WithMany(a => a.ServiceProviders)
             .UsingEntity<ProviderServiceArea>(
-                j => j.HasOne(psa => psa.ServiceArea)
-                      .WithMany()
-                      .HasForeignKey(psa => psa.ServiceAreaId),
+                j => j.HasOne(psa => psa.ServiceArea).WithMany().HasForeignKey(psa => psa.ServiceAreaId),
                 j => j.HasOne(psa => psa.ServiceProvider)
-                      .WithMany()
-                      .HasForeignKey(psa => psa.ServiceProviderId),
-                j =>
-                {
+                    .WithMany(sp => sp.ProviderServiceAreas)
+                    .HasForeignKey(psa => psa.ServiceProviderId),
+                j => {
                     j.ToTable("ProviderServiceAreas");
                     j.HasKey(psa => new { psa.ServiceProviderId, psa.ServiceAreaId });
-                }
-            );
+                });
 
         builder.HasData(SeedData.GetServiceProviders());
     }

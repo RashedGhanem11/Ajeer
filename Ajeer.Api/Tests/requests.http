@@ -193,3 +193,114 @@ Content-Type: {{contentType}}
 # Check the booking details to see the review attached.
 GET {{host}}/api/bookings/{{bookingId}}
 Authorization: Bearer {{tokenCustomer}}
+
+# ==============================================================================
+# 1. SETUP: REGISTER A NEW CUSTOMER (User to be upgraded)
+# ==============================================================================
+
+### 1.1 Register Jane Doe (Starts as Customer)
+# This token will be used to call the /providers/register endpoint.
+# @name registerJane
+POST {{host}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+    "name": "Mohammed Sami",
+    "email": "mohammed@gmail.com",
+    "phone": "0790001000",
+    "password": "Password@123"
+}
+###
+@tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwidW5pcXVlX25hbWUiOiJNb2hhbW1lZCBTYW1pIiwiZW1haWwiOiJtb2hhbW1lZEBnbWFpbC5jb20iLCJyb2xlIjoiQ3VzdG9tZXIiLCJuYmYiOjE3NjQ3MDQwNTYsImV4cCI6MTc2NDc5MDQ1NiwiaWF0IjoxNzY0NzA0MDU2LCJpc3MiOiJBamVlckJhY2tlbmRBUEkiLCJhdWQiOiJBamVlckNsaWVudHMifQ.oKCAjv5MzDEhA3rVj3jpjEq5uIBYpuQJYgeKNyN396M
+@userId = 1
+
+
+### 1.2 Verify Jane's Initial Role (Should see "Customer")
+GET {{host}}/api/auth/test-auth
+Authorization: Bearer {{tokenCustomer}}
+
+# ==============================================================================
+# 2. PROVIDER REGISTRATION (Upgrade User Role)
+# ==============================================================================
+
+### 2.1 Attempt to Become a Provider (Jane)
+# Jane will register to provide Plumbing (Services -1, -2, -3) in Abdoun (-1) and Jebel Al-Weibdeh (-2).
+# Schedules: Monday 8:00 - 12:00 AND Monday 13:00 - 17:00 (Testing Overlap Validator and multiple slots).
+# @name becomeProvider
+POST {{host}}/api/serviceproviders/register
+Authorization: Bearer {{tokenCustomer}}
+Content-Type: {{contentType}}
+
+{
+    "serviceIds": [ -1, -2, -3 ],
+    "serviceAreaIds": [ -1, -2 ],
+    "schedules": [
+        {
+            "dayOfWeek": "Monday",
+            "startTime": "08:00:00",
+            "endTime": "12:00:00"
+        },
+        {
+            "dayOfWeek": "Monday",
+            "startTime": "13:00:00",
+            "endTime": "17:00:00"
+        },
+        {
+            "dayOfWeek": "Wednesday",
+            "startTime": "10:00:00",
+            "endTime": "16:00:00"
+        }
+    ]
+}
+###
+@tokenProvider = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwidW5pcXVlX25hbWUiOiJNb2hhbW1lZCBTYW1pIiwiZW1haWwiOiJtb2hhbW1lZEBnbWFpbC5jb20iLCJyb2xlIjoiU2VydmljZVByb3ZpZGVyIiwibmJmIjoxNzY0NzA0Mjk1LCJleHAiOjE3NjQ3OTA2OTUsImlhdCI6MTc2NDcwNDI5NSwiaXNzIjoiQWplZXJCYWNrZW5kQVBJIiwiYXVkIjoiQWplZXJDbGllbnRzIn0.jY-oNIQ6Lu3fzvO43M6ulbhCag5Trm03yGayrvGtQp4
+
+
+### 2.2 Verify New Role (Should see "ServiceProvider")
+# Using the NEW token from the provider registration response.
+GET {{host}}/api/auth/test-auth
+Authorization: Bearer {{tokenProvider}}
+
+
+# ==============================================================================
+# 3. VALIDATION FAILURE TESTS
+# ==============================================================================
+
+### 3.1 Fail: Duplicate Registration (Jane is already a provider)
+# Expected: 400 Bad Request / Exception message: "User is already registered as a service provider."
+POST {{host}}/api/providers/register
+Authorization: Bearer {{tokenProvider}}
+Content-Type: {{contentType}}
+
+{
+    "bio": "Should fail.",
+    "serviceIds": [ -1 ],
+    "serviceAreaIds": [ -1 ],
+    "schedules": [ { "dayOfWeek": "Monday", "startTime": "09:00:00", "endTime": "17:00:00" } ]
+}
+
+
+### 3.2 Fail: Schedule Overlap
+# Monday slot 1 (9:00 - 11:00) overlaps with slot 2 (10:00 - 12:00)
+# Expected: 400 Bad Request / Validation Error: "Your schedule contains overlapping time slots..."
+POST {{host}}/api/providers/register
+Authorization: Bearer {{tokenCustomer}}
+Content-Type: {{contentType}}
+
+{
+    "bio": "Test Overlap",
+    "serviceIds": [ -1 ],
+    "serviceAreaIds": [ -1 ],
+    "schedules": [
+        {
+            "dayOfWeek": "Tuesday",
+            "startTime": "09:00:00",
+            "endTime": "11:00:00"
+        },
+        {
+            "dayOfWeek": "Tuesday",
+            "startTime": "10:00:00",
+            "endTime": "12:00:00"
+        }
+    ]
+}
