@@ -40,9 +40,7 @@ public static class DependencyInjection
 
     public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
-        
-    //"DefaultConnection": "Server=.\\SQLEXPRESS;Database=AjeerDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetConnectionString("MacConnection");
 
         services.AddDbContext<AppDbContext>(options =>
         {
