@@ -1,10 +1,11 @@
 using Ajeer.Api.Data;
 using Ajeer.Api.DTOs.ServiceCategories;
+using Ajeer.Api.Services.Files;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ajeer.Api.Services.ServiceCategories;
 
-public class ServiceCategoryService(AppDbContext _context) : IServiceCategoryService
+public class ServiceCategoryService(AppDbContext _context, IFileService _fileService) : IServiceCategoryService
 {
     public async Task<List<ServiceCategoryResponse>> GetAllCategoriesAsync()
     {
@@ -16,7 +17,7 @@ public class ServiceCategoryService(AppDbContext _context) : IServiceCategorySer
         {
             Id = c.Id,
             Name = c.Name,
-            IconUrl = $"/uploads/categories/{c.IconUrl}"
+            IconUrl = _fileService.GetPublicUrl("categories", c.IconUrl)!
         }).ToList();
 
         return response;

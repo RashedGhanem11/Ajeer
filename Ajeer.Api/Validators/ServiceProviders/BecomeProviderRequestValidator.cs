@@ -35,13 +35,13 @@ public class BecomeProviderRequestValidator : AbstractValidator<BecomeProviderRe
         });
     }
 
-    private bool HaveNoOverlappingSlots(List<WorkScheduleRequest> schedules)
+    private bool HaveNoOverlappingSlots(List<WorkScheduleDto> schedules)
     {
         if (schedules == null || !schedules.Any()) return true;
 
         var groupedByDay = schedules.GroupBy(s => s.DayOfWeek);
 
-        foreach (IGrouping<DayOfWeek, WorkScheduleRequest> dayGroup in groupedByDay)
+        foreach (IGrouping<DayOfWeek, WorkScheduleDto> dayGroup in groupedByDay)
         {
             var sortedSlots = dayGroup.OrderBy(s => s.StartTime).ToList();
 

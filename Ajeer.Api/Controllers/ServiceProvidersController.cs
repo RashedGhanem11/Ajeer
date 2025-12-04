@@ -20,4 +20,24 @@ public class ServiceProvidersController(IServiceProviderService _providerService
 
         return Ok(response);
     }
+
+    [HttpGet("my-profile")]
+    [Authorize(Roles = "ServiceProvider")]
+    [ProducesResponseType(typeof(ProviderProfileResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyProfile()
+    {
+        int userId = GetUserId();
+        var result = await _providerService.GetMyProfileAsync(userId);
+        return Ok(result);
+    }
+
+    [HttpPut("profile")]
+    [Authorize(Roles = "ServiceProvider")]
+    public async Task<IActionResult> UpdateProfile([FromBody] BecomeProviderRequest dto)
+    {
+        int userId = GetUserId();
+        await _providerService.UpdateProviderProfileAsync(userId, dto);
+
+        return Ok(new { message = "Profile updated successfully." });
+    }
 }

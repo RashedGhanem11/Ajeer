@@ -22,6 +22,18 @@ public class FileService(IWebHostEnvironment _environment) : IFileService
         return uniqueFileName;
     }
 
+    public void DeleteFile(string folderName, string? fileName)
+    {
+        if (string.IsNullOrEmpty(fileName)) return;
+
+        string filePath = Path.Combine(_environment.WebRootPath, "uploads", folderName, fileName);
+
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+        }
+    }
+
     public string? GetPublicUrl(string folderName, string? fileName)
     {
         if (string.IsNullOrEmpty(fileName)) return null;

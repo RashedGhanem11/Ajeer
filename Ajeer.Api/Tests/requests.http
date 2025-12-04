@@ -13,8 +13,8 @@ POST {{host}}/api/auth/login
 Content-Type: {{contentType}}
 
 {
-    "identifier": "sara@example.com",
-    "password": "Password"
+    "identifier": "majed@gmail.com",
+    "password": "Password@123"
 }
 ###
 @tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiItMiIsInVuaXF1ZV9uYW1lIjoiU2FyYSBBaG1hZCIsImVtYWlsIjoic2FyYUBleGFtcGxlLmNvbSIsInJvbGUiOiJDdXN0b21lciIsIm5iZiI6MTc2NDUzMDExOCwiZXhwIjoxNzY0NjE2NTE3LCJpYXQiOjE3NjQ1MzAxMTgsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.63RHyCNH2vCz_GnenEpQkBCGyYjbRZ2mDH-Krj8hNKM
@@ -109,14 +109,15 @@ Content-Disposition: form-data; name="Longitude"
 Content-Disposition: form-data; name="Notes"
 
 Urgent leak in the main bathroom.
---boundary123
+--boundary123--
+###
 Content-Disposition: form-data; name="Attachments"; filename="test-image.jpg"
 Content-Type: image/jpeg
 
 < ./test-image.jpg
 --boundary123--
 ###
-@bookingId = 1
+@bookingId = 2
 
 
 # ==============================================================================
@@ -143,7 +144,7 @@ Authorization: Bearer {{tokenPro2}}
 ### 3.3 Get Bookings (As Provider 3 - Saad)
 # Check if Saad got it.
 GET {{host}}/api/bookings?role=ServiceProvider
-Authorization: Bearer {{tokenPro3}}
+Authorization: Bearer {{tokenPro1}}
 
 ### 3.4 REJECT BOOKING (As the Assigned Provider)
 # REPLACE {{tokenPro1}} with the token of the provider who ACTUALLY got the job.
@@ -165,12 +166,12 @@ Authorization: Bearer {{tokenPro1}}
 ### 4.1 Accept Booking (As the New Provider)
 # Result: Status changes to 'Active'.
 PUT {{host}}/api/bookings/{{bookingId}}/accept
-Authorization: Bearer {{tokenPro3}}
+Authorization: Bearer {{tokenPro2}}
 
 ### 4.2 Complete Booking (As the New Provider)
 # Result: Status changes to 'Completed'.
 PUT {{host}}/api/bookings/{{bookingId}}/complete
-Authorization: Bearer {{tokenPro3}}
+Authorization: Bearer {{tokenPro2}}
 
 
 # ==============================================================================
@@ -184,7 +185,7 @@ Authorization: Bearer {{tokenCustomer}}
 Content-Type: {{contentType}}
 
 {
-    "bookingId": 1,
+    "bookingId": 2,
     "rating": 5,
     "comment": "Excellent service! The replacement provider was very fast."
 }
@@ -205,14 +206,13 @@ POST {{host}}/api/auth/register
 Content-Type: {{contentType}}
 
 {
-    "name": "Mohammed Sami",
-    "email": "mohammed@gmail.com",
-    "phone": "0790001000",
+    "name": "Majed Ahmed",
+    "email": "majed@gmail.com",
+    "phone": "0790001100",
     "password": "Password@123"
 }
 ###
-@tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwidW5pcXVlX25hbWUiOiJNb2hhbW1lZCBTYW1pIiwiZW1haWwiOiJtb2hhbW1lZEBnbWFpbC5jb20iLCJyb2xlIjoiQ3VzdG9tZXIiLCJuYmYiOjE3NjQ3MDQwNTYsImV4cCI6MTc2NDc5MDQ1NiwiaWF0IjoxNzY0NzA0MDU2LCJpc3MiOiJBamVlckJhY2tlbmRBUEkiLCJhdWQiOiJBamVlckNsaWVudHMifQ.oKCAjv5MzDEhA3rVj3jpjEq5uIBYpuQJYgeKNyN396M
-@userId = 1
+@tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyIiwidW5pcXVlX25hbWUiOiJNYWplZCBBaG1lZCIsImVtYWlsIjoibWFqZWRAZ21haWwuY29tIiwicm9sZSI6IlNlcnZpY2VQcm92aWRlciIsIm5iZiI6MTc2NDg3NzE4NCwiZXhwIjoxNzY0OTYzNTg0LCJpYXQiOjE3NjQ4NzcxODQsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.LOahaPcW29ZWtv09WuKASiR0YM2UhgkoMuz8tW_pOrs
 
 
 ### 1.2 Verify Jane's Initial Role (Should see "Customer")
@@ -233,33 +233,51 @@ Content-Type: {{contentType}}
 
 {
     "serviceIds": [ -1, -2, -3 ],
-    "serviceAreaIds": [ -1, -2 ],
+    "serviceAreaIds": [ -1, -3 ],
     "schedules": [
         {
-            "dayOfWeek": "Monday",
+            "dayOfWeek": "Saturday",
             "startTime": "08:00:00",
-            "endTime": "12:00:00"
+            "endTime": "20:00:00"
+        },
+        {
+            "dayOfWeek": "Sunday",
+            "startTime": "8:00:00",
+            "endTime": "20:00:00"
         },
         {
             "dayOfWeek": "Monday",
-            "startTime": "13:00:00",
-            "endTime": "17:00:00"
+            "startTime": "8:00:00",
+            "endTime": "20:00:00"
+        },
+        {
+            "dayOfWeek": "Tuesday",
+            "startTime": "8:00:00",
+            "endTime": "20:00:00"
         },
         {
             "dayOfWeek": "Wednesday",
-            "startTime": "10:00:00",
-            "endTime": "16:00:00"
+            "startTime": "8:00:00",
+            "endTime": "20:00:00"
+        },
+        {
+            "dayOfWeek": "Thursday",
+            "startTime": "8:00:00",
+            "endTime": "20:00:00"
+        },
+        {
+            "dayOfWeek": "Friday",
+            "startTime": "8:00:00",
+            "endTime": "20:00:00"
         }
     ]
 }
 ###
-@tokenProvider = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwidW5pcXVlX25hbWUiOiJNb2hhbW1lZCBTYW1pIiwiZW1haWwiOiJtb2hhbW1lZEBnbWFpbC5jb20iLCJyb2xlIjoiU2VydmljZVByb3ZpZGVyIiwibmJmIjoxNzY0NzA0Mjk1LCJleHAiOjE3NjQ3OTA2OTUsImlhdCI6MTc2NDcwNDI5NSwiaXNzIjoiQWplZXJCYWNrZW5kQVBJIiwiYXVkIjoiQWplZXJDbGllbnRzIn0.jY-oNIQ6Lu3fzvO43M6ulbhCag5Trm03yGayrvGtQp4
-
-
+@tokenProvider = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyIiwidW5pcXVlX25hbWUiOiJNYWplZCBBaG1lZCIsImVtYWlsIjoibWFqZWRAZ21haWwuY29tIiwicm9sZSI6IlNlcnZpY2VQcm92aWRlciIsIm5iZiI6MTc2NDg2OTIwNiwiZXhwIjoxNzY0OTU1NjA2LCJpYXQiOjE3NjQ4NjkyMDYsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.6W22KQf8xvM7d3yrwm7yYKWYby-HLZlmL6Unzg58MuI
 ### 2.2 Verify New Role (Should see "ServiceProvider")
 # Using the NEW token from the provider registration response.
 GET {{host}}/api/auth/test-auth
-Authorization: Bearer {{tokenProvider}}
+Authorization: Bearer {{tokenCustomer}}
 
 
 # ==============================================================================
@@ -303,4 +321,137 @@ Content-Type: {{contentType}}
             "endTime": "12:00:00"
         }
     ]
+}
+
+###
+# Get provider info
+GET {{host}}/api/serviceProviders/my-profile
+Authorization: Bearer {{tokenPro1}}
+
+### 3. Update Profile
+# Change Bio
+# Services: Keep -1 (Leak Repair), Add -3 (Deep Cleaning), Remove -2 (Pipe Installation)
+# Areas: Keep -1 (Khalda)
+# Schedule: Change to ONLY Friday 10-4
+PUT {{host}}/api/serviceProviders/profile
+Authorization: Bearer {{tokenPro1}}
+Content-Type: {{contentType}}
+
+{
+    "bio": "Updated Bio: Expert Plumber and now doing Deep Cleaning!",
+    "serviceIds": [ -1, -2, -3],
+    "serviceAreaIds": [ -1, -2, -3 ],
+    "schedules": [
+        {
+            "dayOfWeek": "Monday",
+            "startTime": "10:00:00",
+            "endTime": "16:00:00"
+        },
+        {
+            "dayOfWeek": "Monday",
+            "startTime": "17:00:00",
+            "endTime": "20:00:00"
+        },
+        {
+            "dayOfWeek": "Thursday",
+            "startTime": "10:00:00",
+            "endTime": "16:00:00"
+        }
+    ]
+}
+
+### 4. Verify Update
+# Check if the new services and schedule appear
+GET {{host}}/api/serviceProviders/my-profile
+Authorization: Bearer {{tokenPro1}}
+
+
+# ==============================================================================
+# 2. UPDATE PROFILE INFO (Multipart)
+# ==============================================================================
+
+### 2.1 Update Name, Phone, and Picture
+# We are changing name to "Sara Updated" and phone to "0799999999".
+# We are uploading a profile picture.
+# Response: Should return a NEW Token with the updated Name/Picture claims.
+# @name updateProfile
+PUT {{host}}/api/users/profile
+Authorization: Bearer {{tokenCustomer}}
+Content-Type: multipart/form-data; boundary=boundaryProfile
+
+--boundaryProfile
+Content-Disposition: form-data; name="Name"
+
+Majed Jamal
+--boundaryProfile
+Content-Disposition: form-data; name="Phone"
+
+0799999999
+--boundaryProfile
+Content-Disposition: form-data; name="ProfileImage"; filename="test.jpg"
+Content-Type: image/jpeg
+
+< ./test.jpg
+--boundaryProfile--
+
+# Capture the NEW token returned by the update (it might have updated claims)
+@newToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyIiwidW5pcXVlX25hbWUiOiJNYWplZCBKYW1hbCIsImVtYWlsIjoibWFqZWRAZ21haWwuY29tIiwicm9sZSI6IlNlcnZpY2VQcm92aWRlciIsIm5iZiI6MTc2NDg3ODA0MCwiZXhwIjoxNzY0OTY0NDQwLCJpYXQiOjE3NjQ4NzgwNDAsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.5xuA5aoP3wY1tb-SEIM2_VgCvgtP28JsB3EDEb0sD2U
+
+
+### 2.2 Verify Update (Check Auth endpoint)
+# Using the NEW token, check if the name is updated in the claims/response.
+GET {{host}}/api/auth/test-auth
+Authorization: Bearer {{newToken}}
+
+
+# ==============================================================================
+# 3. CHANGE PASSWORD
+# ==============================================================================
+
+### 3.1 Fail: Wrong Current Password
+# Trying to change password with incorrect old password.
+# Expected: 400 Bad Request ("Incorrect current password")
+PUT {{host}}/api/users/change-password
+Authorization: Bearer {{newToken}}
+Content-Type: {{contentType}}
+
+{
+    "currentPassword": "WrongPassword",
+    "newPassword": "NewStrongPassword123"
+}
+
+### 3.2 Success: Change Password
+# Changing from "Password" to "NewStrongPassword123".
+PUT {{host}}/api/users/change-password
+Authorization: Bearer {{newToken}}
+Content-Type: {{contentType}}
+
+{
+    "currentPassword": "NewStrongPassword123",
+    "newPassword": "Password@123"
+}
+
+
+# ==============================================================================
+# 4. VERIFY LOGIN WITH NEW PASSWORD
+# ==============================================================================
+
+### 4.1 Fail: Login with OLD Password
+# Expected: 401 Unauthorized
+POST {{host}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+    "identifier": "majed@gmail.com",
+    "password": "Password@123"
+}
+
+### 4.2 Success: Login with NEW Password
+# Expected: 200 OK
+POST {{host}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+    "identifier": "sara@example.com",
+    "password": "NewStrongPassword123"
 }
