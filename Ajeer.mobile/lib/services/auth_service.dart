@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auth_models.dart';
 
 class AuthService {
-  // Replace with your actual backend URL (use 10.0.2.2 for Android emulator)
   static const String baseUrl = 'http://localhost:5289/api/auth';
 
   Future<AuthResponse?> login(String identifier, String password) async {

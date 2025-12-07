@@ -1,3 +1,5 @@
+// lib/screens/login/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
@@ -7,6 +9,14 @@ import '../../services/services.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import '../../themes/theme_notifier.dart';
+
+// NEW IMPORTS
+import '../../models/service_models.dart';
+import '../../services/service_category_service.dart';
+
+// NOTE: Since your UnitTypeScreen takes a 'service' object, we are now passing
+// the ServiceCategory object. If UnitTypeScreen was tightly coupled to the old
+// mock 'Service' class, you will need to update it as well.
 
 class HomeScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -20,7 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 3;
   String _searchQuery = '';
 
-  final List<Service> services = kAvailableServices;
+  // UPDATED STATE: Store real categories and loading status
+  List<ServiceCategory> _categories = [];
+  bool _isFetching = true;
 
   final List<Map<String, dynamic>> navItems = const [
     {
@@ -41,6 +53,40 @@ class _HomeScreenState extends State<HomeScreen> {
     },
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCategories(); // Start fetching data immediately
+  }
+
+  // NEW LOGIC: API call
+  Future<void> _fetchCategories() async {
+    try {
+      final service = ServiceCategoryService();
+      final fetchedCategories = await service.fetchCategories();
+
+      if (!mounted) return;
+
+      setState(() {
+        _categories = fetchedCategories;
+        _isFetching = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isFetching = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error fetching services: ${e.toString().replaceAll('Exception: ', '')}',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   void _onSearchChanged(String query) {
     setState(() {
@@ -128,6 +174,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           SearchHeader(onChanged: _onSearchChanged),
           _buildHomeImage(logoTopPosition, logoHeight, isDarkMode),
+          // Show spinner over everything if loading
+          if (_isFetching)
+            Container(
+              color: isDarkMode ? Colors.black54 : Colors.white70,
+              child: const Center(child: CircularProgressIndicator()),
+            ),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -219,9 +271,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+            // UPDATED: Pass the fetched categories to the GridView
             Expanded(
               child: ServiceGridView(
-                services: services,
+                services: _categories,
                 searchQuery: _searchQuery,
                 bottomPadding: bottomNavClearance,
                 isDarkMode: isDarkMode,
@@ -245,8 +298,8 @@ class SearchHeader extends StatelessWidget {
 
     return Positioned(
       top: MediaQuery.of(context).padding.top,
-      left: 0, // Set to 0
-      right: 0, // Set to 0
+      left: 0,
+      right: 0,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -323,8 +376,9 @@ class SearchHeader extends StatelessWidget {
   }
 }
 
+// UPDATED: ServiceGridView now accepts List<ServiceCategory>
 class ServiceGridView extends StatelessWidget {
-  final List<Service> services;
+  final List<ServiceCategory> services;
   final String searchQuery;
   final double bottomPadding;
   final bool isDarkMode;
@@ -364,31 +418,42 @@ class ServiceGridView extends StatelessWidget {
         itemBuilder: (context, index) {
           final service = filteredServices[index];
           final serviceName = service.name;
-          final serviceIcon = service.icon;
+          final serviceIconUrl = service.iconUrl;
 
           return ServiceGridItem(
-            icon: serviceIcon,
+            iconUrl: serviceIconUrl, // Pass the URL string
             name: serviceName,
             isHighlighted: shouldHighlight(serviceName),
             isDarkMode: isDarkMode,
             onTap: () {
-              if (service.unitTypes.isNotEmpty) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UnitTypeScreen(service: service),
+              // The fake object instance
+              final fakeService = Service(
+                name: "Fake Plumbing Service",
+                icon: Icons.plumbing,
+                unitTypes: {
+                  "Regular_Repair": const UnitType(
+                    priceJOD: 15.0,
+                    estimatedTimeMinutes: 60,
                   ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '$serviceName service is not fully set up yet.',
-                    ),
-                    backgroundColor: Colors.orange,
+                  "Emergency_Call": const UnitType(
+                    priceJOD: 30.0,
+                    estimatedTimeMinutes: 90,
                   ),
-                );
-              }
+                  "Pipe_Installation": const UnitType(
+                    priceJOD: 50.0,
+                    estimatedTimeMinutes: 120,
+                  ),
+                },
+              );
+              // The logic to check for unitTypes is removed because the DTO
+              // does not provide this information. We navigate directly now.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  // We pass the new ServiceCategory object
+                  builder: (context) => UnitTypeScreen(service: fakeService),
+                ),
+              );
             },
           );
         },
@@ -397,16 +462,20 @@ class ServiceGridView extends StatelessWidget {
   }
 }
 
+// UPDATED: ServiceGridItem now expects String iconUrl
 class ServiceGridItem extends StatelessWidget {
-  final IconData? icon;
+  final String iconUrl;
   final String name;
   final bool isHighlighted;
   final VoidCallback onTap;
   final bool isDarkMode;
 
+  // Use 10.0.2.2 for Android, 127.0.0.1 for iOS Simulator
+  final String BASE_API_URL = 'http://127.0.0.1:5289';
+
   const ServiceGridItem({
     super.key,
-    required this.icon,
+    required this.iconUrl,
     required this.name,
     this.isHighlighted = false,
     required this.onTap,
@@ -421,8 +490,10 @@ class ServiceGridItem extends StatelessWidget {
     final Color backgroundColor = primaryColor.withOpacity(0.08);
     final Color borderColor = primaryColor.withOpacity(0.1);
 
+    // 1. The Circle Size
     const double iconContainerSize = 80.0;
-    const double iconSize = 40.0;
+    // 2. The Icon Size (Make this smaller if needed, e.g., 30.0 or 35.0)
+    const double iconSize = 50.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -446,7 +517,26 @@ class ServiceGridItem extends StatelessWidget {
                     ]
                   : null,
             ),
-            child: Icon(icon, size: iconSize, color: primaryColor),
+            // FIX: Use Center here. This stops the image from stretching to 80x80.
+            child: Center(
+              child: SizedBox(
+                width: iconSize,
+                height: iconSize,
+                child: FadeInImage.assetNetwork(
+                  placeholder: 'assets/image/placeholder.png',
+                  // Ensure URL doesn't have double wwwroot or missing slash
+                  image: '$BASE_API_URL/${iconUrl.replaceAll("wwwroot/", "")}',
+                  fit: BoxFit.contain,
+                  imageErrorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.broken_image,
+                      size: iconSize,
+                      color: Colors.red,
+                    );
+                  },
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 8),
           Flexible(
