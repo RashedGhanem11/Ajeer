@@ -1,52 +1,82 @@
+// lib/services/auth_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/auth_models.dart';
 
 class AuthService {
-  // 🔧 Later you will replace this URL with your real .NET API endpoint
-  static const String baseUrl = 'https://your-api-url.com/api';
+  // Replace with your actual backend URL (use 10.0.2.2 for Android emulator)
+  static const String baseUrl = 'http://localhost:5289/api/auth';
 
-  /// Use this one later when backend is ready
-  Future<Map<String, dynamic>> signUp({
-    required String firstName,
-    required String lastName,
-    required String phone,
-    required String email,
-    required String password,
-  }) async {
-    final url = Uri.parse('$baseUrl/register');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'firstName': firstName,
-        'lastName': lastName,
-        'phone': phone,
-        'email': email,
-        'password': password,
-      }),
-    );
+  Future<AuthResponse?> login(String identifier, String password) async {
+    final url = Uri.parse('$baseUrl/login');
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to sign up: ${response.statusCode}');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(
+          LoginRequest(identifier: identifier, password: password).toJson(),
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final authResponse = AuthResponse.fromJson(data);
+
+        // Save Session Data
+        await _saveUserSession(authResponse);
+
+        return authResponse;
+      } else {
+        // Parse backend error message if available
+        final error = jsonDecode(response.body);
+        throw Exception(error['message'] ?? 'Login failed');
+      }
+    } catch (e) {
+      // Re-throw to be handled by the UI
+      throw Exception(e.toString());
     }
   }
 
-  /// This is a mock version — it fakes the backend for now.
-  Future<Map<String, dynamic>> mockSignUp({
-    required String firstName,
-    required String lastName,
-    required String phone,
-    required String email,
-    required String password,
-  }) async {
-    await Future.delayed(const Duration(seconds: 1)); // simulate delay
+  Future<void> _saveUserSession(AuthResponse user) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Save the Token specifically for future API calls
+    await prefs.setString('authToken', user.token);
+    // Save user details for the UI
+    await prefs.setString(
+      'currentUser',
+      jsonEncode({
+        'id': user.userId,
+        'name': user.name,
+        'email': user.email,
+        'phone': user.phone,
+        'role': user.role,
+      }),
+    );
+  }
 
-    if (email.endsWith("@demo.com")) {
-      return {'success': false, 'message': 'Email already registered'};
+  // Add this method to your existing AuthService class
+  Future<bool> register(UserRegisterRequest request) async {
+    final url = Uri.parse(
+      '$baseUrl/register',
+    ); // Adjust endpoint path if needed
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(request.toJson()),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true; // Registration successful
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['message'] ?? 'Registration failed');
+      }
+    } catch (e) {
+      throw Exception(e.toString());
     }
-
-    return {'success': true, 'message': 'Sign-up successful! Welcome aboard.'};
   }
 }

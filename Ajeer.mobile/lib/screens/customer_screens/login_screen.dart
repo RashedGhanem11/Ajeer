@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
-import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
+import 'package:provider/provider.dart';
+import '../../themes/theme_notifier.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import 'home_screen.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-
-// Removed: import '../../main.dart'; // Accesses the global themeNotifier
+import '../../services/auth_service.dart'; // Import your new Auth Service
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,10 +14,14 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Logic Variables
   bool _isPasswordVisible = false;
+  bool _isLoading = false; // New state for API loading
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  // UI Error messages
   String? _emailError;
   String? _passwordError;
 
@@ -41,73 +42,76 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // REFACTORED: Now connects to Backend via AuthService
   void _validateAndLogin() async {
-    // Reset previous error messages
+    // Reset errors
     setState(() {
       _emailError = null;
       _passwordError = null;
     });
 
-    final input = _emailController.text.trim(); // email OR phone
+    final input = _emailController.text.trim();
     final password = _passwordController.text.trim();
+    bool isValid = true;
 
-    bool hasError = false;
-
-    // Validate empty fields
+    // 1. Identifier (Email or Phone) Validation
     if (input.isEmpty) {
-      setState(() {
-        _emailError = 'Enter a valid phone number or email';
-      });
-      hasError = true;
+      _emailError = "Email Or Phone is required.";
+      isValid = false;
+    } else if (input.length > 100) {
+      _emailError = "Email Or Phone cannot exceed 100 characters.";
+      isValid = false;
     }
 
+    // 2. Password Validation
     if (password.isEmpty) {
-      setState(() {
-        _passwordError = 'Enter a valid password';
-      });
-      hasError = true;
+      _passwordError = "Password is required.";
+      isValid = false;
+    } else if (password.length < 8) {
+      _passwordError = "Password must be at least 8 characters.";
+      isValid = false;
     }
 
-    if (hasError) return; // stop if there are validation errors
-
-    final prefs = await SharedPreferences.getInstance();
-    final usersJsonList = prefs.getStringList('users') ?? [];
-
-    if (usersJsonList.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No accounts found. Please sign up first.'),
-        ),
-      );
+    // Stop and update UI errors if not valid
+    if (!isValid) {
+      setState(() {});
       return;
     }
 
-    // Decode all users
-    final users = usersJsonList.map((u) => jsonDecode(u)).toList();
+    // --- Continue with API Call only if validation passes ---
+    setState(() {
+      _isLoading = true;
+    });
 
-    // Search for a match
-    final matchedUser = users.firstWhere(
-      (user) =>
-          (user['email'] == input || user['phone'] == input) &&
-          user['password'] == password,
-      orElse: () => {},
-    );
+    try {
+      final authService = AuthService();
+      await authService.login(input, password);
 
-    if (matchedUser.isNotEmpty) {
-      // ✅ Login successful
-      await prefs.setString('currentUser', jsonEncode(matchedUser));
+      if (!mounted) return;
 
       final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => HomeScreen(themeNotifier: themeNotifier),
         ),
       );
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Invalid credentials')));
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -119,7 +123,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final double logoTopPosition = formTopPosition - logoHeight;
 
     return Scaffold(
-      // Apply theme-aware background color
       backgroundColor: _isDarkMode ? _darkScaffoldBackground : Colors.grey[200],
       body: Stack(
         children: [
@@ -172,9 +175,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLogo(double logoTopPosition, double logoHeight) {
-    // Using a conditional path for the image based on theme
     final String imagePath = _isDarkMode
-        ? 'assets/image/home_dark.png' // Assuming a dark version exists
+        ? 'assets/image/home_dark.png'
         : 'assets/image/home.png';
 
     return Positioned(
@@ -234,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 10.0),
                 _buildForgotButton(),
                 const SizedBox(height: 30.0),
-                _buildLoginButton(),
+                _buildLoginButton(), // Updated to handle loading
                 const SizedBox(height: 30.0),
                 _buildSignUpLink(),
                 const SizedBox(height: 25.0),
@@ -254,7 +256,6 @@ class _LoginScreenState extends State<LoginScreen> {
     Widget? suffixIcon,
     String? error,
   }) {
-    // Colors are correctly non-nullable now
     final Color inputFillColor = _isDarkMode
         ? Colors.grey[800]!
         : Colors.grey[100]!;
@@ -267,7 +268,6 @@ class _LoginScreenState extends State<LoginScreen> {
         : Colors.grey[300]!;
     final Color focusBorderColor = _isDarkMode ? _lightBlue : _primaryBlue;
 
-    // FIX: Removed 'const' to allow BorderRadius.circular(12.0)
     final OutlineInputBorder errorBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12.0),
       borderSide: const BorderSide(color: Colors.red, width: 2.5),
@@ -343,7 +343,6 @@ class _LoginScreenState extends State<LoginScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            // FIX: Removed 'const'
             MaterialPageRoute(
               builder: (context) => const ForgotPasswordScreen(),
             ),
@@ -365,7 +364,6 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          // Gradient remains constant as a design element
           gradient: const LinearGradient(
             colors: [_primaryBlue, _lightBlue],
             begin: Alignment.topRight,
@@ -385,19 +383,30 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: _validateAndLogin,
+            // Disable click when loading
+            onTap: _isLoading ? null : _validateAndLogin,
             borderRadius: BorderRadius.circular(30.0),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 14.0),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14.0),
               child: Center(
-                child: Text(
-                  "LOGIN",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                // Show Spinner when loading, Text otherwise
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        "LOGIN",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -419,7 +428,6 @@ class _LoginScreenState extends State<LoginScreen> {
           onPressed: () {
             Navigator.push(
               context,
-              // FIX: Removed 'const'
               MaterialPageRoute(builder: (context) => const SignUpScreen()),
             );
           },
@@ -449,7 +457,9 @@ class _LoginScreenState extends State<LoginScreen> {
         : Colors.black54;
 
     return OutlinedButton.icon(
-      onPressed: () {},
+      onPressed: () {
+        // TODO: Implement Google Sign-In logic here later
+      },
       style: OutlinedButton.styleFrom(
         backgroundColor: buttonBackgroundColor,
         minimumSize: const Size(double.infinity, 56),

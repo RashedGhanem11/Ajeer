@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../models/auth_models.dart'; // Import your models
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -13,6 +12,7 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  // Controllers
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -20,21 +20,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  // State Variables
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isLoading = false; // New loading state
 
-  // Primary Colors (from app_themes.dart)
+  // Primary Colors
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _lightBlue = Color(0xFF8CCBFF);
-  // Dark mode specific colors (from app_themes.dart)
   static const Color _darkScaffoldBackground = Color(0xFF121212);
   static const Color _darkCardColor = Color(0xFF1E1E1E);
 
-  // Helper method to determine if dark mode is active
   bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
-
-  // The original _inputBorder and _errorBorder fields are removed
-  // as they are created dynamically in _createInputDecoration now.
 
   @override
   void dispose() {
@@ -47,76 +44,71 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  // REFACTORED: Connects to Backend via AuthService and includes combined Name validation
   void _handleSignUp() async {
     if (_formKey.currentState!.validate()) {
-      final authService = AuthService();
+      final String firstName = _firstNameController.text.trim();
+      final String lastName = _lastNameController.text.trim();
+      final String fullName = "$firstName $lastName";
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Creating account...')));
+      // --- 1. Check Name Maximum Length (Client-Side Check) ---
+      if (fullName.length > 100) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Full name cannot exceed 100 characters.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+
+      // 2. Start Loading
+      setState(() {
+        _isLoading = true;
+      });
+
+      // 3. Prepare Data
+      final request = UserRegisterRequest(
+        name: fullName,
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
       try {
-        final result = await authService.mockSignUp(
-          firstName: _firstNameController.text.trim(),
-          lastName: _lastNameController.text.trim(),
-          phone: _phoneController.text.trim(),
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+        // 4. Call API
+        final authService = AuthService();
+        await authService.register(request);
+
+        if (!mounted) return;
+
+        // 5. Success Feedback
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully! Please login.'),
+            backgroundColor: Colors.green,
+          ),
         );
 
-        if (result['success']) {
-          final prefs = await SharedPreferences.getInstance();
-
-          // Retrieve existing users list (or create a new one)
-          final usersJsonList = prefs.getStringList('users') ?? [];
-
-          // Convert each stored string into a Map
-          final users = usersJsonList.map((u) => jsonDecode(u)).toList();
-
-          // Check if the email or phone already exists
-          final email = _emailController.text.trim();
-          final phone = _phoneController.text.trim();
-
-          final alreadyExists = users.any(
-            (user) => user['email'] == email || user['phone'] == phone,
-          );
-
-          if (alreadyExists) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Account already exists')),
-            );
-            return;
-          }
-
-          // Add the new user
-          final newUser = {
-            'firstName': _firstNameController.text.trim(),
-            'lastName': _lastNameController.text.trim(),
-            'phone': phone,
-            'email': email,
-            'password': _passwordController.text.trim(),
-          };
-
-          users.add(newUser);
-
-          // Save updated list
-          final updatedList = users.map((user) => jsonEncode(user)).toList();
-          await prefs.setStringList('users', updatedList);
-
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Sign-up successful!')));
-
-          Navigator.pop(context); // go back to login screen
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result['message'] ?? 'Sign-up failed')),
-          );
-        }
+        // 6. Navigate back to Login
+        Navigator.pop(context);
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        // 7. Error Handling
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      } finally {
+        // 8. Stop Loading
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -130,7 +122,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final double logoTopPosition = formTopPosition - logoHeight;
 
     return Scaffold(
-      // Apply theme-aware background color
       backgroundColor: _isDarkMode ? _darkScaffoldBackground : Colors.grey[200],
       body: Stack(
         children: [
@@ -144,7 +135,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildHeaderGradient(double screenHeight) {
-    // Gradient colors remain constant as a design element
     return Container(
       height: screenHeight * 0.35,
       decoration: const BoxDecoration(
@@ -170,7 +160,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 style: TextStyle(
                   fontSize: 34,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white, // White text over the gradient
+                  color: Colors.white,
                   shadows: [
                     Shadow(
                       blurRadius: 2.0,
@@ -188,7 +178,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: IconButton(
                   icon: const Icon(
                     Icons.arrow_back_ios_new,
-                    color: Colors.white, // White icon over the gradient
+                    color: Colors.white,
                     size: 24.0,
                   ),
                   onPressed: () {
@@ -204,7 +194,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildLogo(double logoTopPosition, double logoHeight) {
-    // Using a conditional path for the image based on theme
     final String imagePath = _isDarkMode
         ? 'assets/image/home_dark.png'
         : 'assets/image/home.png';
@@ -289,10 +278,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     required String hint,
     required IconData icon,
     Widget? suffixIcon,
-    Color? fillColor =
-        Colors.grey, // This is ignored, logic below determines fill color
+    Color? fillColor = Colors.grey,
   }) {
-    // Determine the fill color based on the original logic: white for some fields, grey[100] for others
     final bool isWhiteFill = fillColor == Colors.white;
 
     final Color inputFillColor = _isDarkMode
@@ -307,7 +294,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         : Colors.grey[300]!;
     final Color focusBorderColor = _isDarkMode ? _lightBlue : _primaryBlue;
 
-    // Theme-aware borders
     final OutlineInputBorder inputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12.0),
       borderSide: BorderSide(color: borderColor, width: 2.5),
@@ -317,7 +303,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       borderSide: BorderSide(color: focusBorderColor, width: 2.5),
     );
 
-    // FIX: Removed 'const'
     final OutlineInputBorder errorBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12.0),
       borderSide: const BorderSide(color: Colors.red, width: 2.5),
@@ -348,11 +333,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
             decoration: _createInputDecoration(
               hint: "First Name",
               icon: Icons.person_outline,
-              fillColor: Colors.white, // Indicates to use the white-fill logic
+              fillColor: Colors.white,
             ),
+            // VALIDATION: Name is required.
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Cannot be empty';
+                return 'Name is required.';
               }
               return null;
             },
@@ -366,11 +352,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
             decoration: _createInputDecoration(
               hint: "Last Name",
               icon: Icons.person_outline,
-              fillColor: Colors.white, // Indicates to use the white-fill logic
+              fillColor: Colors.white,
             ),
+            // VALIDATION: Name is required.
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Cannot be empty';
+                return 'Name is required.';
               }
               return null;
             },
@@ -389,11 +376,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
       decoration: _createInputDecoration(
         hint: "Phone Number",
         icon: Icons.phone_outlined,
-        // fillColor is default (Colors.grey), which translates to grey[100]/grey[800]
       ),
+      // VALIDATION: Phone NotEmpty and MaxLength(20)
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Please enter phone number';
+          return 'Phone number is required.';
+        }
+        if (value.length > 20) {
+          return 'Phone number cannot exceed 20 characters.';
         }
         return null;
       },
@@ -402,6 +392,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Widget _buildEmailField() {
     final Color fieldTextColor = _isDarkMode ? Colors.white : Colors.black87;
+    // Basic email regex for front-end validation
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
@@ -410,9 +403,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
         hint: "Email",
         icon: Icons.email_outlined,
       ),
+      // VALIDATION: Email NotEmpty, EmailAddress, and MaxLength(100)
       validator: (value) {
-        if (value == null || value.isEmpty || !value.contains('@')) {
-          return 'Please enter a valid email';
+        if (value == null || value.isEmpty) {
+          return 'Email is required.';
+        }
+        if (value.length > 100) {
+          return 'Email cannot exceed 100 characters.';
+        }
+        if (!emailRegex.hasMatch(value)) {
+          return 'A valid email address is required.';
         }
         return null;
       },
@@ -442,9 +442,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
           },
         ),
       ),
+      // VALIDATION: Password NotEmpty and MinLength(8)
       validator: (value) {
-        if (value == null || value.isEmpty || value.length < 6) {
-          return 'Password must be at least 6 characters';
+        if (value == null || value.isEmpty) {
+          return 'Password is required.';
+        }
+        if (value.length < 8) {
+          return 'Password must be at least 8 characters.';
         }
         return null;
       },
@@ -460,7 +464,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       decoration: _createInputDecoration(
         hint: "Confirm Password",
         icon: Icons.lock_outline,
-        fillColor: Colors.white, // Indicates to use the white-fill logic
+        fillColor: Colors.white,
         suffixIcon: IconButton(
           icon: Icon(
             _isConfirmPasswordVisible
@@ -475,9 +479,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
           },
         ),
       ),
+      // VALIDATION: Match Password
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Please confirm your password';
+          return 'Password is required.';
         }
         if (value != _passwordController.text) {
           return 'Passwords do not match';
@@ -514,19 +519,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: _handleSignUp,
+            onTap: _isLoading
+                ? null
+                : _handleSignUp, // Disable tap when loading
             borderRadius: BorderRadius.circular(30.0),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 14.0),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14.0),
               child: Center(
-                child: Text(
-                  "SIGN UP",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        "SIGN UP",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ),
