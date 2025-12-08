@@ -449,7 +449,7 @@ class _LocationScreenState extends State<LocationScreen> {
         child: const Icon(
           Icons.location_on_outlined,
           size: 55.0,
-          color: Colors.white,
+          color: _LocationScreenState._primaryBlue,
         ),
       ),
     );

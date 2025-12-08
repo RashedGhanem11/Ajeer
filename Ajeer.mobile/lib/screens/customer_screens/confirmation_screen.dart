@@ -49,6 +49,7 @@ class _ConfirmationConstants {
   static const Color primaryBlue = Color(0xFF1976D2);
   static const Color secondaryBlue = Color(0xFF57b2ff);
   static const Color confirmGreen = Color(0xFF4CAF50);
+  static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
 
   static const Color subtleDark = Color(0xFF1E1E1E);
   static const Color subtleLighterDark = Color(0xFF2C2C2C);
@@ -227,10 +228,10 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         : _ConfirmationConstants.secondaryBlue;
     Color secondaryColor = _isConfirmButtonPressed
         ? _ConfirmationConstants.confirmGreen
-        : _ConfirmationConstants.lightBlue;
+        : _ConfirmationConstants._secondaryLightBlue;
     Color glowColor = _isConfirmButtonPressed
         ? _ConfirmationConstants.confirmGreen
-        : _ConfirmationConstants.lightBlue;
+        : _ConfirmationConstants._secondaryLightBlue;
 
     return Positioned(
       top: iconTopPosition,
@@ -273,7 +274,11 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
               width: 1.5,
             ),
           ),
-          child: const Icon(Icons.check, size: 60.0, color: Colors.white),
+          child: const Icon(
+            Icons.check,
+            size: 60.0,
+            color: _ConfirmationConstants.primaryBlue,
+          ),
         ),
       ),
     );

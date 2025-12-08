@@ -344,7 +344,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         child: const Icon(
           Icons.calendar_today_outlined,
           size: 55.0,
-          color: Colors.white,
+          color: _DateTimeScreenState._primaryBlue,
         ),
       ),
     );

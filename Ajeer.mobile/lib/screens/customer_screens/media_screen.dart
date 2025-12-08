@@ -433,7 +433,7 @@ class _MediaScreenState extends State<MediaScreen> {
         child: const Icon(
           Icons.camera_alt_outlined,
           size: 55.0,
-          color: Colors.white,
+          color: _MediaScreenState._primaryBlue,
         ),
       ),
     );
