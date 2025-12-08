@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/chat_models.dart';
 
 class ChatService {
-  final String _baseUrl = 'https://10.0.2.2:7012/api';
-  final String _hubUrl = 'https://10.0.2.2:7012/hubs/chat';
+  final String _baseUrl = 'http://localhost:5289/api';
+  final String _hubUrl = 'http://localhost:5289/hubs/chat';
 
   HubConnection? _hubConnection;
 
@@ -107,13 +107,11 @@ class ChatService {
 
     _hubConnection = HubConnectionBuilder()
         .withUrl(
-            _hubUrl,
-            HttpConnectionOptions(
-              accessTokenFactory: () async => token
-            ))
+          _hubUrl,
+          HttpConnectionOptions(accessTokenFactory: () async => token),
+        )
         .withAutomaticReconnect()
         .build();
-
 
     _hubConnection!.on('ReceiveNewMessage', (arguments) {
       if (arguments != null && arguments.isNotEmpty) {
