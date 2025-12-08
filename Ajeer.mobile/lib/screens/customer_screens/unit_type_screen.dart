@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
+import 'package:provider/provider.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'date_time_screen.dart';
 import 'bookings_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
-import '../../services/services.dart';
-import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
+import '../../themes/theme_notifier.dart';
+
+// NEW IMPORTS
+import '../../models/service_models.dart'; // Contains ServiceCategory and ServiceItem
+import '../../services/unit_type_service.dart'; // The service we updated in Step 2
 
 class UnitTypeScreen extends StatefulWidget {
-  final Service service;
+  // CHANGED: We now accept the category (ID, Name, Icon) passed from Home
+  final ServiceCategory category;
 
-  const UnitTypeScreen({super.key, required this.service});
+  const UnitTypeScreen({super.key, required this.category});
 
   @override
   State<UnitTypeScreen> createState() => _UnitTypeScreenState();
@@ -22,13 +26,52 @@ class UnitTypeScreen extends StatefulWidget {
 class _UnitTypeScreenState extends State<UnitTypeScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 3;
-  final Set<String> _selectedUnitTypes = {};
+
+  // CHANGED: Track selected IDs (int) instead of old Strings (cleaner for backend)
+  final Set<int> _selectedIds = {};
+
+  // NEW: State for data fetching
+  List<ServiceItem> _availableServices = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
+
+  // Base API URL for the Icon Image (used in _buildServiceIcon)
+  final String BASE_API_URL = 'http://localhost:5289';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  // NEW METHOD: Calls the API service using the category ID
+  Future<void> _fetchData() async {
+    try {
+      final apiService = UnitTypeService();
+      // Pass the category ID to fetch services specific to this category
+      final items = await apiService.fetchServicesByCategory(
+        widget.category.id,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _availableServices = items;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -52,8 +95,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
 
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
-
-    // 💡 FIX 3: Retrieve ThemeNotifier via Provider for navigation
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
     switch (index) {
@@ -61,58 +102,56 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            // Removed 'const' since we are passing a variable
-            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
+            builder: (_) => ProfileScreen(themeNotifier: themeNotifier),
           ),
         );
         break;
       case 1:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ChatScreen()),
+          MaterialPageRoute(builder: (_) => const ChatScreen()),
         );
         break;
       case 2:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const BookingsScreen()),
+          MaterialPageRoute(builder: (_) => const BookingsScreen()),
         );
         break;
       case 3:
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+            builder: (_) => HomeScreen(themeNotifier: themeNotifier),
           ),
         );
         break;
     }
   }
 
-  void _onUnitTypeTapped(String unitType) {
+  void _onServiceTapped(int id) {
     setState(() {
-      if (_selectedUnitTypes.contains(unitType)) {
-        _selectedUnitTypes.remove(unitType);
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
       } else {
-        _selectedUnitTypes.add(unitType);
+        _selectedIds.add(id);
       }
     });
   }
 
   void _onNextTap() {
-    if (_selectedUnitTypes.isNotEmpty) {
+    if (_selectedIds.isNotEmpty) {
       double totalCost = 0.0;
       int totalMinutes = 0;
+      List<String> selectedNames = [];
 
-      final Map<String, dynamic> serviceUnitTypes =
-          widget.service.unitTypes as Map<String, dynamic>;
-
-      for (var unitTypeKey in _selectedUnitTypes) {
-        final data = serviceUnitTypes[unitTypeKey];
-        if (data != null) {
-          totalCost += data.priceJOD;
-          // FIX: Explicitly cast the value to int to resolve the 'num' to 'int' assignment error.
-          totalMinutes += (data.estimatedTimeMinutes as int);
+      // Calculate totals based on selected IDs using the fetched data
+      for (var service in _availableServices) {
+        if (_selectedIds.contains(service.id)) {
+          // Use the helpers from our Model to parse the backend strings
+          totalCost += service.priceValue;
+          totalMinutes += service.timeInMinutes;
+          selectedNames.add(service.name);
         }
       }
 
@@ -120,8 +159,8 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
         context,
         MaterialPageRoute(
           builder: (context) => DateTimeScreen(
-            serviceName: widget.service.name,
-            unitType: _selectedUnitTypes.join(', '),
+            serviceName: widget.category.name,
+            unitType: selectedNames.join(', '),
             totalTimeMinutes: totalMinutes,
             totalPrice: totalCost,
           ),
@@ -139,7 +178,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
 
   @override
   Widget build(BuildContext context) {
-    // 💡 FIX 4: Retrieve ThemeNotifier via Provider for build
     final themeNotifier = Provider.of<ThemeNotifier>(context);
     final bool isDarkMode = themeNotifier.isDarkMode;
 
@@ -147,11 +185,9 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
       isDarkMode
           ? SystemUiOverlayStyle.light.copyWith(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
             )
           : SystemUiOverlayStyle.dark.copyWith(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.dark,
             ),
     );
 
@@ -162,10 +198,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     final double bottomNavClearance =
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
-    final unitTypesMap = widget.service.unitTypes;
-    final unitTypeKeys =
-        (unitTypesMap as Map<String, dynamic>?)?.keys.toList() ?? <String>[];
-
     return Scaffold(
       extendBody: true,
       body: Stack(
@@ -175,19 +207,19 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
             whiteContainerTop,
             MediaQuery.of(context).padding.top,
           ),
+
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
-            unitTypeKeys: unitTypeKeys,
             isDarkMode: isDarkMode,
           ),
+
           _buildHomeImage(logoTopPosition, isDarkMode),
+
           _UnitTypeNavigationHeader(
-            onBackTap: () {
-              Navigator.pop(context);
-            },
+            onBackTap: () => Navigator.pop(context),
             onNextTap: _onNextTap,
-            isNextEnabled: _selectedUnitTypes.isNotEmpty,
+            isNextEnabled: _selectedIds.isNotEmpty,
           ),
         ],
       ),
@@ -242,7 +274,23 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
           ],
           border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
         ),
-        child: Icon(widget.service.icon, size: 60.0, color: Colors.white),
+        // CHANGED: Load the category icon from URL
+        child: ClipOval(
+          child: Padding(
+            padding: const EdgeInsets.all(
+              20.0,
+            ), // Padding to prevent image from touching edges
+            child: FadeInImage.assetNetwork(
+              placeholder:
+                  'assets/image/placeholder.png', // Ensure you have this asset
+              image:
+                  '$BASE_API_URL/${widget.category.iconUrl.replaceAll("wwwroot/", "")}',
+              fit: BoxFit.contain,
+              imageErrorBuilder: (c, o, s) =>
+                  const Icon(Icons.broken_image, color: Colors.white, size: 40),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -251,7 +299,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     final String imagePath = isDarkMode
         ? 'assets/image/home_dark.png'
         : 'assets/image/home.png';
-
     return Positioned(
       top: logoTopPosition,
       left: 0,
@@ -270,7 +317,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
   Widget _buildWhiteContainer({
     required double containerTop,
     required double bottomNavClearance,
-    required List<String> unitTypeKeys,
     required bool isDarkMode,
   }) {
     return Positioned(
@@ -314,14 +360,21 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
               ),
             ),
             Expanded(
-              child: _UnitTypeListView(
-                unitTypes: unitTypeKeys,
-                unitData: widget.service.unitTypes as Map<String, dynamic>,
-                selectedUnitTypes: _selectedUnitTypes,
-                onUnitTypeTap: _onUnitTypeTapped,
-                bottomPadding: bottomNavClearance,
-                isDarkMode: isDarkMode,
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                  ? Center(child: Text("Error: $_errorMessage"))
+                  : _availableServices.isEmpty
+                  ? const Center(
+                      child: Text("No unit types available for this service."),
+                    )
+                  : _UnitTypeListView(
+                      services: _availableServices,
+                      selectedIds: _selectedIds,
+                      onServiceTap: _onServiceTapped,
+                      bottomPadding: bottomNavClearance,
+                      isDarkMode: isDarkMode,
+                    ),
             ),
           ],
         ),
@@ -341,24 +394,6 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
     this.isNextEnabled = false,
   });
 
-  Widget _buildAjeerTitle() {
-    return const Text(
-      'Ajeer',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 34,
-        fontWeight: FontWeight.w900,
-        shadows: [
-          Shadow(
-            blurRadius: 2.0,
-            color: Colors.black26,
-            offset: Offset(1.0, 1.0),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Positioned(
@@ -373,7 +408,21 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: onBackTap,
           ),
-          _buildAjeerTitle(),
+          const Text(
+            'Ajeer',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(
+                  blurRadius: 2.0,
+                  color: Colors.black26,
+                  offset: Offset(1.0, 1.0),
+                ),
+              ],
+            ),
+          ),
           IconButton(
             iconSize: 28.0,
             icon: Icon(
@@ -389,19 +438,17 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
 }
 
 class _UnitTypeListView extends StatelessWidget {
-  final Map<String, dynamic> unitData;
-  final List<String> unitTypes;
-  final Set<String> selectedUnitTypes;
-  final ValueChanged<String> onUnitTypeTap;
+  final List<ServiceItem> services; // CHANGED: Using ServiceItem
+  final Set<int> selectedIds; // CHANGED: Using int IDs
+  final ValueChanged<int> onServiceTap;
   final double bottomPadding;
   final bool isDarkMode;
 
   const _UnitTypeListView({
-    required this.unitTypes,
-    required this.selectedUnitTypes,
-    required this.onUnitTypeTap,
+    required this.services,
+    required this.selectedIds,
+    required this.onServiceTap,
     required this.bottomPadding,
-    required this.unitData,
     required this.isDarkMode,
   });
 
@@ -414,23 +461,17 @@ class _UnitTypeListView extends StatelessWidget {
         top: 10.0,
         bottom: bottomPadding,
       ),
-      itemCount: unitTypes.length,
+      itemCount: services.length,
       itemBuilder: (context, index) {
-        final unitName = unitTypes[index];
-        final bool isSelected = selectedUnitTypes.contains(unitName);
-        final data = unitData[unitName];
-
-        final int estimatedTime = data?.estimatedTimeMinutes ?? 0;
-        final double price = data?.priceJOD ?? 0.0;
+        final service = services[index];
+        final bool isSelected = selectedIds.contains(service.id);
 
         return _SelectableUnitItem(
-          name: unitName,
-          estimatedTime: estimatedTime,
-          price: price,
+          name: service.name,
+          estimatedTime: service.estimatedTime ?? "N/A",
+          priceDisplay: service.formattedPrice ?? "N/A",
           isSelected: isSelected,
-          onTap: () {
-            onUnitTypeTap(unitName);
-          },
+          onTap: () => onServiceTap(service.id),
           isDarkMode: isDarkMode,
         );
       },
@@ -440,8 +481,8 @@ class _UnitTypeListView extends StatelessWidget {
 
 class _SelectableUnitItem extends StatelessWidget {
   final String name;
-  final int estimatedTime;
-  final double price;
+  final String estimatedTime;
+  final String priceDisplay; // CHANGED: Takes string directly from DTO
   final bool isSelected;
   final VoidCallback onTap;
   final bool isDarkMode;
@@ -449,7 +490,7 @@ class _SelectableUnitItem extends StatelessWidget {
   const _SelectableUnitItem({
     required this.name,
     required this.estimatedTime,
-    required this.price,
+    required this.priceDisplay,
     required this.isSelected,
     required this.onTap,
     required this.isDarkMode,
@@ -459,14 +500,6 @@ class _SelectableUnitItem extends StatelessWidget {
   static const double _borderRadius = 15.0;
   static const double _borderWidth = 2.0;
   static const Color _subtleLighterDarkGrey = Color(0xFF242424);
-
-  String get _formattedTime {
-    if (estimatedTime < 60) return '$estimatedTime mins';
-    final hours = estimatedTime ~/ 60;
-    final minutes = estimatedTime % 60;
-    if (minutes == 0) return '$hours hrs';
-    return '$hours hrs $minutes mins';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -531,7 +564,8 @@ class _SelectableUnitItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 4.0),
                   Text(
-                    'Est. Time: $_formattedTime',
+                    // REMOVED 'Est. Time: ' prefix here.
+                    estimatedTime,
                     style: TextStyle(fontSize: 14, color: timeTextColor),
                   ),
                 ],
@@ -541,7 +575,7 @@ class _SelectableUnitItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  'JOD ${price.toStringAsFixed(1)}',
+                  priceDisplay, // Displaying the formatted string directly
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

@@ -416,7 +416,8 @@ class ServiceGridView extends StatelessWidget {
         ),
         itemCount: filteredServices.length,
         itemBuilder: (context, index) {
-          final service = filteredServices[index];
+          final service =
+              filteredServices[index]; // This is the ServiceCategory object
           final serviceName = service.name;
           final serviceIconUrl = service.iconUrl;
 
@@ -426,32 +427,11 @@ class ServiceGridView extends StatelessWidget {
             isHighlighted: shouldHighlight(serviceName),
             isDarkMode: isDarkMode,
             onTap: () {
-              // The fake object instance
-              final fakeService = Service(
-                name: "Fake Plumbing Service",
-                icon: Icons.plumbing,
-                unitTypes: {
-                  "Regular_Repair": const UnitType(
-                    priceJOD: 15.0,
-                    estimatedTimeMinutes: 60,
-                  ),
-                  "Emergency_Call": const UnitType(
-                    priceJOD: 30.0,
-                    estimatedTimeMinutes: 90,
-                  ),
-                  "Pipe_Installation": const UnitType(
-                    priceJOD: 50.0,
-                    estimatedTimeMinutes: 120,
-                  ),
-                },
-              );
-              // The logic to check for unitTypes is removed because the DTO
-              // does not provide this information. We navigate directly now.
+              // Navigate to UnitTypeScreen, passing the correct 'service' object
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  // We pass the new ServiceCategory object
-                  builder: (context) => UnitTypeScreen(service: fakeService),
+                  builder: (context) => UnitTypeScreen(category: service),
                 ),
               );
             },
