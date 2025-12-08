@@ -4,6 +4,7 @@ using Ajeer.Api.Data;
 using Ajeer.Api.Middlewares;
 using Ajeer.Api.Services.Auth;
 using Ajeer.Api.Services.Bookings;
+using Ajeer.Api.Services.Chats;
 using Ajeer.Api.Services.Files;
 using Ajeer.Api.Services.Formatting;
 using Ajeer.Api.Services.Reviews;
@@ -35,7 +36,8 @@ public static class DependencyInjection
             //.AddEndpointsApiExplorer()
             //.AddSwaggerGen()
             .AddExceptionHandling()
-            .AddBusinessServices();
+            .AddBusinessServices()
+            .AddSignalR();
 
         return services;
     }
@@ -88,6 +90,21 @@ public static class DependencyInjection
                 ValidateLifetime = false,
                 ClockSkew = TimeSpan.Zero
             };
+
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+
+                    var path = context.HttpContext.Request.Path;
+                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                    {
+                        context.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
+                }
+            };
         });
 
         return services;
@@ -97,6 +114,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IBookingService, BookingService>();
+        services.AddScoped<IChatService, ChatService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IFormattingService, FormattingService>();
         services.AddScoped<IReviewService, ReviewService>();

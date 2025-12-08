@@ -36,4 +36,26 @@ public class FormattingService : IFormattingService
 
         return "Est. Time: " + timeString;
     }
+
+    public string FormatRelativeTime(DateTime messageTime)
+    {
+        var timeDifference = DateTime.Now.Subtract(messageTime);
+
+        if (timeDifference.TotalMinutes < 1)
+            return "Just now";
+
+        if (timeDifference.TotalMinutes < 60)
+            return $"{(int)timeDifference.TotalMinutes} mins ago";
+
+        if (timeDifference.TotalHours < 24)
+            return messageTime.ToString("h:mm tt");
+
+        if (timeDifference.TotalDays < 2)
+            return "Yesterday";
+
+        if (timeDifference.TotalDays < 7)
+            return $"{(int)timeDifference.TotalDays} days ago";
+
+        return messageTime.ToString("MMM d, yyyy");
+    }
 }

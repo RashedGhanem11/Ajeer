@@ -1,5 +1,6 @@
 using Ajeer.Api.Data;
 using Ajeer.Api.Extensions;
+using Ajeer.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.MapGet("/", (AppDbContext context) => {
 
