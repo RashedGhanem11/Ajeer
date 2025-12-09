@@ -1,6 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../config/app_config.dart'; // Adjust path to where AppConfig is
+
+// Imports from your project structure
 import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
@@ -8,12 +18,6 @@ import 'media_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 
 class LocationScreen extends StatefulWidget {
   final String serviceName;
@@ -51,37 +55,26 @@ class _LocationScreenState extends State<LocationScreen> {
   // --- START NEW CUSTOMER LOCATION STATE ---
   String? _selectedCity;
   String? _selectedArea;
-  // Hardcoded data based on the requirements (Amman and the 8 areas from 1.jpg)
-  final List<String> _customerCities = ['Amman'];
-  final Map<String, List<String>> _customerCityAreas = {
-    'Amman': [
-      'Tla\' Al-Ali',
-      'Al-Bayader',
-      'Al-Jubeiha',
-      'Dabouq',
-      'Al-Rabieh',
-      'Shmeisani',
-      'Jabal Al-Weibdeh',
-      'Abdoun',
-    ],
-  };
+
+  // DYNAMIC DATA VARIABLES
+  List<String> _customerCities = [];
+  Map<String, List<String>> _customerCityAreas = {};
+  List<CityResponse> _apiData = [];
+  bool _isLoadingAreas = true;
   // --- END NEW CUSTOMER LOCATION STATE ---
 
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
   static const Color _secondaryBlue = Color(0xFF57b2ff);
-  static const Color _subtleLighterDark = Color(
-    0xFF2C2C2C,
-  ); // Added for map container background
+  static const Color _subtleLighterDark = Color(0xFF2C2C2C);
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
   static const double _mapBorderRadius = 25.0;
   static const double _horizontalPadding = 20.0;
-  static const double _cityAreaBoxHeight = 250.0; // Adjusted for better fit
-  // 📐 FIX 2: Reduced map height by changing the aspect ratio
-  static const double _mapAspectRatio = 1.17; // Adjusted to be wider than tall
+  static const double _cityAreaBoxHeight = 250.0;
+  static const double _mapAspectRatio = 1.17;
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -103,51 +96,69 @@ class _LocationScreenState extends State<LocationScreen> {
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  void _onNavItemTapped(int index) {
-    if (index == _selectedIndex) return;
-
-    // 💡 FIX 3: Retrieve ThemeNotifier via Provider for navigation
-    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            // Correctly pass the retrieved themeNotifier
-            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
-          ),
-        );
-        break;
-      case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ChatScreen()),
-        );
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const BookingsScreen()),
-        );
-        break;
-      case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
-          ),
-        );
-        break;
-    }
-  }
-
   @override
   void initState() {
     super.initState();
     _getCustomerLocation();
-    // Set 'Amman' as the initial selected city since it's the only one available
-    _selectedCity = _customerCities.first;
+    // Fetch areas from API instead of using hardcoded lists
+    _fetchServiceAreas();
+  }
+
+  // --- API FETCHING METHOD ---
+  Future<void> _fetchServiceAreas() async {
+    // 1. Use the URL from your AppConfig (Corrects the Port and IP for iOS)
+    final url = Uri.parse('${AppConfig.apiUrl}/service-areas');
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('authToken');
+
+      if (token == null) {
+        debugPrint('⛔ No auth token found.');
+        setState(() => _isLoadingAreas = false);
+        return;
+      }
+
+      debugPrint('🚀 Fetching areas from: $url'); // Debug print to check URL
+
+      final response = await http
+          .get(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(
+            const Duration(seconds: 10),
+          ); // 2. Add timeout so it doesn't spin forever
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+
+        setState(() {
+          _apiData = data.map((json) => CityResponse.fromJson(json)).toList();
+
+          _customerCities = _apiData.map((city) => city.cityName).toList();
+          _customerCityAreas = {
+            for (var city in _apiData)
+              city.cityName: city.areas.map((area) => area.name).toList(),
+          };
+
+          if (_customerCities.isNotEmpty && _selectedCity == null) {
+            _selectedCity = _customerCities.first;
+          }
+
+          _isLoadingAreas = false;
+        });
+      } else {
+        debugPrint('❌ Error fetching areas: ${response.statusCode}');
+        setState(() => _isLoadingAreas = false);
+      }
+    } catch (e) {
+      debugPrint('❌ Exception fetching areas: $e');
+      setState(() => _isLoadingAreas = false);
+    }
   }
 
   Future<void> _getCustomerLocation() async {
@@ -185,17 +196,14 @@ class _LocationScreenState extends State<LocationScreen> {
 
       if (placemarks.isNotEmpty) {
         final Placemark place = placemarks.first;
-
         final city = place.locality?.trim();
         String? area = place.subLocality?.trim();
 
-        // 🔄 fallback if area is missing
         if (area == null || area.isEmpty) {
           area = place.subAdministrativeArea?.trim();
         }
 
-        // 🔍 Try Google Geocoding API for more accurate city/area
-        // NOTE: The API key here is a placeholder/example. A real, valid key must be used.
+        // Placeholder API Key - Replace with real one
         final googleData = await getAreaFromCoordinates(
           location,
           'AIzaSyCXvl-cyD8q4HwtM7QblvHOe45d_83su9I',
@@ -205,7 +213,6 @@ class _LocationScreenState extends State<LocationScreen> {
         String? googleArea = googleData['area'];
         String? googleGovernorate = googleData['governorate'];
 
-        // ✅ Use Google’s data to fix wrong city names or missing area
         String finalCity = (googleCity != null && googleCity.isNotEmpty)
             ? googleCity
             : (city ?? '');
@@ -230,11 +237,9 @@ class _LocationScreenState extends State<LocationScreen> {
           visibleAddress += ', Unnamed location';
 
         String fullAddress = '';
-
         if (street != null && street.isNotEmpty) {
           fullAddress = street;
         }
-
         if (building != null &&
             building.isNotEmpty &&
             (street == null || !building.contains(street))) {
@@ -243,15 +248,48 @@ class _LocationScreenState extends State<LocationScreen> {
         fullAddress = fullAddress.trim().replaceAll(RegExp(r',\s+'), ', ');
 
         setState(() {
-          _resolvedAddress = visibleAddress; // Amman, Area
+          _resolvedAddress = visibleAddress;
           _fullResolvedAddress = fullAddress;
         });
-
-        debugPrint('📍 Visible: $_resolvedAddress');
-        debugPrint('🏠 Full: $_fullResolvedAddress');
       }
     } catch (e) {
       debugPrint('❌ Failed to resolve address: $e');
+    }
+  }
+
+  void _onNavItemTapped(int index) {
+    if (index == _selectedIndex) return;
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
+          ),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ChatScreen()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BookingsScreen()),
+        );
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+          ),
+        );
+        break;
     }
   }
 
@@ -259,12 +297,10 @@ class _LocationScreenState extends State<LocationScreen> {
     Navigator.pop(context);
   }
 
-  // Check if both a city and an area have been selected manually
   bool get _isNextEnabled => _selectedCity != null && _selectedArea != null;
 
   void _onNextTap() {
     if (!_isNextEnabled) {
-      // Prevent navigation if location is not selected
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select an area before proceeding.'),
@@ -275,12 +311,7 @@ class _LocationScreenState extends State<LocationScreen> {
       return;
     }
 
-    // Combine selected city and area for the resolvedCityArea variable
     final String finalCityArea = '$_selectedCity, $_selectedArea';
-
-    // Combine current resolved full address with the selected area for final address
-    // This logic ensures that the manually selected area is included in the final address sent.
-    // Just use the geocoded street name (fullResolvedAddress)
     String finalAddress = _fullResolvedAddress ?? '';
 
     Navigator.push(
@@ -294,19 +325,17 @@ class _LocationScreenState extends State<LocationScreen> {
           selectionMode: widget.selectionMode,
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
-          resolvedAddress: finalAddress, // Use the full address
-          resolvedCityArea:
-              finalCityArea, // Use the manually selected city/area
+          resolvedAddress: finalAddress,
+          resolvedCityArea: finalCityArea,
         ),
       ),
     );
   }
 
-  // --- START NEW CUSTOMER LOCATION METHODS ---
   void _onCitySelected(String city) {
     setState(() {
       _selectedCity = city;
-      _selectedArea = null; // Reset area when city changes
+      _selectedArea = null;
     });
   }
 
@@ -315,7 +344,6 @@ class _LocationScreenState extends State<LocationScreen> {
       _selectedArea = area;
     });
   }
-  // --- END NEW CUSTOMER LOCATION METHODS ---
 
   void _showMaximizedMap(BuildContext context, bool isDarkMode) async {
     if (_customerLocation == null) return;
@@ -354,65 +382,6 @@ class _LocationScreenState extends State<LocationScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // 💡 Retrieve ThemeNotifier via Provider for build
-    final themeNotifier = Provider.of<ThemeNotifier>(context);
-    final bool isDarkMode = themeNotifier.isDarkMode;
-
-    SystemChrome.setSystemUIOverlayStyle(
-      isDarkMode
-          ? SystemUiOverlayStyle.light.copyWith(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
-            )
-          : SystemUiOverlayStyle.dark.copyWith(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.dark,
-            ),
-    );
-
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    // 📐 FIX 1: Reverted back to 0.30 so the container stays at the Red Arrow
-    final double whiteContainerTop = screenHeight * 0.30;
-
-    final double logoTopPosition =
-        whiteContainerTop - _logoHeight + _overlapAdjustment;
-    final double bottomNavClearance =
-        _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
-
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: isDarkMode ? Colors.black : Colors.white,
-      body: Stack(
-        children: [
-          _buildBackgroundGradient(whiteContainerTop),
-          _buildLocationIcon(
-            whiteContainerTop,
-            MediaQuery.of(context).padding.top,
-          ),
-          _buildWhiteContainer(
-            containerTop: whiteContainerTop,
-            bottomNavClearance: bottomNavClearance,
-            isDarkMode: isDarkMode,
-          ),
-          _buildHomeImage(logoTopPosition, isDarkMode),
-          _NavigationHeader(
-            onBackTap: _onBackTap,
-            onNextTap: _onNextTap,
-            isNextEnabled: _isNextEnabled, // Pass the check for next button
-          ),
-        ],
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        items: _navItems,
-        selectedIndex: _selectedIndex,
-        onIndexChanged: _onNavItemTapped,
-      ),
-    );
-  }
-
   Future<Map<String, String?>> getAreaFromCoordinates(
     LatLng location,
     String apiKey,
@@ -437,7 +406,6 @@ class _LocationScreenState extends State<LocationScreen> {
             for (final component in result['address_components']) {
               final types = List<String>.from(component['types']);
 
-              // ✅ Prioritize most specific area
               if (area == null &&
                   (types.contains('point_of_interest') ||
                       types.contains('premise') ||
@@ -446,31 +414,80 @@ class _LocationScreenState extends State<LocationScreen> {
                 area = component['long_name'];
               }
 
-              // ✅ City: prefer locality, fall back to level_2
               if (city == null &&
                   (types.contains('locality') ||
                       types.contains('administrative_area_level_2'))) {
                 city = component['long_name'];
               }
 
-              // ✅ Governorate: level 1
               if (governorate == null &&
                   types.contains('administrative_area_level_1')) {
                 governorate = component['long_name'];
               }
             }
           }
-        } else {
-          debugPrint('⚠️ Geocoding API error: ${data['status']}');
         }
-      } else {
-        debugPrint('❌ HTTP error: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('❌ Exception: $e');
     }
 
     return {'city': city, 'area': area, 'governorate': governorate};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final bool isDarkMode = themeNotifier.isDarkMode;
+
+    SystemChrome.setSystemUIOverlayStyle(
+      isDarkMode
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+            ),
+    );
+
+    final screenHeight = MediaQuery.of(context).size.height;
+    final double whiteContainerTop = screenHeight * 0.30;
+    final double logoTopPosition =
+        whiteContainerTop - _logoHeight + _overlapAdjustment;
+    final double bottomNavClearance =
+        _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
+
+    return Scaffold(
+      extendBody: true,
+      backgroundColor: isDarkMode ? Colors.black : Colors.white,
+      body: Stack(
+        children: [
+          _buildBackgroundGradient(whiteContainerTop),
+          _buildLocationIcon(
+            whiteContainerTop,
+            MediaQuery.of(context).padding.top,
+          ),
+          _buildWhiteContainer(
+            containerTop: whiteContainerTop,
+            bottomNavClearance: bottomNavClearance,
+            isDarkMode: isDarkMode,
+          ),
+          _buildHomeImage(logoTopPosition, isDarkMode),
+          _NavigationHeader(
+            onBackTap: _onBackTap,
+            onNextTap: _onNextTap,
+            isNextEnabled: _isNextEnabled,
+          ),
+        ],
+      ),
+      bottomNavigationBar: CustomBottomNavBar(
+        items: _navItems,
+        selectedIndex: _selectedIndex,
+        onIndexChanged: _onNavItemTapped,
+      ),
+    );
   }
 
   Widget _buildBackgroundGradient(double containerTop) {
@@ -555,7 +572,6 @@ class _LocationScreenState extends State<LocationScreen> {
       right: 0,
       bottom: 0,
       child: Container(
-        // ✂ FIX 2: Added Clip.hardEdge to prevent content from overflowing the rounded corners
         clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
           color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
@@ -577,15 +593,11 @@ class _LocationScreenState extends State<LocationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 📐 FIX 3: Increased top spacing from 15.0 to 50.0
-              // This pushes the content down to the Yellow Arrow while keeping the container at the Red Arrow
               const SizedBox(height: 15.0),
-
               Padding(
                 padding: const EdgeInsets.only(
                   left: _horizontalPadding,
-                  top:
-                      20.0, // This pushes the title down slightly from the curve
+                  top: 20.0,
                 ),
                 child: Text(
                   'Pick a location',
@@ -597,9 +609,6 @@ class _LocationScreenState extends State<LocationScreen> {
                 ),
               ),
 
-              // 🚫 DELETED: The text widget that showed _resolvedAddress is removed here.
-
-              // Map Section
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   _horizontalPadding,
@@ -609,28 +618,34 @@ class _LocationScreenState extends State<LocationScreen> {
                 ),
                 child: Center(
                   child: AspectRatio(
-                    // 📐 FIX 2: Use the new, smaller aspect ratio
                     aspectRatio: _mapAspectRatio,
                     child: _buildMapPlaceholder(isDarkMode),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 22.0), // Separator
-              // New: City/Area Picker Section
+              const SizedBox(height: 22.0),
+
+              // --- DYNAMIC LOCATION SELECTOR ---
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                child: _CustomerLocationSelector(
-                  city: _selectedCity,
-                  area: _selectedArea,
-                  cities: _customerCities,
-                  cityAreas: _customerCityAreas,
-                  onCitySelected: _onCitySelected,
-                  onAreaTapped: _onAreaTapped,
-                  isDarkMode: isDarkMode,
-                ),
+                child: _isLoadingAreas
+                    ? Container(
+                        height: 250,
+                        alignment: Alignment.center,
+                        child: const CircularProgressIndicator(),
+                      )
+                    : _CustomerLocationSelector(
+                        city: _selectedCity,
+                        area: _selectedArea,
+                        cities: _customerCities,
+                        cityAreas: _customerCityAreas,
+                        onCitySelected: _onCitySelected,
+                        onAreaTapped: _onAreaTapped,
+                        isDarkMode: isDarkMode,
+                      ),
               ),
-              const SizedBox(height: 30.0), // Padding at the end
+              const SizedBox(height: 30.0),
             ],
           ),
         ),
@@ -708,8 +723,6 @@ class _LocationScreenState extends State<LocationScreen> {
                       ],
                     ),
             ),
-
-            // 📍 Center pin when editing
             if (_isEditingLocation)
               const Align(
                 alignment: Alignment.center,
@@ -717,15 +730,12 @@ class _LocationScreenState extends State<LocationScreen> {
                   child: Icon(Icons.location_pin, size: 50, color: Colors.red),
                 ),
               ),
-
-            // 🔁 Top-right button cluster (Save, Edit, Maximize)
             Positioned(
               top: 15,
               right: 15,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // ✅ Save (only in edit mode)
                   if (_isEditingLocation)
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
@@ -737,11 +747,9 @@ class _LocationScreenState extends State<LocationScreen> {
                             _customerLocation = _mapCenterDuringEdit!;
                             _isEditingLocation = false;
                           });
-
                           await _resolveAddressFromCoordinates(
                             _customerLocation!,
                           );
-
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
@@ -757,8 +765,6 @@ class _LocationScreenState extends State<LocationScreen> {
                         child: const Icon(Icons.check, color: Colors.white),
                       ),
                     ),
-
-                  // ✏ Edit
                   Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: FloatingActionButton(
@@ -777,8 +783,6 @@ class _LocationScreenState extends State<LocationScreen> {
                       ),
                     ),
                   ),
-
-                  // ⛶ Maximize
                   FloatingActionButton(
                     mini: true,
                     backgroundColor: _primaryBlue,
@@ -788,7 +792,6 @@ class _LocationScreenState extends State<LocationScreen> {
                 ],
               ),
             ),
-            // 🔍 Zoom buttons (bottom right)
             Positioned(
               bottom: 15,
               right: 15,
@@ -907,7 +910,6 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
               ],
             ),
           ),
-
           if (_isEditing)
             const Align(
               alignment: Alignment.center,
@@ -915,8 +917,6 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
                 child: Icon(Icons.location_pin, size: 50, color: Colors.red),
               ),
             ),
-
-          // Top-right button row
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
             right: 10,
@@ -964,7 +964,6 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
               ],
             ),
           ),
-          // 🔍 Zoom buttons in maximized map
           Positioned(
             bottom: 20,
             right: 15,
@@ -1016,24 +1015,6 @@ class _NavigationHeader extends StatelessWidget {
     required this.isNextEnabled,
   });
 
-  Widget _buildAjeerTitle() {
-    return const Text(
-      'Ajeer',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 34,
-        fontWeight: FontWeight.w900,
-        shadows: [
-          Shadow(
-            blurRadius: 2.0,
-            color: Colors.black26,
-            offset: Offset(1.0, 1.0),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Positioned(
@@ -1048,25 +1029,34 @@ class _NavigationHeader extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: onBackTap,
           ),
-          _buildAjeerTitle(),
+          const Text(
+            'Ajeer',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(
+                  blurRadius: 2.0,
+                  color: Colors.black26,
+                  offset: Offset(1.0, 1.0),
+                ),
+              ],
+            ),
+          ),
           IconButton(
             iconSize: 28.0,
             icon: Icon(
               Icons.arrow_forward_ios,
-              // Change color based on selection status
               color: Colors.white.withOpacity(isNextEnabled ? 1.0 : 0.5),
             ),
-            onPressed: isNextEnabled
-                ? onNextTap
-                : null, // Disable if not enabled
+            onPressed: isNextEnabled ? onNextTap : null,
           ),
         ],
       ),
     );
   }
 }
-
-// --- START NEW WIDGETS FOR CUSTOMER CITY/AREA PICKER ---
 
 class _CustomerLocationSelector extends StatelessWidget {
   final String? city;
@@ -1090,21 +1080,24 @@ class _CustomerLocationSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      // 1. Changed alignment to Center
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 5.0, bottom: 10.0),
+          padding: const EdgeInsets.only(bottom: 15.0, left: 20, right: 20),
           child: Text(
-            'Select your area',
+            // 2. Updated Text content
+            'Select your area. This will be used to determine your Ajeer!',
+            textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: isDarkMode ? Colors.white : Colors.black87,
+              fontSize: 15, // Adjusted size to fit the longer text better
+              fontWeight: FontWeight.normal, // 3. Removed Bold
+              color: Colors.grey, // 4. Changed color to Gray
             ),
           ),
         ),
         SizedBox(
-          height: _LocationScreenState._cityAreaBoxHeight,
+          height: 250.0,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1154,13 +1147,9 @@ class _LocationBox extends StatelessWidget {
   });
 
   static const Color kPrimaryBlue = Color(0xFF1976D2);
-  static const double kBoxRadius = 15.0;
-  static const double kHeaderRadius = 13.0;
 
   @override
   Widget build(BuildContext context) {
-    const Color headerBgColor = kPrimaryBlue;
-    const Color headerTextColor = Colors.white;
     final Color listBgColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
     final Color borderColor = isDarkMode
         ? Colors.grey.shade700
@@ -1169,7 +1158,7 @@ class _LocationBox extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: listBgColor,
-        borderRadius: BorderRadius.circular(kBoxRadius),
+        borderRadius: BorderRadius.circular(15.0),
         border: Border.all(color: borderColor, width: 2),
       ),
       child: Column(
@@ -1178,10 +1167,8 @@ class _LocationBox extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8.0),
             decoration: const BoxDecoration(
-              color: headerBgColor,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(kHeaderRadius),
-              ),
+              color: kPrimaryBlue,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(13.0)),
             ),
             child: Text(
               title,
@@ -1189,7 +1176,7 @@ class _LocationBox extends StatelessWidget {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: headerTextColor,
+                color: Colors.white,
               ),
             ),
           ),
@@ -1214,11 +1201,9 @@ class _CustomerCityList extends StatelessWidget {
     required this.isDarkMode,
   });
 
-  static const Color kPrimaryBlue = Color(0xFF1976D2);
-
   @override
   Widget build(BuildContext context) {
-    final Color selectedBgColor = kPrimaryBlue.withOpacity(0.1);
+    final Color selectedBgColor = const Color(0xFF1976D2).withOpacity(0.1);
 
     return ListView.builder(
       padding: EdgeInsets.zero,
@@ -1226,20 +1211,15 @@ class _CustomerCityList extends StatelessWidget {
       itemBuilder: (context, index) {
         final city = cities[index];
         final bool isSelected = city == selectedCity;
-
         final Color itemTextColor = isSelected
-            ? kPrimaryBlue
+            ? const Color(0xFF1976D2)
             : (isDarkMode ? Colors.white70 : Colors.black87);
 
         return ListTile(
           onTap: () => onCitySelected(city),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 8.0,
-            vertical: 0,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
           visualDensity: const VisualDensity(vertical: -4),
           dense: true,
-          minVerticalPadding: 0,
           title: Text(
             city,
             style: TextStyle(
@@ -1249,7 +1229,7 @@ class _CustomerCityList extends StatelessWidget {
             ),
           ),
           trailing: isSelected
-              ? const Icon(Icons.check, color: kPrimaryBlue, size: 20)
+              ? const Icon(Icons.check, color: Color(0xFF1976D2), size: 20)
               : null,
           tileColor: isSelected ? selectedBgColor : null,
           shape: RoundedRectangleBorder(
@@ -1276,16 +1256,12 @@ class _CustomerAreaList extends StatelessWidget {
     required this.isDarkMode,
   });
 
-  static const Color kPrimaryBlue = Color(0xFF1976D2);
-  static const Color kSelectedGreen = Colors.green;
-
   @override
   Widget build(BuildContext context) {
     if (selectedCity == null) {
       return Center(
         child: Text(
           'Select a city first.',
-          textAlign: TextAlign.center,
           style: TextStyle(
             color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
             fontSize: 14,
@@ -1299,8 +1275,7 @@ class _CustomerAreaList extends StatelessWidget {
     if (availableAreas.isEmpty) {
       return Center(
         child: Text(
-          'No areas available in $selectedCity.',
-          textAlign: TextAlign.center,
+          'No areas available.',
           style: TextStyle(
             color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
             fontSize: 14,
@@ -1316,22 +1291,15 @@ class _CustomerAreaList extends StatelessWidget {
         final area = availableAreas[index];
         final bool isSelected = area == selectedArea;
 
-        final Color itemBgColor = isSelected
-            ? kPrimaryBlue.withOpacity(0.1)
-            : (isDarkMode ? Colors.transparent : Colors.transparent);
         final Color itemTextColor = isDarkMode
-            ? (isSelected ? kPrimaryBlue : Colors.white70)
-            : (isSelected ? kPrimaryBlue : Colors.black87);
+            ? (isSelected ? const Color(0xFF1976D2) : Colors.white70)
+            : (isSelected ? const Color(0xFF1976D2) : Colors.black87);
 
         return ListTile(
           onTap: () => onAreaTapped(area),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 8.0,
-            vertical: 0,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
           visualDensity: const VisualDensity(vertical: -4),
           dense: true,
-          minVerticalPadding: 0,
           title: Text(
             area,
             style: TextStyle(
@@ -1341,7 +1309,7 @@ class _CustomerAreaList extends StatelessWidget {
             ),
           ),
           trailing: isSelected
-              ? const Icon(Icons.check_circle, color: kSelectedGreen, size: 20)
+              ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
               : Icon(
                   Icons.radio_button_unchecked,
                   color: isDarkMode
@@ -1349,10 +1317,39 @@ class _CustomerAreaList extends StatelessWidget {
                       : Colors.grey.shade400,
                   size: 20,
                 ),
-          tileColor: itemBgColor,
+          tileColor: isSelected
+              ? const Color(0xFF1976D2).withOpacity(0.1)
+              : null,
         );
       },
     );
   }
 }
-// --- END NEW WIDGETS FOR CUSTOMER CITY/AREA PICKER ---
+
+// --- DTO MODELS (Included here for convenience) ---
+class AreaResponse {
+  final int id;
+  final String name;
+
+  AreaResponse({required this.id, required this.name});
+
+  factory AreaResponse.fromJson(Map<String, dynamic> json) {
+    return AreaResponse(id: json['id'], name: json['name']);
+  }
+}
+
+class CityResponse {
+  final String cityName;
+  final List<AreaResponse> areas;
+
+  CityResponse({required this.cityName, required this.areas});
+
+  factory CityResponse.fromJson(Map<String, dynamic> json) {
+    var areasList = json['areas'] as List;
+    List<AreaResponse> areasItems = areasList
+        .map((i) => AreaResponse.fromJson(i))
+        .toList();
+
+    return CityResponse(cityName: json['cityName'], areas: areasItems);
+  }
+}
