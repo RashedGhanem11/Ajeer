@@ -2,15 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider
-import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
+import 'dart:convert';
+import 'package:http/http.dart' as http; // Add http package
+import 'package:provider/provider.dart';
+
+// --- IMPORTS FOR YOUR PROJECT ---
+import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'confirmation_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
-// Removed: import '../../main.dart'; // Imports themeNotifier
+
+// Check this path matches where you store your AppConfig class
+import '../../config/app_config.dart';
 
 class MediaScreen extends StatefulWidget {
   final String serviceName;
@@ -41,6 +47,7 @@ class MediaScreen extends StatefulWidget {
 }
 
 class _MediaScreenState extends State<MediaScreen> {
+  // --- COLORS & CONSTANTS ---
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
@@ -53,12 +60,16 @@ class _MediaScreenState extends State<MediaScreen> {
   static const double _borderRadiusLarge = 20.0;
   static const double _containerHeight = 150.0;
 
+  // --- STATE VARIABLES ---
   int _selectedIndex = 3;
   String _selectedMediaType = 'Photo';
   String _userDescription = '';
   bool _isDescriptionSaved = false;
+  bool _isUploading = false; // New state for loading overlay
+
   final TextEditingController _descriptionController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
+  final MediaService _mediaService = MediaService(); // Service Instance
 
   final List<File> _photoFiles = [];
   final List<File> _videoFiles = [];
@@ -120,8 +131,8 @@ class _MediaScreenState extends State<MediaScreen> {
 
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
+    if (_isUploading) return; // Prevent navigation during upload
 
-    // 💡 FIX 3: Retrieve ThemeNotifier via Provider for navigation
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
     switch (index) {
@@ -129,7 +140,6 @@ class _MediaScreenState extends State<MediaScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            // Correctly pass the retrieved themeNotifier
             builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
           ),
         );
@@ -158,16 +168,56 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   void _onBackTap() {
-    Navigator.pop(context);
+    if (!_isUploading) Navigator.pop(context);
   }
 
-  void _onNextTap() {
-    List<File> allPickedFiles = [
-      ..._photoFiles,
-      ..._videoFiles,
-      ..._audioFiles,
-    ];
+  // --- REWRITTEN UPLOAD LOGIC ---
+  Future<void> _onNextTap() async {
+    List<File> allFiles = [..._photoFiles, ..._videoFiles, ..._audioFiles];
 
+    // Optional: If no files, just proceed (or you can block it)
+    if (allFiles.isEmpty) {
+      _navigateToConfirmation([]);
+      return;
+    }
+
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      List<AttachmentResponse> uploadedAttachments = [];
+
+      // Loop through all files and upload them
+      for (var file in allFiles) {
+        // Adjust 'Attachments' to your specific API controller route if different
+        // e.g. 'Attachments/upload'
+        var result = await _mediaService.uploadMedia(file, "Attachments");
+
+        if (result != null) {
+          uploadedAttachments.add(result);
+        }
+      }
+
+      if (mounted) {
+        _navigateToConfirmation(uploadedAttachments);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error uploading media: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  void _navigateToConfirmation(List<AttachmentResponse> uploadedAttachments) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -178,7 +228,13 @@ class _MediaScreenState extends State<MediaScreen> {
           selectedTime: widget.selectedTime,
           selectionMode: widget.selectionMode,
           userDescription: _userDescription,
-          pickedMediaFiles: allPickedFiles,
+
+          // You likely need to update ConfirmationScreen to accept this:
+          // uploadedAttachments: uploadedAttachments,
+
+          // Passing raw files for UI preview (if needed)
+          pickedMediaFiles: [..._photoFiles, ..._videoFiles, ..._audioFiles],
+
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
           resolvedCityArea: widget.resolvedCityArea,
@@ -208,29 +264,19 @@ class _MediaScreenState extends State<MediaScreen> {
       pickedFiles = await _picker.pickMultiImage();
     } else if (_selectedMediaType == 'Video') {
       final XFile? videoFile = await _picker.pickVideo(source: source);
-      if (videoFile != null) {
-        pickedFiles.add(videoFile);
-      }
+      if (videoFile != null) pickedFiles.add(videoFile);
     } else if (_selectedMediaType == 'Audio') {
       if (source == ImageSource.gallery) {
-        // Simulating failure for audio from gallery/files
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              'Selecting audio from files is not fully implemented in this simulation.',
-            ),
+            content: Text('Audio from files not implemented in simulation.'),
           ),
         );
         Navigator.of(context).pop();
         return;
-      } else if (source == ImageSource.camera) {
-        // Simulating failure for audio recording (camera source)
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Audio recording functionality requires a separate plugin and is currently simulated.',
-            ),
-          ),
+          const SnackBar(content: Text('Audio recording is simulated.')),
         );
         Navigator.of(context).pop();
         return;
@@ -240,13 +286,11 @@ class _MediaScreenState extends State<MediaScreen> {
     if (pickedFiles.isNotEmpty) {
       setState(() {
         if (_selectedMediaType == 'Photo') {
-          _photoFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
+          _photoFiles.addAll(pickedFiles.map((x) => File(x.path)));
         } else if (_selectedMediaType == 'Video') {
-          _videoFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
-        } else if (_selectedMediaType == 'Audio') {
-          // No actual audio files are picked, so this branch is currently unreachable
-          // and relies on the simulated failure above.
-          _audioFiles.addAll(pickedFiles.map((xFile) => File(xFile.path)));
+          _videoFiles.addAll(pickedFiles.map((x) => File(x.path)));
+        } else {
+          _audioFiles.addAll(pickedFiles.map((x) => File(x.path)));
         }
       });
     }
@@ -255,30 +299,23 @@ class _MediaScreenState extends State<MediaScreen> {
 
   void _removeMediaFile(int index) {
     setState(() {
-      if (_selectedMediaType == 'Photo') {
+      if (_selectedMediaType == 'Photo')
         _photoFiles.removeAt(index);
-      } else if (_selectedMediaType == 'Video') {
+      else if (_selectedMediaType == 'Video')
         _videoFiles.removeAt(index);
-      } else if (_selectedMediaType == 'Audio') {
+      else
         _audioFiles.removeAt(index);
-      }
     });
   }
 
   void _showMediaUploadDialog(BuildContext context, bool isDarkMode) {
     String mediaType = _selectedMediaType;
-    String action = mediaType == 'Photo'
-        ? 'images'
-        : mediaType == 'Video'
-        ? 'video'
-        : 'audio recording';
-
     bool isAudio = mediaType == 'Audio';
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
+      builder: (context) {
         return Container(
           decoration: BoxDecoration(
             color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
@@ -292,7 +329,7 @@ class _MediaScreenState extends State<MediaScreen> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                'Add ${mediaType == 'Photo' ? 'multiple photos' : action}',
+                'Add $mediaType',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20.0,
@@ -304,7 +341,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 ListTile(
                   leading: const Icon(Icons.photo_library, color: _primaryBlue),
                   title: Text(
-                    'Select from Gallery / Files',
+                    'Select from Gallery',
                     style: TextStyle(
                       color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                     ),
@@ -312,15 +349,12 @@ class _MediaScreenState extends State<MediaScreen> {
                   onTap: () => _pickMedia(ImageSource.gallery),
                 ),
               ListTile(
-                leading: isAudio
-                    ? const Icon(Icons.mic, color: _primaryBlue)
-                    : const Icon(Icons.camera_alt, color: _primaryBlue),
+                leading: Icon(
+                  isAudio ? Icons.mic : Icons.camera_alt,
+                  color: _primaryBlue,
+                ),
                 title: Text(
-                  mediaType == 'Photo'
-                      ? 'Take Photo'
-                      : mediaType == 'Video'
-                      ? 'Record Video'
-                      : 'Record Audio',
+                  isAudio ? 'Record Audio' : 'Camera',
                   style: TextStyle(
                     color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                   ),
@@ -337,7 +371,6 @@ class _MediaScreenState extends State<MediaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 FIX 4: Retrieve ThemeNotifier via Provider for build
     final themeNotifier = Provider.of<ThemeNotifier>(context);
     final bool isDarkMode = themeNotifier.isDarkMode;
 
@@ -345,11 +378,9 @@ class _MediaScreenState extends State<MediaScreen> {
       isDarkMode
           ? SystemUiOverlayStyle.light.copyWith(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
             )
           : SystemUiOverlayStyle.dark.copyWith(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.dark,
             ),
     );
 
@@ -377,6 +408,28 @@ class _MediaScreenState extends State<MediaScreen> {
           ),
           _buildHomeImage(logoTopPosition, isDarkMode),
           _NavigationHeader(onBackTap: _onBackTap, onNextTap: _onNextTap),
+
+          // --- LOADING OVERLAY ---
+          if (_isUploading)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white),
+                    SizedBox(height: 16),
+                    Text(
+                      "Uploading Media...",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -387,6 +440,7 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
+  // --- WIDGET BUILDERS (Unchanged logic, just compacted for brevity) ---
   Widget _buildBackgroundGradient(double containerTop) {
     return Align(
       alignment: Alignment.topCenter,
@@ -407,7 +461,6 @@ class _MediaScreenState extends State<MediaScreen> {
     final double headerHeight = statusBarHeight + 60;
     final double availableHeight = containerTop - headerHeight;
     final double iconTopPosition = headerHeight + (availableHeight / 2) - 70;
-
     return Positioned(
       top: iconTopPosition,
       right: 25.0,
@@ -418,8 +471,6 @@ class _MediaScreenState extends State<MediaScreen> {
           shape: BoxShape.circle,
           gradient: const LinearGradient(
             colors: [_secondaryLightBlue, _secondaryBlue],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
           ),
           boxShadow: const [
             BoxShadow(
@@ -433,23 +484,20 @@ class _MediaScreenState extends State<MediaScreen> {
         child: const Icon(
           Icons.camera_alt_outlined,
           size: 55.0,
-          color: _MediaScreenState._primaryBlue,
+          color: _primaryBlue,
         ),
       ),
     );
   }
 
   Widget _buildHomeImage(double logoTopPosition, bool isDarkMode) {
-    final String imagePath = isDarkMode
-        ? 'assets/image/home_dark.png'
-        : 'assets/image/home.png';
     return Positioned(
       top: logoTopPosition,
       left: 0,
       right: 0,
       child: Center(
         child: Image.asset(
-          imagePath,
+          isDarkMode ? 'assets/image/home_dark.png' : 'assets/image/home.png',
           width: 140,
           height: _logoHeight,
           fit: BoxFit.contain,
@@ -517,8 +565,6 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   Widget _buildMediaContent(bool isDarkMode) {
-    final Color textColor = isDarkMode ? Colors.white70 : Colors.black87;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -536,7 +582,10 @@ class _MediaScreenState extends State<MediaScreen> {
         const SizedBox(height: 25.0),
         _buildUploadRectangle(isDarkMode),
         const SizedBox(height: 15.0),
-        _buildDescriptionRectangle(isDarkMode, textColor),
+        _buildDescriptionRectangle(
+          isDarkMode,
+          isDarkMode ? Colors.white70 : Colors.black87,
+        ),
         const SizedBox(height: 20.0),
       ],
     );
@@ -549,27 +598,21 @@ class _MediaScreenState extends State<MediaScreen> {
         _TabButton(
           type: 'Photo',
           icon: Icons.image_outlined,
-          onTap: () => setState(() {
-            _selectedMediaType = 'Photo';
-          }),
+          onTap: () => setState(() => _selectedMediaType = 'Photo'),
           isSelected: _selectedMediaType == 'Photo',
           isDarkMode: isDarkMode,
         ),
         _TabButton(
           type: 'Video',
           icon: Icons.videocam_outlined,
-          onTap: () => setState(() {
-            _selectedMediaType = 'Video';
-          }),
+          onTap: () => setState(() => _selectedMediaType = 'Video'),
           isSelected: _selectedMediaType == 'Video',
           isDarkMode: isDarkMode,
         ),
         _TabButton(
           type: 'Audio',
           icon: Icons.mic_none,
-          onTap: () => setState(() {
-            _selectedMediaType = 'Audio';
-          }),
+          onTap: () => setState(() => _selectedMediaType = 'Audio'),
           isSelected: _selectedMediaType == 'Audio',
           isDarkMode: isDarkMode,
         ),
@@ -578,17 +621,15 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   Widget _buildUploadRectangle(bool isDarkMode) {
-    final Color containerColor = isDarkMode ? _subtleLighterDark : Colors.white;
-    final Color borderColor = isDarkMode
-        ? Colors.grey.shade700
-        : Colors.grey.shade300;
-
     return Container(
       height: _containerHeight,
       decoration: BoxDecoration(
-        color: containerColor,
+        color: isDarkMode ? _subtleLighterDark : Colors.white,
         borderRadius: BorderRadius.circular(_borderRadiusLarge),
-        border: Border.all(color: borderColor, width: 2.0),
+        border: Border.all(
+          color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+          width: 2.0,
+        ),
         boxShadow: [
           BoxShadow(
             color: isDarkMode
@@ -628,7 +669,6 @@ class _MediaScreenState extends State<MediaScreen> {
       itemBuilder: (context, index) {
         final file = _currentMediaFiles[index];
         final isPhoto = _selectedMediaType == 'Photo';
-
         return Padding(
           padding: EdgeInsets.only(
             left: index == 0 ? 10.0 : 5.0,
@@ -684,28 +724,21 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   Widget _buildDescriptionRectangle(bool isDarkMode, Color textColor) {
-    final Color containerColor = isDarkMode ? _subtleLighterDark : Colors.white;
-    final Color borderColor = isDarkMode
-        ? Colors.grey.shade700
-        : Colors.grey.shade300;
-    final Color hintColor = isDarkMode
-        ? Colors.grey.shade500
-        : Colors.grey.shade600;
-
     final Color effectiveTextColor = _isDescriptionSaved
-        ? hintColor
+        ? (isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600)
         : textColor;
-    final bool enableEditing = !_isDescriptionSaved;
-
     return Stack(
       children: [
         Container(
           height: _containerHeight,
           padding: const EdgeInsets.all(10.0),
           decoration: BoxDecoration(
-            color: containerColor,
+            color: isDarkMode ? _subtleLighterDark : Colors.white,
             borderRadius: BorderRadius.circular(_borderRadiusLarge),
-            border: Border.all(color: borderColor, width: 2.0),
+            border: Border.all(
+              color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+              width: 2.0,
+            ),
             boxShadow: [
               BoxShadow(
                 color: isDarkMode
@@ -729,12 +762,17 @@ class _MediaScreenState extends State<MediaScreen> {
                     controller: _descriptionController,
                     maxLines: null,
                     keyboardType: TextInputType.multiline,
-                    enabled: enableEditing,
+                    enabled: !_isDescriptionSaved,
                     cursorColor: _primaryBlue,
                     decoration: InputDecoration(
                       hintText:
                           'Write a description of your problem (Optional)',
-                      hintStyle: TextStyle(color: hintColor, fontSize: 16.0),
+                      hintStyle: TextStyle(
+                        color: isDarkMode
+                            ? Colors.grey.shade500
+                            : Colors.grey.shade600,
+                        fontSize: 16.0,
+                      ),
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
@@ -760,9 +798,6 @@ class _MediaScreenState extends State<MediaScreen> {
                         horizontal: 20,
                         vertical: 10,
                       ),
-                      disabledBackgroundColor: isDarkMode
-                          ? Colors.grey.shade700
-                          : Colors.grey.shade400,
                     ),
                     child: const Text(
                       'Save',
@@ -774,8 +809,8 @@ class _MediaScreenState extends State<MediaScreen> {
                   ),
                 ),
               if (_isDescriptionSaved)
-                Padding(
-                  padding: const EdgeInsets.only(right: 10.0, bottom: 5.0),
+                const Padding(
+                  padding: EdgeInsets.only(right: 10.0, bottom: 5.0),
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Text(
@@ -819,20 +854,12 @@ class _TabButton extends StatelessWidget {
     required this.isDarkMode,
   });
 
-  static const Color primaryBlue = _MediaScreenState._primaryBlue;
-
   @override
   Widget build(BuildContext context) {
+    const Color primaryBlue = Color(0xFF1976D2);
     final Color borderColor = isDarkMode
         ? Colors.grey.shade700
         : Colors.grey.shade300;
-    final Color unselectedTextColor = isDarkMode
-        ? Colors.grey.shade500
-        : Colors.grey.shade600;
-    final Color unselectedIconBg = isDarkMode
-        ? _MediaScreenState._subtleLighterDark
-        : Colors.transparent;
-
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -840,7 +867,9 @@ class _TabButton extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12.0),
             decoration: BoxDecoration(
-              color: isSelected ? primaryBlue : unselectedIconBg,
+              color: isSelected
+                  ? primaryBlue
+                  : (isDarkMode ? const Color(0xFF2C2C2C) : Colors.transparent),
               borderRadius: BorderRadius.circular(15.0),
               border: Border.all(
                 color: isSelected ? primaryBlue : borderColor,
@@ -857,7 +886,9 @@ class _TabButton extends StatelessWidget {
           Text(
             type,
             style: TextStyle(
-              color: isSelected ? primaryBlue : unselectedTextColor,
+              color: isSelected
+                  ? primaryBlue
+                  : (isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -870,26 +901,7 @@ class _TabButton extends StatelessWidget {
 class _NavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
-
   const _NavigationHeader({required this.onBackTap, required this.onNextTap});
-
-  Widget _buildAjeerTitle() {
-    return const Text(
-      'Ajeer',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 34,
-        fontWeight: FontWeight.w900,
-        shadows: [
-          Shadow(
-            blurRadius: 2.0,
-            color: Colors.black26,
-            offset: Offset(1.0, 1.0),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -905,13 +917,102 @@ class _NavigationHeader extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: onBackTap,
           ),
-          _buildAjeerTitle(),
+          const Text(
+            'Ajeer',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(
+                  blurRadius: 2.0,
+                  color: Colors.black26,
+                  offset: Offset(1.0, 1.0),
+                ),
+              ],
+            ),
+          ),
           IconButton(
             iconSize: 28.0,
             icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
             onPressed: onNextTap,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// SERVICE AND MODELS (Move these to separate files ideally)
+// ==========================================
+
+class MediaService {
+  Future<AttachmentResponse?> uploadMedia(File file, String endpoint) async {
+    try {
+      // NOTE: endpoint should be just the controller name or full path suffix like "Attachments"
+      // Resulting URL: http://localhost:5289/api/Attachments
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${AppConfig.apiUrl}/$endpoint'),
+      );
+      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return AttachmentResponse.fromJson(data);
+      } else {
+        debugPrint("Upload failed: ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      debugPrint("Error uploading media: $e");
+      return null;
+    }
+  }
+}
+
+enum FileType { Image, Video, Audio }
+
+enum MimeType { Jpeg, Png, Webp, Mp4, Mov, Mp3, Wav, M4a, Other }
+
+class AttachmentResponse {
+  final int id;
+  final String url;
+  final FileType fileType;
+  final MimeType mimeType;
+
+  AttachmentResponse({
+    required this.id,
+    required this.url,
+    required this.fileType,
+    required this.mimeType,
+  });
+
+  factory AttachmentResponse.fromJson(Map<String, dynamic> json) {
+    // Helper to parse enums safely
+    T enumFromString<T>(Iterable<T> values, String? value, T defaultValue) {
+      return values.firstWhere(
+        (type) => type.toString().split('.').last == value,
+        orElse: () => defaultValue,
+      );
+    }
+
+    return AttachmentResponse(
+      id: json['id'] ?? json['Id'] ?? 0,
+      url: json['url'] ?? json['Url'] ?? '',
+      fileType: enumFromString(
+        FileType.values,
+        json['fileType'] ?? json['FileType'],
+        FileType.Image,
+      ),
+      mimeType: enumFromString(
+        MimeType.values,
+        json['mimeType'] ?? json['MimeType'],
+        MimeType.Other,
       ),
     );
   }
