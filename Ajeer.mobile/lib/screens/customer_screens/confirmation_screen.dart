@@ -170,7 +170,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     final booking = Booking(
       provider: 'Khalid S.',
       phone: '0796753640',
-      location: 'Amman - Khalda',
+      location: widget.resolvedCityArea, // Uses the manually selected City/Area
       serviceName: widget.serviceName,
       unitType: widget.unitType,
       selectedDate: widget.selectedDate,

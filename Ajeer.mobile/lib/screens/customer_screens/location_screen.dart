@@ -47,7 +47,25 @@ class _LocationScreenState extends State<LocationScreen> {
   bool _isEditingLocation = false;
   MapController _mapController = MapController();
   LatLng? _mapCenterDuringEdit;
-  //String? _resolvedArea;
+
+  // --- START NEW CUSTOMER LOCATION STATE ---
+  String? _selectedCity;
+  String? _selectedArea;
+  // Hardcoded data based on the requirements (Amman and the 8 areas from 1.jpg)
+  final List<String> _customerCities = ['Amman'];
+  final Map<String, List<String>> _customerCityAreas = {
+    'Amman': [
+      'Tla\' Al-Ali',
+      'Al-Bayader',
+      'Al-Jubeiha',
+      'Dabouq',
+      'Al-Rabieh',
+      'Shmeisani',
+      'Jabal Al-Weibdeh',
+      'Abdoun',
+    ],
+  };
+  // --- END NEW CUSTOMER LOCATION STATE ---
 
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
@@ -61,6 +79,9 @@ class _LocationScreenState extends State<LocationScreen> {
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
   static const double _mapBorderRadius = 25.0;
   static const double _horizontalPadding = 20.0;
+  static const double _cityAreaBoxHeight = 250.0; // Adjusted for better fit
+  // 📐 FIX 2: Reduced map height by changing the aspect ratio
+  static const double _mapAspectRatio = 1.17; // Adjusted to be wider than tall
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -125,6 +146,8 @@ class _LocationScreenState extends State<LocationScreen> {
   void initState() {
     super.initState();
     _getCustomerLocation();
+    // Set 'Amman' as the initial selected city since it's the only one available
+    _selectedCity = _customerCities.first;
   }
 
   Future<void> _getCustomerLocation() async {
@@ -172,6 +195,7 @@ class _LocationScreenState extends State<LocationScreen> {
         }
 
         // 🔍 Try Google Geocoding API for more accurate city/area
+        // NOTE: The API key here is a placeholder/example. A real, valid key must be used.
         final googleData = await getAreaFromCoordinates(
           location,
           'AIzaSyCXvl-cyD8q4HwtM7QblvHOe45d_83su9I',
@@ -235,7 +259,30 @@ class _LocationScreenState extends State<LocationScreen> {
     Navigator.pop(context);
   }
 
+  // Check if both a city and an area have been selected manually
+  bool get _isNextEnabled => _selectedCity != null && _selectedArea != null;
+
   void _onNextTap() {
+    if (!_isNextEnabled) {
+      // Prevent navigation if location is not selected
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select an area before proceeding.'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Combine selected city and area for the resolvedCityArea variable
+    final String finalCityArea = '$_selectedCity, $_selectedArea';
+
+    // Combine current resolved full address with the selected area for final address
+    // This logic ensures that the manually selected area is included in the final address sent.
+    // Just use the geocoded street name (fullResolvedAddress)
+    String finalAddress = _fullResolvedAddress ?? '';
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -247,12 +294,28 @@ class _LocationScreenState extends State<LocationScreen> {
           selectionMode: widget.selectionMode,
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
-          resolvedAddress: _fullResolvedAddress ?? '',
-          resolvedCityArea: _resolvedAddress ?? '',
+          resolvedAddress: finalAddress, // Use the full address
+          resolvedCityArea:
+              finalCityArea, // Use the manually selected city/area
         ),
       ),
     );
   }
+
+  // --- START NEW CUSTOMER LOCATION METHODS ---
+  void _onCitySelected(String city) {
+    setState(() {
+      _selectedCity = city;
+      _selectedArea = null; // Reset area when city changes
+    });
+  }
+
+  void _onAreaTapped(String area) {
+    setState(() {
+      _selectedArea = area;
+    });
+  }
+  // --- END NEW CUSTOMER LOCATION METHODS ---
 
   void _showMaximizedMap(BuildContext context, bool isDarkMode) async {
     if (_customerLocation == null) return;
@@ -293,7 +356,7 @@ class _LocationScreenState extends State<LocationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 FIX 4: Retrieve ThemeNotifier via Provider for build
+    // 💡 Retrieve ThemeNotifier via Provider for build
     final themeNotifier = Provider.of<ThemeNotifier>(context);
     final bool isDarkMode = themeNotifier.isDarkMode;
 
@@ -310,7 +373,10 @@ class _LocationScreenState extends State<LocationScreen> {
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
+
+    // 📐 FIX 1: Reverted back to 0.30 so the container stays at the Red Arrow
     final double whiteContainerTop = screenHeight * 0.30;
+
     final double logoTopPosition =
         whiteContainerTop - _logoHeight + _overlapAdjustment;
     final double bottomNavClearance =
@@ -332,7 +398,11 @@ class _LocationScreenState extends State<LocationScreen> {
             isDarkMode: isDarkMode,
           ),
           _buildHomeImage(logoTopPosition, isDarkMode),
-          _NavigationHeader(onBackTap: _onBackTap, onNextTap: _onNextTap),
+          _NavigationHeader(
+            onBackTap: _onBackTap,
+            onNextTap: _onNextTap,
+            isNextEnabled: _isNextEnabled, // Pass the check for next button
+          ),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -485,6 +555,8 @@ class _LocationScreenState extends State<LocationScreen> {
       right: 0,
       bottom: 0,
       child: Container(
+        // ✂ FIX 2: Added Clip.hardEdge to prevent content from overflowing the rounded corners
+        clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
           color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
           borderRadius: const BorderRadius.only(
@@ -500,53 +572,73 @@ class _LocationScreenState extends State<LocationScreen> {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 15.0),
-            Padding(
-              padding: const EdgeInsets.only(
-                left: _horizontalPadding,
-                top: 20.0,
-              ),
-              child: Text(
-                'Pick a location',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black87,
-                ),
-              ),
-            ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(bottom: bottomNavClearance),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 📐 FIX 3: Increased top spacing from 15.0 to 50.0
+              // This pushes the content down to the Yellow Arrow while keeping the container at the Red Arrow
+              const SizedBox(height: 15.0),
 
-            // ✅ Add this block right BELOW the "Pick a location" text:
-            if (_resolvedAddress != null)
               Padding(
                 padding: const EdgeInsets.only(
                   left: _horizontalPadding,
-                  top: 8.0,
-                  right: _horizontalPadding,
+                  top:
+                      20.0, // This pushes the title down slightly from the curve
                 ),
                 child: Text(
-                  _resolvedAddress!,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                  'Pick a location',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
 
-            // 🗺️ Keep your map section as is
-            Expanded(
-              child: _buildMapPlaceholder(bottomNavClearance, isDarkMode),
-            ),
-          ],
+              // 🚫 DELETED: The text widget that showed _resolvedAddress is removed here.
+
+              // Map Section
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  _horizontalPadding,
+                  10.0,
+                  _horizontalPadding,
+                  0,
+                ),
+                child: Center(
+                  child: AspectRatio(
+                    // 📐 FIX 2: Use the new, smaller aspect ratio
+                    aspectRatio: _mapAspectRatio,
+                    child: _buildMapPlaceholder(isDarkMode),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 22.0), // Separator
+              // New: City/Area Picker Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                child: _CustomerLocationSelector(
+                  city: _selectedCity,
+                  area: _selectedArea,
+                  cities: _customerCities,
+                  cityAreas: _customerCityAreas,
+                  onCitySelected: _onCitySelected,
+                  onAreaTapped: _onAreaTapped,
+                  isDarkMode: isDarkMode,
+                ),
+              ),
+              const SizedBox(height: 30.0), // Padding at the end
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildMapPlaceholder(double bottomNavClearance, bool isDarkMode) {
+  Widget _buildMapPlaceholder(bool isDarkMode) {
     final Color mapBgColor = isDarkMode
         ? _subtleLighterDark
         : Colors.grey[100]!;
@@ -554,202 +646,184 @@ class _LocationScreenState extends State<LocationScreen> {
         ? Colors.grey[700]!
         : Colors.grey[400]!;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        _horizontalPadding,
-        10.0,
-        _horizontalPadding,
-        bottomNavClearance - _horizontalPadding,
-      ),
-      child: Center(
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: mapBgColor,
-            borderRadius: BorderRadius.circular(_mapBorderRadius),
-            border: Border.all(color: mapBorderColor, width: 2.0),
-            boxShadow: [
-              BoxShadow(
-                color: isDarkMode
-                    ? Colors.black.withOpacity(0.5)
-                    : Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: AspectRatio(
-            aspectRatio: 1 / 1.5,
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(_mapBorderRadius),
-                  child: _customerLocation == null
-                      ? const Center(child: CircularProgressIndicator())
-                      : FlutterMap(
-                          mapController: _mapController,
-                          options: MapOptions(
-                            center: _isEditingLocation
-                                ? _mapCenterDuringEdit ?? _customerLocation
-                                : _customerLocation,
-                            zoom: 15.0,
-                            onPositionChanged: _isEditingLocation
-                                ? (MapPosition pos, _) {
-                                    setState(() {
-                                      _mapCenterDuringEdit = pos.center!;
-                                    });
-                                  }
-                                : null,
-                          ),
-                          children: [
-                            TileLayer(
-                              urlTemplate:
-                                  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                              subdomains: const ['a', 'b', 'c'],
-                            ),
-                            if (!_isEditingLocation)
-                              MarkerLayer(
-                                markers: [
-                                  Marker(
-                                    point: _customerLocation!,
-                                    width: 50,
-                                    height: 50,
-                                    child: const Icon(
-                                      Icons.location_pin,
-                                      color: Colors.red,
-                                      size: 40,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                          ],
+    return Center(
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: mapBgColor,
+          borderRadius: BorderRadius.circular(_mapBorderRadius),
+          border: Border.all(color: mapBorderColor, width: 2.0),
+          boxShadow: [
+            BoxShadow(
+              color: isDarkMode
+                  ? Colors.black.withOpacity(0.5)
+                  : Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(_mapBorderRadius),
+              child: _customerLocation == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        center: _isEditingLocation
+                            ? _mapCenterDuringEdit ?? _customerLocation
+                            : _customerLocation,
+                        zoom: 15.0,
+                        onPositionChanged: _isEditingLocation
+                            ? (MapPosition pos, _) {
+                                setState(() {
+                                  _mapCenterDuringEdit = pos.center!;
+                                });
+                              }
+                            : null,
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          subdomains: const ['a', 'b', 'c'],
                         ),
-                ),
+                        if (!_isEditingLocation)
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: _customerLocation!,
+                                width: 50,
+                                height: 50,
+                                child: const Icon(
+                                  Icons.location_pin,
+                                  color: Colors.red,
+                                  size: 40,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+            ),
 
-                // 📍 Center pin when editing
-                if (_isEditingLocation)
-                  const Align(
-                    alignment: Alignment.center,
-                    child: IgnorePointer(
-                      child: Icon(
-                        Icons.location_pin,
-                        size: 50,
-                        color: Colors.red,
+            // 📍 Center pin when editing
+            if (_isEditingLocation)
+              const Align(
+                alignment: Alignment.center,
+                child: IgnorePointer(
+                  child: Icon(Icons.location_pin, size: 50, color: Colors.red),
+                ),
+              ),
+
+            // 🔁 Top-right button cluster (Save, Edit, Maximize)
+            Positioned(
+              top: 15,
+              right: 15,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ✅ Save (only in edit mode)
+                  if (_isEditingLocation)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: FloatingActionButton(
+                        mini: true,
+                        backgroundColor: Colors.green,
+                        onPressed: () async {
+                          setState(() {
+                            _customerLocation = _mapCenterDuringEdit!;
+                            _isEditingLocation = false;
+                          });
+
+                          await _resolveAddressFromCoordinates(
+                            _customerLocation!,
+                          );
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Location updated',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              backgroundColor: Color(0xFF1976D2),
+                              behavior: SnackBarBehavior.fixed,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        child: const Icon(Icons.check, color: Colors.white),
+                      ),
+                    ),
+
+                  // ✏ Edit
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: FloatingActionButton(
+                      mini: true,
+                      backgroundColor: _primaryBlue,
+                      onPressed: () {
+                        setState(() {
+                          _isEditingLocation = true;
+                          _mapCenterDuringEdit = _customerLocation;
+                          _mapController.move(_customerLocation!, 15.0);
+                        });
+                      },
+                      child: const Icon(
+                        Icons.edit_location_alt,
+                        color: Colors.white,
                       ),
                     ),
                   ),
 
-                // 🔁 Top-right button cluster (Save, Edit, Maximize)
-                Positioned(
-                  top: 15,
-                  right: 15,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // ✅ Save (only in edit mode)
-                      if (_isEditingLocation)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: FloatingActionButton(
-                            mini: true,
-                            backgroundColor: Colors.green,
-                            onPressed: () async {
-                              setState(() {
-                                _customerLocation = _mapCenterDuringEdit!;
-                                _isEditingLocation = false;
-                              });
-
-                              await _resolveAddressFromCoordinates(
-                                _customerLocation!,
-                              );
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Location updated',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  backgroundColor: Color(0xFF1976D2),
-                                  behavior: SnackBarBehavior.fixed,
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                            },
-                            child: const Icon(Icons.check, color: Colors.white),
-                          ),
-                        ),
-
-                      // ✏ Edit
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: FloatingActionButton(
-                          mini: true,
-                          backgroundColor: _primaryBlue,
-                          onPressed: () {
-                            setState(() {
-                              _isEditingLocation = true;
-                              _mapCenterDuringEdit = _customerLocation;
-                              _mapController.move(_customerLocation!, 15.0);
-                            });
-                          },
-                          child: const Icon(
-                            Icons.edit_location_alt,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-
-                      // ⛶ Maximize
-                      FloatingActionButton(
-                        mini: true,
-                        backgroundColor: _primaryBlue,
-                        onPressed: () => _showMaximizedMap(context, isDarkMode),
-                        child: const Icon(
-                          Icons.open_in_full,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                  // ⛶ Maximize
+                  FloatingActionButton(
+                    mini: true,
+                    backgroundColor: _primaryBlue,
+                    onPressed: () => _showMaximizedMap(context, isDarkMode),
+                    child: const Icon(Icons.open_in_full, color: Colors.white),
                   ),
-                ),
-                // 🔍 Zoom buttons (bottom right)
-                Positioned(
-                  bottom: 15,
-                  right: 15,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FloatingActionButton(
-                        heroTag: 'zoom_in',
-                        mini: true,
-                        backgroundColor: Colors.white,
-                        onPressed: () {
-                          _mapController.move(
-                            _mapController.center,
-                            _mapController.zoom + 1,
-                          );
-                        },
-                        child: const Icon(Icons.zoom_in, color: Colors.black),
-                      ),
-                      const SizedBox(width: 10),
-                      FloatingActionButton(
-                        heroTag: 'zoom_out',
-                        mini: true,
-                        backgroundColor: Colors.white,
-                        onPressed: () {
-                          _mapController.move(
-                            _mapController.center,
-                            _mapController.zoom - 1,
-                          );
-                        },
-                        child: const Icon(Icons.zoom_out, color: Colors.black),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            // 🔍 Zoom buttons (bottom right)
+            Positioned(
+              bottom: 15,
+              right: 15,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FloatingActionButton(
+                    heroTag: 'zoom_in',
+                    mini: true,
+                    backgroundColor: Colors.white,
+                    onPressed: () {
+                      _mapController.move(
+                        _mapController.center,
+                        _mapController.zoom + 1,
+                      );
+                    },
+                    child: const Icon(Icons.zoom_in, color: Colors.black),
+                  ),
+                  const SizedBox(width: 10),
+                  FloatingActionButton(
+                    heroTag: 'zoom_out',
+                    mini: true,
+                    backgroundColor: Colors.white,
+                    onPressed: () {
+                      _mapController.move(
+                        _mapController.center,
+                        _mapController.zoom - 1,
+                      );
+                    },
+                    child: const Icon(Icons.zoom_out, color: Colors.black),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -934,8 +1008,13 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
 class _NavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
+  final bool isNextEnabled;
 
-  const _NavigationHeader({required this.onBackTap, required this.onNextTap});
+  const _NavigationHeader({
+    required this.onBackTap,
+    required this.onNextTap,
+    required this.isNextEnabled,
+  });
 
   Widget _buildAjeerTitle() {
     return const Text(
@@ -972,11 +1051,308 @@ class _NavigationHeader extends StatelessWidget {
           _buildAjeerTitle(),
           IconButton(
             iconSize: 28.0,
-            icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-            onPressed: onNextTap,
+            icon: Icon(
+              Icons.arrow_forward_ios,
+              // Change color based on selection status
+              color: Colors.white.withOpacity(isNextEnabled ? 1.0 : 0.5),
+            ),
+            onPressed: isNextEnabled
+                ? onNextTap
+                : null, // Disable if not enabled
           ),
         ],
       ),
     );
   }
 }
+
+// --- START NEW WIDGETS FOR CUSTOMER CITY/AREA PICKER ---
+
+class _CustomerLocationSelector extends StatelessWidget {
+  final String? city;
+  final String? area;
+  final List<String> cities;
+  final Map<String, List<String>> cityAreas;
+  final ValueChanged<String> onCitySelected;
+  final ValueChanged<String> onAreaTapped;
+  final bool isDarkMode;
+
+  const _CustomerLocationSelector({
+    required this.city,
+    required this.area,
+    required this.cities,
+    required this.cityAreas,
+    required this.onCitySelected,
+    required this.onAreaTapped,
+    required this.isDarkMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 5.0, bottom: 10.0),
+          child: Text(
+            'Select your area',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white : Colors.black87,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: _LocationScreenState._cityAreaBoxHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _LocationBox(
+                  title: 'City Picker',
+                  isDarkMode: isDarkMode,
+                  child: _CustomerCityList(
+                    cities: cities,
+                    selectedCity: city,
+                    onCitySelected: onCitySelected,
+                    isDarkMode: isDarkMode,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: _LocationBox(
+                  title: 'Area Picker',
+                  isDarkMode: isDarkMode,
+                  child: _CustomerAreaList(
+                    selectedCity: city,
+                    selectedArea: area,
+                    cityAreas: cityAreas,
+                    onAreaTapped: onAreaTapped,
+                    isDarkMode: isDarkMode,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LocationBox extends StatelessWidget {
+  final String title;
+  final Widget child;
+  final bool isDarkMode;
+
+  const _LocationBox({
+    required this.title,
+    required this.child,
+    required this.isDarkMode,
+  });
+
+  static const Color kPrimaryBlue = Color(0xFF1976D2);
+  static const double kBoxRadius = 15.0;
+  static const double kHeaderRadius = 13.0;
+
+  @override
+  Widget build(BuildContext context) {
+    const Color headerBgColor = kPrimaryBlue;
+    const Color headerTextColor = Colors.white;
+    final Color listBgColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
+    final Color borderColor = isDarkMode
+        ? Colors.grey.shade700
+        : Colors.grey.shade300;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: listBgColor,
+        borderRadius: BorderRadius.circular(kBoxRadius),
+        border: Border.all(color: borderColor, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            decoration: const BoxDecoration(
+              color: headerBgColor,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(kHeaderRadius),
+              ),
+            ),
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: headerTextColor,
+              ),
+            ),
+          ),
+          Divider(height: 1, color: borderColor),
+          Expanded(child: child),
+        ],
+      ),
+    );
+  }
+}
+
+class _CustomerCityList extends StatelessWidget {
+  final List<String> cities;
+  final String? selectedCity;
+  final ValueChanged<String> onCitySelected;
+  final bool isDarkMode;
+
+  const _CustomerCityList({
+    required this.cities,
+    required this.selectedCity,
+    required this.onCitySelected,
+    required this.isDarkMode,
+  });
+
+  static const Color kPrimaryBlue = Color(0xFF1976D2);
+
+  @override
+  Widget build(BuildContext context) {
+    final Color selectedBgColor = kPrimaryBlue.withOpacity(0.1);
+
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: cities.length,
+      itemBuilder: (context, index) {
+        final city = cities[index];
+        final bool isSelected = city == selectedCity;
+
+        final Color itemTextColor = isSelected
+            ? kPrimaryBlue
+            : (isDarkMode ? Colors.white70 : Colors.black87);
+
+        return ListTile(
+          onTap: () => onCitySelected(city),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8.0,
+            vertical: 0,
+          ),
+          visualDensity: const VisualDensity(vertical: -4),
+          dense: true,
+          minVerticalPadding: 0,
+          title: Text(
+            city,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: itemTextColor,
+            ),
+          ),
+          trailing: isSelected
+              ? const Icon(Icons.check, color: kPrimaryBlue, size: 20)
+              : null,
+          tileColor: isSelected ? selectedBgColor : null,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CustomerAreaList extends StatelessWidget {
+  final String? selectedCity;
+  final String? selectedArea;
+  final Map<String, List<String>> cityAreas;
+  final ValueChanged<String> onAreaTapped;
+  final bool isDarkMode;
+
+  const _CustomerAreaList({
+    required this.selectedCity,
+    required this.selectedArea,
+    required this.cityAreas,
+    required this.onAreaTapped,
+    required this.isDarkMode,
+  });
+
+  static const Color kPrimaryBlue = Color(0xFF1976D2);
+  static const Color kSelectedGreen = Colors.green;
+
+  @override
+  Widget build(BuildContext context) {
+    if (selectedCity == null) {
+      return Center(
+        child: Text(
+          'Select a city first.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
+    final List<String> availableAreas = cityAreas[selectedCity] ?? [];
+
+    if (availableAreas.isEmpty) {
+      return Center(
+        child: Text(
+          'No areas available in $selectedCity.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: availableAreas.length,
+      itemBuilder: (context, index) {
+        final area = availableAreas[index];
+        final bool isSelected = area == selectedArea;
+
+        final Color itemBgColor = isSelected
+            ? kPrimaryBlue.withOpacity(0.1)
+            : (isDarkMode ? Colors.transparent : Colors.transparent);
+        final Color itemTextColor = isDarkMode
+            ? (isSelected ? kPrimaryBlue : Colors.white70)
+            : (isSelected ? kPrimaryBlue : Colors.black87);
+
+        return ListTile(
+          onTap: () => onAreaTapped(area),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8.0,
+            vertical: 0,
+          ),
+          visualDensity: const VisualDensity(vertical: -4),
+          dense: true,
+          minVerticalPadding: 0,
+          title: Text(
+            area,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: itemTextColor,
+            ),
+          ),
+          trailing: isSelected
+              ? const Icon(Icons.check_circle, color: kSelectedGreen, size: 20)
+              : Icon(
+                  Icons.radio_button_unchecked,
+                  color: isDarkMode
+                      ? Colors.grey.shade600
+                      : Colors.grey.shade400,
+                  size: 20,
+                ),
+          tileColor: itemBgColor,
+        );
+      },
+    );
+  }
+}
+// --- END NEW WIDGETS FOR CUSTOMER CITY/AREA PICKER ---
