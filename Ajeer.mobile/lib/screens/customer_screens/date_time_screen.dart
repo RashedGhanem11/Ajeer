@@ -33,7 +33,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   int _selectedIndex = 3;
   String _selectionMode = 'Custom';
   DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = TimeOfDay.now();
+  late TimeOfDay _selectedTime;
   late List<DateTime> _days;
 
   final List<Map<String, dynamic>> _navItems = const [
@@ -68,8 +68,21 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   static const double _dialogBorderRadius = 38.0;
 
   @override
+  @override
   void initState() {
     super.initState();
+
+    // Calculate the time 30 minutes from now
+    final DateTime now = DateTime.now();
+    final DateTime futureTime = now.add(const Duration(minutes: 30));
+
+    // Set the selected time
+    _selectedTime = TimeOfDay.fromDateTime(futureTime);
+
+    // Optional: If adding 30 mins pushes it to tomorrow (e.g. 11:45 PM -> 12:15 AM),
+    // you might want to update the date as well:
+    // _selectedDate = futureTime;
+
     _days = List.generate(30, (i) => DateTime.now().add(Duration(days: i)));
   }
 
