@@ -3,10 +3,11 @@ import 'package:http/http.dart' as http;
 import 'package:signalr_core/signalr_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/chat_models.dart';
+import '../config/app_config.dart';
 
 class ChatService {
-  final String _baseUrl = 'http://localhost:5289/api';
-  final String _hubUrl = 'http://localhost:5289/hubs/chat';
+  final String _apiUrl = AppConfig.apiUrl;
+  final String _hubUrl = AppConfig.hubUrl;
 
   HubConnection? _hubConnection;
 
@@ -20,7 +21,7 @@ class ChatService {
     if (token == null) throw Exception('No auth token found');
 
     final response = await http.get(
-      Uri.parse('$_baseUrl/chats'),
+      Uri.parse('$_apiUrl/chats'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -40,7 +41,7 @@ class ChatService {
     if (token == null) throw Exception('No auth token found');
 
     final response = await http.get(
-      Uri.parse('$_baseUrl/chats/$bookingId'),
+      Uri.parse('$_apiUrl/chats/$bookingId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -58,7 +59,7 @@ class ChatService {
   Future<ChatMessage> sendMessage(int bookingId, String content) async {
     final token = await _getToken();
     final response = await http.post(
-      Uri.parse('$_baseUrl/chats/$bookingId'),
+      Uri.parse('$_apiUrl/chats/$bookingId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -76,7 +77,7 @@ class ChatService {
   Future<void> deleteMessage(int messageId) async {
     final token = await _getToken();
     final response = await http.delete(
-      Uri.parse('$_baseUrl/chats/messages/$messageId'),
+      Uri.parse('$_apiUrl/chats/messages/$messageId'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
@@ -88,7 +89,7 @@ class ChatService {
   Future<void> markAsRead(int messageId) async {
     final token = await _getToken();
     final response = await http.put(
-      Uri.parse('$_baseUrl/chats/messages/$messageId/read'),
+      Uri.parse('$_apiUrl/chats/messages/$messageId/read'),
       headers: {'Authorization': 'Bearer $token'},
     );
 

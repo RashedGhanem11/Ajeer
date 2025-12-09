@@ -8,6 +8,7 @@ import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
 import '../../themes/theme_notifier.dart';
+import '../../config/app_config.dart';
 
 // NEW IMPORTS
 import '../../models/service_models.dart'; // Contains ServiceCategory and ServiceItem
@@ -42,7 +43,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
 
   // Base API URL for the Icon Image (used in _buildServiceIcon)
-  final String BASE_API_URL = 'http://localhost:5289';
+  final String BASE_API_URL = AppConfig.baseUrl;
 
   @override
   void initState() {

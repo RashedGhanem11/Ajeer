@@ -9,7 +9,7 @@ import '../../services/services.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import '../../themes/theme_notifier.dart';
-
+import '../../config/app_config.dart';
 // NEW IMPORTS
 import '../../models/service_models.dart';
 import '../../services/service_category_service.dart';
@@ -451,7 +451,7 @@ class ServiceGridItem extends StatelessWidget {
   final bool isDarkMode;
 
   // Use 10.0.2.2 for Android, 127.0.0.1 for iOS Simulator
-  final String BASE_API_URL = 'http://127.0.0.1:5289';
+  final String BASE_API_URL = AppConfig.baseUrl;
 
   const ServiceGridItem({
     super.key,
@@ -504,8 +504,7 @@ class ServiceGridItem extends StatelessWidget {
                 height: iconSize,
                 child: FadeInImage.assetNetwork(
                   placeholder: 'assets/image/placeholder.png',
-                  // Ensure URL doesn't have double wwwroot or missing slash
-                  image: '$BASE_API_URL/${iconUrl.replaceAll("wwwroot/", "")}',
+                  image: AppConfig.getFullImageUrl(iconUrl),
                   fit: BoxFit.contain,
                   imageErrorBuilder: (context, error, stackTrace) {
                     return Icon(

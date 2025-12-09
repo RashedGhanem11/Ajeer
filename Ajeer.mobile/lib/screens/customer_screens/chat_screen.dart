@@ -9,6 +9,7 @@ import '../../services/chat_service.dart';
 import '../shared_screens/profile_screen.dart';
 import 'bookings_screen.dart';
 import 'home_screen.dart';
+import '../../config/app_config.dart';
 
 // --- CHAT CONSTANTS ---
 class _ChatConstants {
@@ -374,11 +375,9 @@ class _ChatListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Construct full image URL (assuming localhost logic for Android Emulator)
-    // Adjust IP if testing on physical device
     String? imageUrl = chat.otherSideImageUrl;
-    if (imageUrl != null && imageUrl.startsWith('/')) {
-      imageUrl = 'http://localhost:5289$imageUrl';
+    if (imageUrl != null) {
+        imageUrl = AppConfig.getFullImageUrl(imageUrl);
     }
 
     final Color titleColor = isDarkMode ? Colors.white : Colors.black87;

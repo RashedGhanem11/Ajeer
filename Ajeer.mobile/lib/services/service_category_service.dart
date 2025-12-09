@@ -4,9 +4,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/service_models.dart';
+import '../config/app_config.dart';
 
 class ServiceCategoryService {
-  static const String baseUrl = 'http://localhost:5289/api/servicecategories';
+  static const String apiUrl = AppConfig.apiUrl;
+  static const String baseUrl = '$apiUrl/servicecategories';
 
   Future<List<ServiceCategory>> fetchCategories() async {
     final url = Uri.parse(baseUrl);

@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auth_models.dart';
+import '../config/app_config.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://localhost:5289/api/auth';
+  static const String apiUrl = AppConfig.apiUrl;
+  static const String baseUrl = '$apiUrl/auth';
 
   Future<AuthResponse?> login(String identifier, String password) async {
     final url = Uri.parse('$baseUrl/login');
