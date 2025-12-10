@@ -102,17 +102,34 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
   ];
 
-  List<File> get _photoFiles => widget.pickedMediaFiles
-      .where(
-        (file) =>
-            !file.path.toLowerCase().endsWith('.mp4') &&
-            !file.path.toLowerCase().endsWith('.m4a'),
-      )
-      .toList();
+  // inside _ConfirmationScreenState class
 
-  List<File> get _videoFiles => widget.pickedMediaFiles
-      .where((file) => file.path.toLowerCase().endsWith('.mp4'))
-      .toList();
+  // 1. IMPROVED: Check for common video extensions (.mp4 AND .mov)
+  List<File> get _videoFiles => widget.pickedMediaFiles.where((file) {
+    final path = file.path.toLowerCase();
+    return path.endsWith('.mp4') || path.endsWith('.mov');
+  }).toList();
+
+  // 2. IMPROVED: Check for audio extensions
+  List<File> get _audioFiles => widget.pickedMediaFiles.where((file) {
+    final path = file.path.toLowerCase();
+    return path.endsWith('.mp3') ||
+        path.endsWith('.m4a') ||
+        path.endsWith('.wav') ||
+        path.endsWith('.aac');
+  }).toList();
+
+  // 3. IMPROVED: Photos are anything that isn't a video or audio
+  List<File> get _photoFiles => widget.pickedMediaFiles.where((file) {
+    final path = file.path.toLowerCase();
+    bool isVideo = path.endsWith('.mp4') || path.endsWith('.mov');
+    bool isAudio =
+        path.endsWith('.mp3') ||
+        path.endsWith('.m4a') ||
+        path.endsWith('.wav') ||
+        path.endsWith('.aac');
+    return !isVideo && !isAudio;
+  }).toList();
 
   @override
   void initState() {
