@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'dart:convert';
-import 'package:http/http.dart' as http; // Add http package
 import 'package:provider/provider.dart';
 
-// --- IMPORTS FOR YOUR PROJECT ---
 import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
@@ -15,10 +12,14 @@ import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
 
-// Check this path matches where you store your AppConfig class
-import '../../config/app_config.dart';
-
 class MediaScreen extends StatefulWidget {
+  // --- ADDED: Required Data for Booking DTO ---
+  final List<int> serviceIds;
+  final int serviceAreaId;
+  final double latitude;
+  final double longitude;
+
+  // --- Existing Data ---
   final String serviceName;
   final String unitType;
   final DateTime selectedDate;
@@ -31,6 +32,10 @@ class MediaScreen extends StatefulWidget {
 
   const MediaScreen({
     super.key,
+    required this.serviceIds, // Add this
+    required this.serviceAreaId, // Add this
+    required this.latitude, // Add this
+    required this.longitude, // Add this
     required this.serviceName,
     required this.unitType,
     required this.selectedDate,
@@ -65,11 +70,9 @@ class _MediaScreenState extends State<MediaScreen> {
   String _selectedMediaType = 'Photo';
   String _userDescription = '';
   bool _isDescriptionSaved = false;
-  bool _isUploading = false; // New state for loading overlay
 
   final TextEditingController _descriptionController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
-  final MediaService _mediaService = MediaService(); // Service Instance
 
   final List<File> _photoFiles = [];
   final List<File> _videoFiles = [];
@@ -131,7 +134,6 @@ class _MediaScreenState extends State<MediaScreen> {
 
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
-    if (_isUploading) return; // Prevent navigation during upload
 
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
@@ -168,60 +170,28 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   void _onBackTap() {
-    if (!_isUploading) Navigator.pop(context);
+    Navigator.pop(context);
   }
 
-  // --- REWRITTEN UPLOAD LOGIC ---
-  Future<void> _onNextTap() async {
-    List<File> allFiles = [..._photoFiles, ..._videoFiles, ..._audioFiles];
-
-    // Optional: If no files, just proceed (or you can block it)
-    if (allFiles.isEmpty) {
-      _navigateToConfirmation([]);
-      return;
-    }
-
-    setState(() {
-      _isUploading = true;
-    });
-
-    try {
-      List<AttachmentResponse> uploadedAttachments = [];
-
-      // Loop through all files and upload them
-      for (var file in allFiles) {
-        // Adjust 'Attachments' to your specific API controller route if different
-        // e.g. 'Attachments/upload'
-        var result = await _mediaService.uploadMedia(file, "Attachments");
-
-        if (result != null) {
-          uploadedAttachments.add(result);
-        }
-      }
-
-      if (mounted) {
-        _navigateToConfirmation(uploadedAttachments);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error uploading media: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
-      }
-    }
+  // --- UPDATED NEXT LOGIC ---
+  void _onNextTap() {
+    // We navigate to ConfirmationScreen and pass all data forward.
+    // The upload logic is now handled in ConfirmationScreen.
+    _navigateToConfirmation();
   }
 
-  void _navigateToConfirmation(List<AttachmentResponse> uploadedAttachments) {
+  void _navigateToConfirmation() {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ConfirmationScreen(
+          // --- FIX: Pass the missing arguments here ---
+          serviceIds: widget.serviceIds,
+          serviceAreaId: widget.serviceAreaId,
+          latitude: widget.latitude,
+          longitude: widget.longitude,
+
+          // ---------------------------------------------
           serviceName: widget.serviceName,
           unitType: widget.unitType,
           selectedDate: widget.selectedDate,
@@ -229,10 +199,7 @@ class _MediaScreenState extends State<MediaScreen> {
           selectionMode: widget.selectionMode,
           userDescription: _userDescription,
 
-          // You likely need to update ConfirmationScreen to accept this:
-          // uploadedAttachments: uploadedAttachments,
-
-          // Passing raw files for UI preview (if needed)
+          // Combine all files to pass to confirmation
           pickedMediaFiles: [..._photoFiles, ..._videoFiles, ..._audioFiles],
 
           totalTimeMinutes: widget.totalTimeMinutes,
@@ -266,6 +233,7 @@ class _MediaScreenState extends State<MediaScreen> {
       final XFile? videoFile = await _picker.pickVideo(source: source);
       if (videoFile != null) pickedFiles.add(videoFile);
     } else if (_selectedMediaType == 'Audio') {
+      // Audio simulation remains the same
       if (source == ImageSource.gallery) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -408,28 +376,6 @@ class _MediaScreenState extends State<MediaScreen> {
           ),
           _buildHomeImage(logoTopPosition, isDarkMode),
           _NavigationHeader(onBackTap: _onBackTap, onNextTap: _onNextTap),
-
-          // --- LOADING OVERLAY ---
-          if (_isUploading)
-            Container(
-              color: Colors.black.withOpacity(0.5),
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(color: Colors.white),
-                    SizedBox(height: 16),
-                    Text(
-                      "Uploading Media...",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -440,7 +386,7 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-  // --- WIDGET BUILDERS (Unchanged logic, just compacted for brevity) ---
+  // --- WIDGET BUILDERS ---
   Widget _buildBackgroundGradient(double containerTop) {
     return Align(
       alignment: Alignment.topCenter,
@@ -938,81 +884,6 @@ class _NavigationHeader extends StatelessWidget {
             onPressed: onNextTap,
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ==========================================
-// SERVICE AND MODELS (Move these to separate files ideally)
-// ==========================================
-
-class MediaService {
-  Future<AttachmentResponse?> uploadMedia(File file, String endpoint) async {
-    try {
-      // NOTE: endpoint should be just the controller name or full path suffix like "Attachments"
-      // Resulting URL: http://localhost:5289/api/Attachments
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('${AppConfig.apiUrl}/$endpoint'),
-      );
-      request.files.add(await http.MultipartFile.fromPath('file', file.path));
-
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        return AttachmentResponse.fromJson(data);
-      } else {
-        debugPrint("Upload failed: ${response.body}");
-        return null;
-      }
-    } catch (e) {
-      debugPrint("Error uploading media: $e");
-      return null;
-    }
-  }
-}
-
-enum FileType { Image, Video, Audio }
-
-enum MimeType { Jpeg, Png, Webp, Mp4, Mov, Mp3, Wav, M4a, Other }
-
-class AttachmentResponse {
-  final int id;
-  final String url;
-  final FileType fileType;
-  final MimeType mimeType;
-
-  AttachmentResponse({
-    required this.id,
-    required this.url,
-    required this.fileType,
-    required this.mimeType,
-  });
-
-  factory AttachmentResponse.fromJson(Map<String, dynamic> json) {
-    // Helper to parse enums safely
-    T enumFromString<T>(Iterable<T> values, String? value, T defaultValue) {
-      return values.firstWhere(
-        (type) => type.toString().split('.').last == value,
-        orElse: () => defaultValue,
-      );
-    }
-
-    return AttachmentResponse(
-      id: json['id'] ?? json['Id'] ?? 0,
-      url: json['url'] ?? json['Url'] ?? '',
-      fileType: enumFromString(
-        FileType.values,
-        json['fileType'] ?? json['FileType'],
-        FileType.Image,
-      ),
-      mimeType: enumFromString(
-        MimeType.values,
-        json['mimeType'] ?? json['MimeType'],
-        MimeType.Other,
       ),
     );
   }

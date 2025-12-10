@@ -10,12 +10,10 @@ import 'home_screen.dart';
 import '../../themes/theme_notifier.dart';
 import '../../config/app_config.dart';
 
-// NEW IMPORTS
-import '../../models/service_models.dart'; // Contains ServiceCategory and ServiceItem
-import '../../services/unit_type_service.dart'; // The service we updated in Step 2
+import '../../models/service_models.dart';
+import '../../services/unit_type_service.dart';
 
 class UnitTypeScreen extends StatefulWidget {
-  // CHANGED: We now accept the category (ID, Name, Icon) passed from Home
   final ServiceCategory category;
 
   const UnitTypeScreen({super.key, required this.category});
@@ -28,10 +26,8 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 3;
 
-  // CHANGED: Track selected IDs (int) instead of old Strings (cleaner for backend)
   final Set<int> _selectedIds = {};
 
-  // NEW: State for data fetching
   List<ServiceItem> _availableServices = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -42,7 +38,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
   static const double _overlapAdjustment = 10.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
 
-  // Base API URL for the Icon Image (used in _buildServiceIcon)
   final String BASE_API_URL = AppConfig.baseUrl;
 
   @override
@@ -51,11 +46,9 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     _fetchData();
   }
 
-  // NEW METHOD: Calls the API service using the category ID
   Future<void> _fetchData() async {
     try {
       final apiService = UnitTypeService();
-      // Pass the category ID to fetch services specific to this category
       final items = await apiService.fetchServicesByCategory(
         widget.category.id,
       );
@@ -146,10 +139,8 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
       int totalMinutes = 0;
       List<String> selectedNames = [];
 
-      // Calculate totals based on selected IDs using the fetched data
       for (var service in _availableServices) {
         if (_selectedIds.contains(service.id)) {
-          // Use the helpers from our Model to parse the backend strings
           totalCost += service.priceValue;
           totalMinutes += service.timeInMinutes;
           selectedNames.add(service.name);
@@ -160,6 +151,9 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
         context,
         MaterialPageRoute(
           builder: (context) => DateTimeScreen(
+            // --- FIX: Pass the list of IDs here ---
+            serviceIds: _selectedIds.toList(),
+            // --------------------------------------
             serviceName: widget.category.name,
             unitType: selectedNames.join(', '),
             totalTimeMinutes: totalMinutes,
@@ -275,15 +269,11 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
           ],
           border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
         ),
-        // CHANGED: Load the category icon from URL
         child: ClipOval(
           child: Padding(
-            padding: const EdgeInsets.all(
-              20.0,
-            ), // Padding to prevent image from touching edges
+            padding: const EdgeInsets.all(20.0),
             child: FadeInImage.assetNetwork(
-              placeholder:
-                  'assets/image/placeholder.png', // Ensure you have this asset
+              placeholder: 'assets/image/placeholder.png',
               image:
                   '$BASE_API_URL/${widget.category.iconUrl.replaceAll("wwwroot/", "")}',
               fit: BoxFit.contain,
@@ -439,8 +429,8 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
 }
 
 class _UnitTypeListView extends StatelessWidget {
-  final List<ServiceItem> services; // CHANGED: Using ServiceItem
-  final Set<int> selectedIds; // CHANGED: Using int IDs
+  final List<ServiceItem> services;
+  final Set<int> selectedIds;
   final ValueChanged<int> onServiceTap;
   final double bottomPadding;
   final bool isDarkMode;
@@ -483,7 +473,7 @@ class _UnitTypeListView extends StatelessWidget {
 class _SelectableUnitItem extends StatelessWidget {
   final String name;
   final String estimatedTime;
-  final String priceDisplay; // CHANGED: Takes string directly from DTO
+  final String priceDisplay;
   final bool isSelected;
   final VoidCallback onTap;
   final bool isDarkMode;
@@ -565,7 +555,6 @@ class _SelectableUnitItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 4.0),
                   Text(
-                    // REMOVED 'Est. Time: ' prefix here.
                     estimatedTime,
                     style: TextStyle(fontSize: 14, color: timeTextColor),
                   ),
@@ -576,7 +565,7 @@ class _SelectableUnitItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  priceDisplay, // Displaying the formatted string directly
+                  priceDisplay,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

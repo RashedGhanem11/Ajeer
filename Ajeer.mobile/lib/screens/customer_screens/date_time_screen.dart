@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
-import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
+import 'package:provider/provider.dart';
+import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'location_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
-// Removed: import '../../main.dart';
 
 class DateTimeScreen extends StatefulWidget {
+  // --- ADDED: Pass-through data for DTO ---
+  final List<int> serviceIds;
+
   final String serviceName;
   final String unitType;
   final int totalTimeMinutes;
@@ -19,6 +21,7 @@ class DateTimeScreen extends StatefulWidget {
 
   const DateTimeScreen({
     super.key,
+    required this.serviceIds, // Add this required parameter
     required this.serviceName,
     required this.unitType,
     required this.totalTimeMinutes,
@@ -68,7 +71,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   static const double _dialogBorderRadius = 38.0;
 
   @override
-  @override
   void initState() {
     super.initState();
 
@@ -78,18 +80,12 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
 
     // Set the selected time
     _selectedTime = TimeOfDay.fromDateTime(futureTime);
-
-    // Optional: If adding 30 mins pushes it to tomorrow (e.g. 11:45 PM -> 12:15 AM),
-    // you might want to update the date as well:
-    // _selectedDate = futureTime;
-
     _days = List.generate(30, (i) => DateTime.now().add(Duration(days: i)));
   }
 
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
 
-    // 💡 FIX 3: Retrieve themeNotifier using Provider (listen: false for navigation)
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
     switch (index) {
@@ -97,7 +93,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            // FIX: Pass the required 'themeNotifier'
             builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
           ),
         );
@@ -138,7 +133,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 
   void _showDatePicker() async {
-    // 💡 FIX 4: Retrieve isDarkMode using Provider (listen: false for modal)
     final isDarkMode = Provider.of<ThemeNotifier>(
       context,
       listen: false,
@@ -187,7 +181,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 
   void _showTimePicker() async {
-    // 💡 FIX 5: Retrieve isDarkMode using Provider (listen: false for modal)
     final isDarkMode = Provider.of<ThemeNotifier>(
       context,
       listen: false,
@@ -240,6 +233,9 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => LocationScreen(
+          // --- FIX: Pass the IDs to LocationScreen ---
+          serviceIds: widget.serviceIds,
+          // ------------------------------------------
           serviceName: widget.serviceName,
           unitType: widget.unitType,
           selectedDate: _selectedDate,
@@ -247,7 +243,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           selectionMode: _selectionMode,
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
-          // LocationScreen now handles theme itself via Provider (fixed in previous step)
         ),
       ),
     );
@@ -255,7 +250,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 FIX 6: Retrieve ThemeNotifier via Provider for build
     final bool isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -271,11 +265,9 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
-
     final double whiteContainerTop = screenHeight * 0.30;
     final double logoTopPosition =
         whiteContainerTop - _logoHeight + _overlapAdjustment;
-
     final double bottomNavClearance =
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
@@ -296,9 +288,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           ),
           _buildHomeImage(logoTopPosition, isDarkMode),
           _NavigationHeader(
-            onBackTap: () {
-              Navigator.pop(context);
-            },
+            onBackTap: () => Navigator.pop(context),
             onNextTap: _onNextTap,
           ),
         ],
@@ -357,7 +347,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         child: const Icon(
           Icons.calendar_today_outlined,
           size: 55.0,
-          color: _DateTimeScreenState._primaryBlue,
+          color: _primaryBlue,
         ),
       ),
     );
@@ -719,7 +709,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     final Color cardBorderColor = isDarkMode
         ? Colors.blue[400]!.withOpacity(0.5)
         : Colors.blue[200]!;
-    // FIX: Add null assertion operator (!) to resolve the nullable Color? to Color type conflict.
     final Color iconColor = isDarkMode ? Colors.blue[400]! : Colors.blue[700]!;
     final Color messageColor = isDarkMode ? Colors.white70 : Colors.blue[900]!;
 

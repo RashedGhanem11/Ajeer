@@ -2,17 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart'; // 💡 FIX 1: Import Provider package
-import '../../themes/theme_notifier.dart'; // 💡 FIX 2: Import ThemeNotifier definition
+import 'package:provider/provider.dart';
+import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
-import '../../models/booking.dart';
-// Removed: import '../../main.dart';
+import '../../services/booking_service.dart'; // UNCOMMENT THIS IMPORT when you create the service file
 
 class ConfirmationScreen extends StatefulWidget {
+  // DTO Requirements
+  final List<int> serviceIds; // Added
+  final int serviceAreaId; // Added
+  final double latitude; // Added
+  final double longitude; // Added
+
+  // Display/UI Requirements
   final String serviceName;
   final String unitType;
   final DateTime selectedDate;
@@ -27,6 +33,10 @@ class ConfirmationScreen extends StatefulWidget {
 
   const ConfirmationScreen({
     super.key,
+    required this.serviceIds, // Make sure to pass this
+    required this.serviceAreaId, // Make sure to pass this
+    required this.latitude, // Make sure to pass this
+    required this.longitude, // Make sure to pass this
     required this.serviceName,
     required this.unitType,
     required this.selectedDate,
@@ -70,6 +80,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   int _selectedIndex = 3;
   String _currentMediaView = 'Photo';
   bool _isConfirmButtonPressed = false;
+  bool _isLoading = false; // Added to track API call status
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -106,7 +117,6 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   @override
   void initState() {
     super.initState();
-
     if (_photoFiles.isNotEmpty) {
       _currentMediaView = 'Photo';
     } else if (_videoFiles.isNotEmpty) {
@@ -118,8 +128,6 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
-
-    // 💡 FIX 3: Retrieve themeNotifier using Provider (listen: false for navigation)
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
     switch (index) {
@@ -127,7 +135,6 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            // FIX: Pass the required 'themeNotifier' to ProfileScreen
             builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
           ),
         );
@@ -155,44 +162,75 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     }
   }
 
-  void _onConfirmTap() {
+  Future<void> _onConfirmTap() async {
+    if (_isLoading) return;
+
     setState(() {
       _isConfirmButtonPressed = true;
+      _isLoading = true;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Booking for ${widget.serviceName} confirmed! Estimated cost: JOD ${widget.totalPrice.toStringAsFixed(2)}',
-        ),
-        backgroundColor: _ConfirmationConstants.confirmGreen,
-      ),
+
+    // Combine Date and Time
+    final combinedDateTime = DateTime(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+      widget.selectedDate.day,
+      widget.selectedTime.hour,
+      widget.selectedTime.minute,
     );
-    final booking = Booking(
-      provider: 'Khalid S.',
-      phone: '0796753640',
-      location: widget.resolvedCityArea, // Uses the manually selected City/Area
-      serviceName: widget.serviceName,
-      unitType: widget.unitType,
-      selectedDate: widget.selectedDate,
-      selectedTime: widget.selectedTime,
-      selectionMode: widget.selectionMode,
-      userDescription: widget.userDescription,
-      uploadedFiles: widget.pickedMediaFiles,
-      totalTimeMinutes: widget.totalTimeMinutes,
-      totalPrice: widget.totalPrice,
-    );
-    Future.delayed(const Duration(seconds: 1), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => BookingsScreen(
-            newBooking: booking,
-            resolvedCityArea: widget.resolvedCityArea,
-            resolvedAddress: widget.resolvedAddress,
-          ),
+
+    // Call the API Service
+    // NOTE: You need to create an instance of BookingService or make it static
+    // final bookingService = BookingService();
+    // bool success = await bookingService.createBooking(...)
+
+    // START TEMPORARY MOCK FOR DEMONSTRATION (Replace with actual Service Call)
+    // In real implementation:
+    // final success = await BookingService().createBooking(
+    //   serviceIds: widget.serviceIds,
+    //   serviceAreaId: widget.serviceAreaId,
+    //   scheduledDate: combinedDateTime,
+    //   address: widget.resolvedAddress,
+    //   latitude: widget.latitude,
+    //   longitude: widget.longitude,
+    //   notes: widget.userDescription,
+    //   attachments: widget.pickedMediaFiles,
+    // );
+
+    // Simulate network delay
+    await Future.delayed(const Duration(seconds: 2));
+    bool success = true;
+    // END TEMPORARY MOCK
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+      _isConfirmButtonPressed = false;
+    });
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Booking Confirmed! Finding the best provider...'),
+          backgroundColor: _ConfirmationConstants.confirmGreen,
         ),
       );
-    });
+
+      // Navigate to Bookings Screen (Fresh state, no static provider passed)
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const BookingsScreen()),
+        (route) => false, // Remove back stack
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to place booking. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildBackgroundGradient(double containerTop) {
@@ -263,22 +301,25 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                 spreadRadius: _isConfirmButtonPressed ? 20.0 : 10.0,
                 offset: const Offset(0, 0),
               ),
-              const BoxShadow(
-                blurRadius: 5.0,
-                color: Colors.black38,
-                offset: Offset(2.0, 2.0),
-              ),
             ],
             border: Border.all(
               color: Colors.white.withOpacity(0.5),
               width: 1.5,
             ),
           ),
-          child: const Icon(
-            Icons.check,
-            size: 60.0,
-            color: _ConfirmationConstants.primaryBlue,
-          ),
+          child: _isLoading
+              ? const Padding(
+                  padding: EdgeInsets.all(25.0),
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                )
+              : const Icon(
+                  Icons.check,
+                  size: 60.0,
+                  color: _ConfirmationConstants.primaryBlue,
+                ),
         ),
       ),
     );
@@ -355,12 +396,8 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
             subtitle: widget.resolvedAddress,
             isDarkMode: isDarkMode,
           ),
-          _DetailItem(
-            icon: Icons.person_outline,
-            title: 'Khalid. S',
-            subtitle: '0796753640',
-            isDarkMode: isDarkMode,
-          ),
+
+          // REMOVED: Static Provider Widget (Khalid S.)
           const SizedBox(height: 15.0),
           _MediaSummary(
             photoCount: _photoFiles.length,
@@ -483,7 +520,6 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 💡 FIX 4: Retrieve isDarkMode via Provider for build
     final bool isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -583,6 +619,8 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   }
 }
 
+// ... Rest of the helper widgets (_PriceAndDurationDisplay, _DetailItem, etc.) remain unchanged from your original file.
+// Please include them here when pasting into your project.
 class _PriceAndDurationDisplay extends StatelessWidget {
   final double totalPrice;
   final int totalTimeMinutes;

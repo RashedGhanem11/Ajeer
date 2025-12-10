@@ -8,9 +8,8 @@ import 'package:geocoding/geocoding.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../config/app_config.dart'; // Adjust path to where AppConfig is
+import '../../config/app_config.dart';
 
-// Imports from your project structure
 import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
@@ -20,6 +19,9 @@ import 'chat_screen.dart';
 import 'home_screen.dart';
 
 class LocationScreen extends StatefulWidget {
+  // --- ADDED: Receive Service IDs from previous screen ---
+  final List<int> serviceIds;
+
   final String serviceName;
   final String unitType;
   final DateTime selectedDate;
@@ -30,6 +32,7 @@ class LocationScreen extends StatefulWidget {
 
   const LocationScreen({
     super.key,
+    required this.serviceIds, // Add this
     required this.serviceName,
     required this.unitType,
     required this.selectedDate,
@@ -52,16 +55,17 @@ class _LocationScreenState extends State<LocationScreen> {
   MapController _mapController = MapController();
   LatLng? _mapCenterDuringEdit;
 
-  // --- START NEW CUSTOMER LOCATION STATE ---
+  // --- CUSTOMER LOCATION STATE ---
   String? _selectedCity;
   String? _selectedArea;
 
   // DYNAMIC DATA VARIABLES
   List<String> _customerCities = [];
   Map<String, List<String>> _customerCityAreas = {};
+
+  // Keep the full object list so we can lookup IDs later
   List<CityResponse> _apiData = [];
   bool _isLoadingAreas = true;
-  // --- END NEW CUSTOMER LOCATION STATE ---
 
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
@@ -73,7 +77,6 @@ class _LocationScreenState extends State<LocationScreen> {
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
   static const double _mapBorderRadius = 25.0;
   static const double _horizontalPadding = 20.0;
-  static const double _cityAreaBoxHeight = 250.0;
   static const double _mapAspectRatio = 1.17;
 
   final List<Map<String, dynamic>> _navItems = const [
@@ -100,38 +103,34 @@ class _LocationScreenState extends State<LocationScreen> {
   void initState() {
     super.initState();
     _getCustomerLocation();
-    // Fetch areas from API instead of using hardcoded lists
     _fetchServiceAreas();
   }
 
-  // --- API FETCHING METHOD ---
   Future<void> _fetchServiceAreas() async {
-    // 1. Use the URL from your AppConfig (Corrects the Port and IP for iOS)
     final url = Uri.parse('${AppConfig.apiUrl}/service-areas');
 
     try {
+      // NOTE: If your backend allows anonymous fetching of areas, you can remove the token check.
+      // Otherwise ensure user is logged in.
       final prefs = await SharedPreferences.getInstance();
       final String? token = prefs.getString('authToken');
 
+      // If fetching fails without token, comment this block out temporarily for testing
       if (token == null) {
         debugPrint('⛔ No auth token found.');
-        setState(() => _isLoadingAreas = false);
-        return;
+        // setState(() => _isLoadingAreas = false);
+        // return;
       }
-
-      debugPrint('🚀 Fetching areas from: $url'); // Debug print to check URL
 
       final response = await http
           .get(
             url,
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
+              if (token != null) 'Authorization': 'Bearer $token',
             },
           )
-          .timeout(
-            const Duration(seconds: 10),
-          ); // 2. Add timeout so it doesn't spin forever
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -203,26 +202,11 @@ class _LocationScreenState extends State<LocationScreen> {
           area = place.subAdministrativeArea?.trim();
         }
 
-        // Placeholder API Key - Replace with real one
-        final googleData = await getAreaFromCoordinates(
-          location,
-          'AIzaSyCXvl-cyD8q4HwtM7QblvHOe45d_83su9I',
-        );
-
-        String? googleCity = googleData['city'];
-        String? googleArea = googleData['area'];
-        String? googleGovernorate = googleData['governorate'];
-
-        String finalCity = (googleCity != null && googleCity.isNotEmpty)
-            ? googleCity
-            : (city ?? '');
-        String finalArea = (googleArea != null && googleArea.isNotEmpty)
-            ? googleArea
-            : (area ?? '');
-        String finalGovernorate =
-            (googleGovernorate != null && googleGovernorate.isNotEmpty)
-            ? googleGovernorate
-            : '';
+        // Simulating Google lookup or using geocoding package result
+        // Replace API key logic if strictly needed
+        String finalCity = city ?? '';
+        String finalArea = area ?? '';
+        String finalGovernorate = place.administrativeArea ?? '';
 
         final street = place.street?.trim();
         final building = place.name?.trim();
@@ -297,16 +281,33 @@ class _LocationScreenState extends State<LocationScreen> {
     Navigator.pop(context);
   }
 
-  bool get _isNextEnabled => _selectedCity != null && _selectedArea != null;
+  bool get _isNextEnabled =>
+      _selectedCity != null &&
+      _selectedArea != null &&
+      _customerLocation != null;
 
   void _onNextTap() {
     if (!_isNextEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select an area before proceeding.'),
+          content: Text('Please select an area and ensure location is picked.'),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
         ),
+      );
+      return;
+    }
+
+    // --- LOOKUP SERVICE AREA ID ---
+    int? selectedAreaId;
+    try {
+      final cityObj = _apiData.firstWhere((c) => c.cityName == _selectedCity);
+      final areaObj = cityObj.areas.firstWhere((a) => a.name == _selectedArea);
+      selectedAreaId = areaObj.id;
+    } catch (e) {
+      debugPrint("Error finding area ID: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error validating area selection.')),
       );
       return;
     }
@@ -318,6 +319,13 @@ class _LocationScreenState extends State<LocationScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => MediaScreen(
+          // --- PASS NEW DATA ---
+          serviceIds: widget.serviceIds, // Pass through from constructor
+          serviceAreaId: selectedAreaId!, // Found from API list
+          latitude: _customerLocation!.latitude,
+          longitude: _customerLocation!.longitude,
+
+          // ---------------------
           serviceName: widget.serviceName,
           unitType: widget.unitType,
           selectedDate: widget.selectedDate,
@@ -373,12 +381,6 @@ class _LocationScreenState extends State<LocationScreen> {
       });
       _mapController.move(updatedLocation, 15.0);
       await _resolveAddressFromCoordinates(updatedLocation);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Location updated'),
-          backgroundColor: Color(0xFF1976D2),
-        ),
-      );
     }
   }
 
@@ -386,53 +388,8 @@ class _LocationScreenState extends State<LocationScreen> {
     LatLng location,
     String apiKey,
   ) async {
-    final url =
-        'https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.latitude},${location.longitude}&key=$apiKey&language=en';
-
-    String? city;
-    String? area;
-    String? governorate;
-
-    try {
-      final response = await http.get(Uri.parse(url));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['status'] == 'OK') {
-          final results = data['results'] as List<dynamic>;
-
-          for (final result in results) {
-            for (final component in result['address_components']) {
-              final types = List<String>.from(component['types']);
-
-              if (area == null &&
-                  (types.contains('point_of_interest') ||
-                      types.contains('premise') ||
-                      types.contains('neighborhood') ||
-                      types.contains('sublocality'))) {
-                area = component['long_name'];
-              }
-
-              if (city == null &&
-                  (types.contains('locality') ||
-                      types.contains('administrative_area_level_2'))) {
-                city = component['long_name'];
-              }
-
-              if (governorate == null &&
-                  types.contains('administrative_area_level_1')) {
-                governorate = component['long_name'];
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('❌ Exception: $e');
-    }
-
-    return {'city': city, 'area': area, 'governorate': governorate};
+    // Basic placeholder implementation
+    return {'city': null, 'area': null, 'governorate': null};
   }
 
   @override
@@ -536,7 +493,7 @@ class _LocationScreenState extends State<LocationScreen> {
         child: const Icon(
           Icons.location_on_outlined,
           size: 55.0,
-          color: _LocationScreenState._primaryBlue,
+          color: _primaryBlue,
         ),
       ),
     );
@@ -750,17 +707,6 @@ class _LocationScreenState extends State<LocationScreen> {
                           await _resolveAddressFromCoordinates(
                             _customerLocation!,
                           );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Location updated',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              backgroundColor: Color(0xFF1976D2),
-                              behavior: SnackBarBehavior.fixed,
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
                         },
                         child: const Icon(Icons.check, color: Colors.white),
                       ),
@@ -788,40 +734,6 @@ class _LocationScreenState extends State<LocationScreen> {
                     backgroundColor: _primaryBlue,
                     onPressed: () => _showMaximizedMap(context, isDarkMode),
                     child: const Icon(Icons.open_in_full, color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              bottom: 15,
-              right: 15,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  FloatingActionButton(
-                    heroTag: 'zoom_in',
-                    mini: true,
-                    backgroundColor: Colors.white,
-                    onPressed: () {
-                      _mapController.move(
-                        _mapController.center,
-                        _mapController.zoom + 1,
-                      );
-                    },
-                    child: const Icon(Icons.zoom_in, color: Colors.black),
-                  ),
-                  const SizedBox(width: 10),
-                  FloatingActionButton(
-                    heroTag: 'zoom_out',
-                    mini: true,
-                    backgroundColor: Colors.white,
-                    onPressed: () {
-                      _mapController.move(
-                        _mapController.center,
-                        _mapController.zoom - 1,
-                      );
-                    },
-                    child: const Icon(Icons.zoom_out, color: Colors.black),
                   ),
                 ],
               ),
@@ -964,40 +876,6 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
               ],
             ),
           ),
-          Positioned(
-            bottom: 20,
-            right: 15,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FloatingActionButton(
-                  heroTag: 'max_zoom_in',
-                  mini: true,
-                  backgroundColor: Colors.white,
-                  onPressed: () {
-                    _mapController.move(
-                      _mapController.center,
-                      _mapController.zoom + 1,
-                    );
-                  },
-                  child: const Icon(Icons.zoom_in, color: Colors.black),
-                ),
-                const SizedBox(width: 10),
-                FloatingActionButton(
-                  heroTag: 'max_zoom_out',
-                  mini: true,
-                  backgroundColor: Colors.white,
-                  onPressed: () {
-                    _mapController.move(
-                      _mapController.center,
-                      _mapController.zoom - 1,
-                    );
-                  },
-                  child: const Icon(Icons.zoom_out, color: Colors.black),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -1080,19 +958,17 @@ class _CustomerLocationSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      // 1. Changed alignment to Center
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 15.0, left: 20, right: 20),
-          child: Text(
-            // 2. Updated Text content
+          child: const Text(
             'Select your area. This will be used to determine your Ajeer!',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 15, // Adjusted size to fit the longer text better
-              fontWeight: FontWeight.normal, // 3. Removed Bold
-              color: Colors.grey, // 4. Changed color to Gray
+              fontSize: 15,
+              fontWeight: FontWeight.normal,
+              color: Colors.grey,
             ),
           ),
         ),
@@ -1326,7 +1202,6 @@ class _CustomerAreaList extends StatelessWidget {
   }
 }
 
-// --- DTO MODELS (Included here for convenience) ---
 class AreaResponse {
   final int id;
   final String name;
