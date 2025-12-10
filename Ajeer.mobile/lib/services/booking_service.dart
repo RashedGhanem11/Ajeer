@@ -1,10 +1,18 @@
 import 'dart:io';
+import 'dart:convert'; // Added for JSON decoding
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class BookingResult {
+  final bool success;
+  final String message;
+
+  BookingResult({required this.success, required this.message});
+}
+
 class BookingService {
-  Future<bool> createBooking({
+  Future<BookingResult> createBooking({
     required List<int> serviceIds,
     required int serviceAreaId,
     required DateTime scheduledDate,
@@ -28,42 +36,85 @@ class BookingService {
       request.fields['Notes'] = notes;
     }
 
-    // 2. Add List<int> ServiceIds
-    // ASP.NET Core default model binding handles multiple fields with the same name as a List
+    // 2. Add ServiceIds
     for (var id in serviceIds) {
       request.fields['ServiceIds'] = id.toString();
-      // Note: If backend expects indexed keys, use: request.fields['ServiceIds[$i]'] = id.toString();
     }
 
     // 3. Add Attachments
     if (attachments != null) {
       for (var file in attachments) {
-        // You might need to adjust the field name 'Attachments' based on your exact controller signature,
-        // but typically it matches the property name in the DTO.
         request.files.add(
           await http.MultipartFile.fromPath('Attachments', file.path),
         );
       }
     }
 
-    // 4. Send Request (Add Authorization header here if needed later)
+    // 4. Send Request
     try {
       final prefs = await SharedPreferences.getInstance();
-      request.headers.addAll({
-        'Authorization': 'Bearer ${prefs.getString('authToken')}',
-      });
+      final token = prefs.getString('authToken');
+
+      if (token != null) {
+        request.headers.addAll({'Authorization': 'Bearer $token'});
+      }
+
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
+        return BookingResult(
+          success: true,
+          message: 'Booking confirmed successfully!',
+        );
       } else {
-        print('Error creating booking: ${response.body}');
-        return false;
+        // --- ERROR PARSING LOGIC ---
+        String errorMsg = 'Failed to create booking.';
+
+        try {
+          if (response.body.isNotEmpty) {
+            final decoded = jsonDecode(response.body);
+
+            // Check if it's the standard ASP.NET validation error format
+            if (decoded is Map<String, dynamic> &&
+                decoded.containsKey('errors')) {
+              final errors = decoded['errors'] as Map<String, dynamic>;
+
+              // Extract all error messages into a single list
+              List<String> messages = [];
+              errors.forEach((key, value) {
+                if (value is List) {
+                  messages.addAll(value.map((e) => e.toString()));
+                }
+              });
+
+              if (messages.isNotEmpty) {
+                // Join them with newlines so the user sees all issues
+                errorMsg = messages.join('\n');
+              }
+            } else if (decoded is Map<String, dynamic> &&
+                decoded.containsKey('title')) {
+              // Sometimes it's just a general error with a 'title' but no 'errors'
+              errorMsg = decoded['title'];
+            } else {
+              // Fallback if structure is different
+              errorMsg = response.body;
+            }
+          }
+        } catch (e) {
+          // If JSON parsing fails, just use the raw body or default text
+          print("Error parsing error response: $e");
+          if (response.body.isNotEmpty) errorMsg = response.body;
+        }
+
+        return BookingResult(success: false, message: errorMsg);
       }
     } catch (e) {
       print('Exception creating booking: $e');
-      return false;
+      return BookingResult(
+        success: false,
+        message: 'Connection error: Please check your internet.',
+      );
     }
   }
 }

@@ -9,14 +9,14 @@ import 'bookings_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import 'home_screen.dart';
-import '../../services/booking_service.dart'; // UNCOMMENT THIS IMPORT when you create the service file
+import '../../services/booking_service.dart';
 
 class ConfirmationScreen extends StatefulWidget {
   // DTO Requirements
-  final List<int> serviceIds; // Added
-  final int serviceAreaId; // Added
-  final double latitude; // Added
-  final double longitude; // Added
+  final List<int> serviceIds;
+  final int serviceAreaId;
+  final double latitude;
+  final double longitude;
 
   // Display/UI Requirements
   final String serviceName;
@@ -33,10 +33,10 @@ class ConfirmationScreen extends StatefulWidget {
 
   const ConfirmationScreen({
     super.key,
-    required this.serviceIds, // Make sure to pass this
-    required this.serviceAreaId, // Make sure to pass this
-    required this.latitude, // Make sure to pass this
-    required this.longitude, // Make sure to pass this
+    required this.serviceIds,
+    required this.serviceAreaId,
+    required this.latitude,
+    required this.longitude,
     required this.serviceName,
     required this.unitType,
     required this.selectedDate,
@@ -80,7 +80,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   int _selectedIndex = 3;
   String _currentMediaView = 'Photo';
   bool _isConfirmButtonPressed = false;
-  bool _isLoading = false; // Added to track API call status
+  bool _isLoading = false;
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -180,13 +180,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     );
 
     // Call the API Service
-    // NOTE: You need to create an instance of BookingService or make it static
-
-    bool success = false;
-
-    // START TEMPORARY MOCK FOR DEMONSTRATION (Replace with actual Service Call)
-    // In real implementation:
-    success = await BookingService().createBooking(
+    final BookingResult result = await BookingService().createBooking(
       serviceIds: widget.serviceIds,
       serviceAreaId: widget.serviceAreaId,
       scheduledDate: combinedDateTime,
@@ -204,25 +198,29 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       _isConfirmButtonPressed = false;
     });
 
-    if (success) {
+    if (result.success) {
+      // Success Message (from backend or default)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Booking Confirmed! Finding the best provider...'),
+          content: Text(result.message),
           backgroundColor: _ConfirmationConstants.confirmGreen,
+          duration: const Duration(seconds: 3),
         ),
       );
 
-      // Navigate to Bookings Screen (Fresh state, no static provider passed)
+      // Navigate to Bookings Screen
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const BookingsScreen()),
-        (route) => false, // Remove back stack
+        (route) => false,
       );
     } else {
+      // Error Message (from backend)
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to place booking. Please try again.'),
+        SnackBar(
+          content: Text(result.message),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4), // Longer duration for errors
         ),
       );
     }
@@ -392,7 +390,6 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
             isDarkMode: isDarkMode,
           ),
 
-          // REMOVED: Static Provider Widget (Khalid S.)
           const SizedBox(height: 15.0),
           _MediaSummary(
             photoCount: _photoFiles.length,
