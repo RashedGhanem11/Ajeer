@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BookingService {
   Future<bool> createBooking({
@@ -47,6 +48,10 @@ class BookingService {
 
     // 4. Send Request (Add Authorization header here if needed later)
     try {
+      final prefs = await SharedPreferences.getInstance();
+      request.headers.addAll({
+        'Authorization': 'Bearer ${prefs.getString('authToken')}',
+      });
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 

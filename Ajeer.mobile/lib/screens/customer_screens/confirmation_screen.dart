@@ -181,26 +181,21 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 
     // Call the API Service
     // NOTE: You need to create an instance of BookingService or make it static
-    // final bookingService = BookingService();
-    // bool success = await bookingService.createBooking(...)
+
+    bool success = false;
 
     // START TEMPORARY MOCK FOR DEMONSTRATION (Replace with actual Service Call)
     // In real implementation:
-    // final success = await BookingService().createBooking(
-    //   serviceIds: widget.serviceIds,
-    //   serviceAreaId: widget.serviceAreaId,
-    //   scheduledDate: combinedDateTime,
-    //   address: widget.resolvedAddress,
-    //   latitude: widget.latitude,
-    //   longitude: widget.longitude,
-    //   notes: widget.userDescription,
-    //   attachments: widget.pickedMediaFiles,
-    // );
-
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 2));
-    bool success = true;
-    // END TEMPORARY MOCK
+    success = await BookingService().createBooking(
+      serviceIds: widget.serviceIds,
+      serviceAreaId: widget.serviceAreaId,
+      scheduledDate: combinedDateTime,
+      address: widget.resolvedAddress,
+      latitude: widget.latitude,
+      longitude: widget.longitude,
+      notes: widget.userDescription,
+      attachments: widget.pickedMediaFiles,
+    );
 
     if (!mounted) return;
 
