@@ -1,8 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../themes/theme_notifier.dart';
 import 'work_schedule_screen.dart';
 import '../../models/provider_data.dart';
+import '../../config/app_config.dart';
+
+// You can use the separate file for models if you prefer,
+// but defining them here ensures this file is self-contained as requested.
+class AreaResponse {
+  final int id;
+  final String name;
+
+  AreaResponse({required this.id, required this.name});
+
+  factory AreaResponse.fromJson(Map<String, dynamic> json) {
+    return AreaResponse(id: json['id'], name: json['name']);
+  }
+}
+
+class CityResponse {
+  final String cityName;
+  final List<AreaResponse> areas;
+
+  CityResponse({required this.cityName, required this.areas});
+
+  factory CityResponse.fromJson(Map<String, dynamic> json) {
+    var areasList = json['areas'] as List;
+    List<AreaResponse> areasItems = areasList
+        .map((i) => AreaResponse.fromJson(i))
+        .toList();
+
+    return CityResponse(cityName: json['cityName'], areas: areasItems);
+  }
+}
 
 const Color kLightBlue = Color(0xFF8CCBFF);
 const Color kPrimaryBlue = Color(0xFF1976D2);
@@ -16,93 +50,6 @@ const double kContentHorizontalPadding = 5.0;
 const double kBoxRadius = 15.0;
 const double kHeaderRadius = 13.0;
 const double kListContainerHeight = 310.0;
-
-const List<String> kJordanCities = [
-  'Amman',
-  'Zarqa',
-  'Irbid',
-  'Aqaba',
-  'Salt',
-  'Madaba',
-  'Karak',
-  'Mafraq',
-  'Jerash',
-  'Ajloun',
-  'Tafilah',
-  'Ma\'an',
-];
-
-const Map<String, List<String>> kCityAreas = {
-  'Amman': [
-    'Al-Balad (Downtown Amman)',
-    'Jabal Amman',
-    'Jabal Al Lweibdeh',
-    'Jabal Al Hussein',
-    'Abdali',
-    'Ras Al Ain',
-    'Al Ashrafieh',
-    'Abdoun',
-    'Sweifieh',
-    'Dabouq',
-    'Khalda',
-    'Deir Ghbar',
-    'Al-Rabyeh',
-    'Al-Kursi',
-    'Al-Jandaweel',
-    'Um Uthaina',
-    'Al-Sweifieh',
-    'Al-Sahl',
-    'Al-Bayader',
-    'Mecca Street',
-    'Gardens (Wasfi Al-Tal Street)',
-    'Al-Madina Al-Munawara Street',
-    'Um Al-Summaq',
-    'Tla’ Al-Ali',
-    'Al-Rawnaq',
-    'Al-Jubaiha',
-    'Al-Tariq',
-    'Abu Nsair',
-    'Al-Nuzha',
-    'Al-Huson Road area',
-    'Al-Baqa’a',
-    'Al-Zahra’a',
-    'Al-Muqablain',
-    'Al-Tabarbour',
-    'Marka',
-    'Al-Yadoudeh',
-    'Al-Hashmi Al-Janoubi',
-    'Al-Nasr',
-    'Sahab',
-    'Al-Qweismeh',
-    'Al-Jweideh',
-    'Al-Taj',
-    'Marj Al-Hamam',
-    'Al-Misdar',
-    'Al-Hashmi Al-Shamali',
-    'Al-Wehdat',
-    'Al-Mahatta',
-    'Al-Taybeh',
-    'Al-Manshieh',
-    'Airport Road area',
-    'Naour',
-    'Al-Hummar',
-    'Al-Muwaqqar',
-    'Madinat Al-Hassan',
-    'Al-Mustanda',
-    'Al-Salt Road area',
-  ],
-  'Zarqa': ['New Zarqa', 'Zarqa City Center', 'Hashemiyya'],
-  'Irbid': ['Irbid City Center', 'North Irbid', 'University District'],
-  'Aqaba': ['Aqaba Center', 'Tala Bay', 'South Beach'],
-  'Salt': ['Salt Downtown', 'Yarka', 'Zai'],
-  'Madaba': ['Madaba Center', 'Mount Nebo Area'],
-  'Karak': ['Karak Castle Area', 'Muta'],
-  'Mafraq': ['Mafraq City Center', 'Al-Ruwaished'],
-  'Jerash': ['Jerash City Center', 'Souf'],
-  'Ajloun': ['Ajloun Center', 'Anjara'],
-  'Tafilah': ['Tafilah City Center', 'Al-Ais'],
-  'Ma\'an': ['Ma\'an City Center', 'Petra Area'],
-};
 
 class LocationScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -123,32 +70,86 @@ class LocationScreen extends StatefulWidget {
 }
 
 class _LocationScreenState extends State<LocationScreen> {
+  // --- Backend State ---
+  List<CityResponse> _apiData = [];
+  bool _isLoading = true;
+
+  // --- UI State ---
   String? _selectedCity;
   Set<String> _currentAreaSelection = {};
   List<LocationSelection> _finalLocations = [];
   String _areaSearchQuery = '';
 
-  List<String> get _availableCities => kJordanCities
-      .where((city) => !_finalLocations.any((loc) => loc.city == city))
-      .toList();
-
   @override
   void initState() {
     super.initState();
+    _fetchServiceAreas();
+  }
 
+  // --- API Fetching Logic ---
+  Future<void> _fetchServiceAreas() async {
+    final url = Uri.parse('${AppConfig.apiUrl}/service-areas');
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('authToken');
+
+      final response = await http
+          .get(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            _apiData = data.map((json) => CityResponse.fromJson(json)).toList();
+            _isLoading = false;
+
+            // Initialize edit state only after data is loaded
+            _initializeEditState();
+          });
+        }
+      } else {
+        debugPrint('❌ Error fetching areas: ${response.statusCode}');
+        if (mounted) setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint('❌ Exception fetching areas: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _initializeEditState() {
     if (widget.isEdit && widget.initialData != null) {
       _finalLocations = List<LocationSelection>.from(
         widget.initialData!.selectedLocations,
       );
-      _selectedCity = _finalLocations.isNotEmpty
-          ? _finalLocations.first.city
-          : (_availableCities.isNotEmpty ? _availableCities.first : null);
+      // Try to select the first available city that hasn't been added yet
+      _selectedCity = _availableCities.isNotEmpty
+          ? _availableCities.first
+          : null;
     } else {
       _selectedCity = _availableCities.isNotEmpty
           ? _availableCities.first
           : null;
     }
   }
+
+  // --- Computed Properties ---
+
+  // Get list of city names from API
+  List<String> get _allApiCityNames => _apiData.map((c) => c.cityName).toList();
+
+  // Filter cities that are already in the "finalLocations" list
+  List<String> get _availableCities => _allApiCityNames
+      .where((city) => !_finalLocations.any((loc) => loc.city == city))
+      .toList();
 
   void _onBackTap() => Navigator.pop(context);
 
@@ -342,24 +343,34 @@ class _LocationScreenState extends State<LocationScreen> {
                 ),
               ),
               const SizedBox(height: 7.0),
-              _LocationSelectionContent(
-                availableCities: _availableCities,
-                selectedCity: _selectedCity,
-                currentAreaSelection: _currentAreaSelection,
-                finalLocations: _finalLocations,
-                areaSearchQuery: _areaSearchQuery,
-                onCitySelected: _onCitySelected,
-                onAreaTapped: _onAreaTapped,
-                onAreaSearchChanged: (query) {
-                  setState(() {
-                    _areaSearchQuery = query;
-                  });
-                },
-                onSave: _onSaveLocations,
-                onEdit: _onEditLocation,
-                onDelete: _onDeleteLocation,
-                isDarkMode: isDarkMode,
-              ),
+
+              // Loading State Handler
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else
+                _LocationSelectionContent(
+                  availableCities: _availableCities,
+                  selectedCity: _selectedCity,
+                  currentAreaSelection: _currentAreaSelection,
+                  finalLocations: _finalLocations,
+                  areaSearchQuery: _areaSearchQuery,
+                  // Pass the full API data down to helper widgets
+                  apiData: _apiData,
+                  onCitySelected: _onCitySelected,
+                  onAreaTapped: _onAreaTapped,
+                  onAreaSearchChanged: (query) {
+                    setState(() {
+                      _areaSearchQuery = query;
+                    });
+                  },
+                  onSave: _onSaveLocations,
+                  onEdit: _onEditLocation,
+                  onDelete: _onDeleteLocation,
+                  isDarkMode: isDarkMode,
+                ),
             ],
           ),
         ),
@@ -432,6 +443,7 @@ class _LocationSelectionContent extends StatelessWidget {
   final Set<String> currentAreaSelection;
   final List<LocationSelection> finalLocations;
   final String areaSearchQuery;
+  final List<CityResponse> apiData; // Added API Data
   final ValueChanged<String> onCitySelected;
   final ValueChanged<String> onAreaTapped;
   final ValueChanged<String> onAreaSearchChanged;
@@ -446,6 +458,7 @@ class _LocationSelectionContent extends StatelessWidget {
     required this.currentAreaSelection,
     required this.finalLocations,
     required this.areaSearchQuery,
+    required this.apiData,
     required this.onCitySelected,
     required this.onAreaTapped,
     required this.onAreaSearchChanged,
@@ -602,6 +615,7 @@ class _LocationSelectionContent extends StatelessWidget {
             currentAreaSelection: currentAreaSelection,
             finalLocations: finalLocations,
             areaSearchQuery: areaSearchQuery,
+            apiData: apiData, // Pass API Data
             onCitySelected: onCitySelected,
             onAreaTapped: onAreaTapped,
             onAreaSearchChanged: onAreaSearchChanged,
@@ -623,6 +637,7 @@ class _CityAreaSelector extends StatelessWidget {
   final Set<String> currentAreaSelection;
   final List<LocationSelection> finalLocations;
   final String areaSearchQuery;
+  final List<CityResponse> apiData;
   final ValueChanged<String> onCitySelected;
   final ValueChanged<String> onAreaTapped;
   final ValueChanged<String> onAreaSearchChanged;
@@ -635,6 +650,7 @@ class _CityAreaSelector extends StatelessWidget {
     required this.currentAreaSelection,
     required this.finalLocations,
     required this.areaSearchQuery,
+    required this.apiData,
     required this.onCitySelected,
     required this.onAreaTapped,
     required this.onAreaSearchChanged,
@@ -675,10 +691,11 @@ class _CityAreaSelector extends StatelessWidget {
                     selectedCity: selectedCity,
                     currentAreaSelection: currentAreaSelection,
                     areaSearchQuery: areaSearchQuery,
+                    apiData: apiData, // Pass API Data
                     onAreaTapped: onAreaTapped,
                     onAreaSearchChanged: onAreaSearchChanged,
                     isDarkMode: isDarkMode,
-                    finalLocations: finalLocations, // Passed the required data
+                    finalLocations: finalLocations,
                   ),
                 ),
               ),
@@ -792,6 +809,19 @@ class _CityList extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color selectedBgColor = kPrimaryBlue.withOpacity(0.1);
 
+    if (cities.isEmpty) {
+      return Center(
+        child: Text(
+          'No cities available\nor all added.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: EdgeInsets.zero,
       itemCount: cities.length,
@@ -837,24 +867,38 @@ class _AreaList extends StatelessWidget {
   final String? selectedCity;
   final Set<String> currentAreaSelection;
   final String areaSearchQuery;
+  final List<CityResponse> apiData;
   final ValueChanged<String> onAreaTapped;
   final ValueChanged<String> onAreaSearchChanged;
   final bool isDarkMode;
-  // ✨ FIX: This field was missing and caused the error
   final List<LocationSelection> finalLocations;
 
   const _AreaList({
     required this.selectedCity,
     required this.currentAreaSelection,
     required this.areaSearchQuery,
+    required this.apiData,
     required this.onAreaTapped,
     required this.onAreaSearchChanged,
     required this.isDarkMode,
-    required this.finalLocations, // Now correctly defined and initialized
+    required this.finalLocations,
   });
 
   String _normalizeString(String text) {
     return text.replaceAll(RegExp(r'[\s-]'), '').toLowerCase();
+  }
+
+  // Helper to extract area names from API data based on selected city
+  List<String> _getAreasForCity(String cityName) {
+    try {
+      final cityObj = apiData.firstWhere(
+        (c) => c.cityName == cityName,
+        orElse: () => CityResponse(cityName: '', areas: []),
+      );
+      return cityObj.areas.map((a) => a.name).toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   @override
@@ -872,12 +916,16 @@ class _AreaList extends StatelessWidget {
       );
     }
 
+    // Since we filtered cities in the city list, we don't strictly need to filter here,
+    // but safety first.
     final bool isCityAlreadyAdded = finalLocations.any(
       (loc) => loc.city == selectedCity,
     );
+
+    // Get areas dynamically from API data
     final List<String> availableAreas = isCityAlreadyAdded
         ? []
-        : (kCityAreas[selectedCity] ?? []);
+        : _getAreasForCity(selectedCity!);
 
     String normalizedQuery = _normalizeString(areaSearchQuery);
 
@@ -896,12 +944,14 @@ class _AreaList extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: filteredAreas.isEmpty && normalizedQuery.isNotEmpty
+          child: filteredAreas.isEmpty
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(10.0),
                     child: Text(
-                      'No areas found for "$areaSearchQuery" in $selectedCity.',
+                      normalizedQuery.isNotEmpty
+                          ? 'No areas found for "$areaSearchQuery".'
+                          : 'No areas available.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: isDarkMode
@@ -921,9 +971,7 @@ class _AreaList extends StatelessWidget {
 
                     final Color itemBgColor = isSelected
                         ? kPrimaryBlue.withOpacity(0.1)
-                        : (isDarkMode
-                              ? Colors.transparent
-                              : Colors.transparent);
+                        : Colors.transparent;
                     final Color itemTextColor = isDarkMode
                         ? (isSelected ? kPrimaryBlue : Colors.white70)
                         : (isSelected ? kPrimaryBlue : Colors.black87);

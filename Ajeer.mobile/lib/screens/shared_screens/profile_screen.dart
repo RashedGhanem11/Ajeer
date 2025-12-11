@@ -2,19 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:convert';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
+import '../../widgets/shared_widgets/settings_menu.dart';
+import '../../themes/theme_notifier.dart';
+import '../../notifiers/user_notifier.dart'; // ✅ Ensure this is imported
+import '../../models/provider_data.dart';
+
 import '../customer_screens/bookings_screen.dart';
 import '../customer_screens/home_screen.dart';
 import '../customer_screens/chat_screen.dart';
-import '../../themes/theme_notifier.dart';
 import '../customer_screens/login_screen.dart';
-import '../../widgets/shared_widgets/settings_menu.dart';
 import '../service_provider_screens/services_screen.dart';
-import '../../notifiers/user_notifier.dart';
-import '../../models/provider_data.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -25,6 +27,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  // --- Constants ---
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _darkBlue = Color(0xFF0D47A1);
@@ -35,18 +38,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const Color _cancelRed = Color(0xFFF44336);
   static const double _borderRadius = 50.0;
   static const double _profileAvatarHeight = 100.0;
-  static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
-  static const double _fieldVerticalPadding = 16.0;
+  static const double _navBarTotalHeight = 86.0; // 56 + 20 + 10
   static const double _whiteContainerHeightRatio = 0.3;
-  static const double _profileTextGapReduction = 10.0;
-  static const double _maxButtonWidth = 260.0;
 
+  // --- State Variables ---
   int _selectedIndex = 0;
   bool _isPasswordVisible = false;
   bool _isEditing = false;
   bool _dataHasChanged = false;
 
-  Set<int> _selectedNotifications = {};
+  // Profile Data
+  String _firstName = '';
+  String _lastName = '';
+  String _mobileNumber = '';
+  String _email = '';
+  String _password = '';
+  File? _profileImage;
+  File? _originalProfileImage;
+
+  // Controllers
+  late TextEditingController _firstNameController;
+  late TextEditingController _lastNameController;
+  late TextEditingController _mobileController;
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
+
+  // Notifications
+  final Set<int> _selectedNotifications = {};
   bool _isDeleting = false;
   List<Map<String, dynamic>> _notifications = [
     {
@@ -57,32 +75,211 @@ class _ProfileScreenState extends State<ProfileScreen> {
     },
     {
       'title': 'Provider Assigned',
-      'subtitle': 'John Doe has been assigned to your service.',
+      'subtitle': 'John Doe has been assigned.',
       'icon': Icons.people_alt,
       'color': Colors.blue,
     },
     {
       'title': 'Payment Reminder',
-      'subtitle': 'A service fee is due tomorrow.',
+      'subtitle': 'Service fee due tomorrow.',
       'icon': Icons.payments,
       'color': Colors.orange,
     },
-    {
-      'title': 'Ajeer Update',
-      'subtitle': 'Check out the new app features!',
-      'icon': Icons.notifications_active,
-      'color': Colors.purple,
-    },
-    {
-      'title': 'System Maintenance',
-      'subtitle': 'Scheduled downtime this Friday at 2 AM.',
-      'icon': Icons.build,
-      'color': Colors.grey,
-    },
   ];
 
-  List<Map<String, dynamic>> get _navItems {
+  @override
+  void initState() {
+    super.initState();
+    _initializeControllers();
+    _loadUserData();
+  }
+
+  void _initializeControllers() {
+    _firstNameController = TextEditingController();
+    _lastNameController = TextEditingController();
+    _mobileController = TextEditingController();
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    _addListenersToControllers();
+  }
+
+  void _addListenersToControllers() {
+    void listener() {
+      final bool changed =
+          _firstNameController.text != _firstName ||
+          _lastNameController.text != _lastName ||
+          _mobileController.text != _mobileNumber ||
+          _emailController.text != _email ||
+          (_passwordController.text != _password &&
+              _passwordController.text != '********') ||
+          (_profileImage != _originalProfileImage);
+
+      if (_dataHasChanged != changed) {
+        setState(() => _dataHasChanged = changed);
+      }
+    }
+
+    _firstNameController.addListener(listener);
+    _lastNameController.addListener(listener);
+    _mobileController.addListener(listener);
+    _emailController.addListener(listener);
+    _passwordController.addListener(listener);
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString('currentUser');
+
+    if (userJson != null) {
+      final user = jsonDecode(userJson);
+      if (mounted) {
+        setState(() {
+          _firstName = user['firstName'] ?? '';
+          _lastName = user['lastName'] ?? '';
+          _mobileNumber = user['phone'] ?? '';
+          _email = user['email'] ?? '';
+          _password = user['password'] ?? '';
+
+          // Update controllers
+          _firstNameController.text = _firstName;
+          _lastNameController.text = _lastName;
+          _mobileController.text = _mobileNumber;
+          _emailController.text = _email;
+          _passwordController.text = '********'; // Mask password initially
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _mobileController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // --- Actions ---
+
+  Future<void> _pickImage() async {
+    if (!_isEditing) return;
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _profileImage = File(image.path);
+        _dataHasChanged = true;
+      });
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    setState(() {
+      _firstName = _firstNameController.text;
+      _lastName = _lastNameController.text;
+      _mobileNumber = _mobileController.text;
+      _email = _emailController.text;
+      if (_passwordController.text != '********') {
+        _password = _passwordController.text;
+      }
+      _originalProfileImage = _profileImage;
+      _dataHasChanged = false;
+      _isEditing = false;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString('currentUser');
+
+    if (userJson != null) {
+      final user = jsonDecode(userJson);
+      user['firstName'] = _firstName;
+      user['lastName'] = _lastName;
+      user['phone'] = _mobileNumber;
+      user['email'] = _email;
+      user['password'] = _password;
+
+      // Update in the main list as well
+      final usersJsonList = prefs.getStringList('users') ?? [];
+      final List<Map<String, dynamic>> users = usersJsonList
+          .map((u) => Map<String, dynamic>.from(jsonDecode(u)))
+          .toList();
+
+      for (int i = 0; i < users.length; i++) {
+        if (users[i]['email'] == user['email']) {
+          users[i] = user;
+          break;
+        }
+      }
+
+      await prefs.setStringList(
+        'users',
+        users.map((u) => jsonEncode(u)).toList(),
+      );
+      await prefs.setString('currentUser', jsonEncode(user));
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Profile saved successfully!'),
+          backgroundColor: Colors.green[700],
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _toggleEditMode() {
+    setState(() {
+      if (_isEditing) {
+        // Cancel Editing: Revert
+        _firstNameController.text = _firstName;
+        _lastNameController.text = _lastName;
+        _mobileController.text = _mobileNumber;
+        _emailController.text = _email;
+        _passwordController.text = '********';
+        _profileImage = _originalProfileImage;
+        _dataHasChanged = false;
+      } else {
+        // Start Editing: Store original image state
+        _originalProfileImage = _profileImage;
+      }
+      _isEditing = !_isEditing;
+    });
+  }
+
+  // --- Reset Provider Logic (No Dialog) ---
+  Future<void> _resetProviderData() async {
     final userNotifier = Provider.of<UserNotifier>(context, listen: false);
+
+    // 1. Clear Data in Logic
+    await userNotifier.clearProviderData();
+
+    // 2. Exit Edit Mode
+    setState(() {
+      _isEditing = false;
+      _dataHasChanged = false;
+    });
+
+    // 3. Feedback
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Provider data has been completely reset.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
+  // --- Navigation Helpers ---
+  List<Map<String, dynamic>> _getNavItems(UserNotifier userNotifier) {
     final baseItems = [
       {
         'label': 'Profile',
@@ -101,7 +298,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'notificationCount': 3,
       },
     ];
-    // Only include Home if user is NOT a provider
     if (!userNotifier.isProvider) {
       baseItems.add({
         'label': 'Home',
@@ -112,458 +308,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return baseItems;
   }
 
-  String _firstName = 'Ahmad';
-  String _lastName = 'K.';
-  String _mobileNumber = '962 700000000';
-  String _email = 'ahmad.k@example.com';
-  String _password = '********';
-  File? _profileImage;
-  File? _originalProfileImage;
-
-  late TextEditingController _firstNameController;
-  late TextEditingController _lastNameController;
-  late TextEditingController _mobileController;
-  late TextEditingController _emailController;
-  late TextEditingController _passwordController;
-
-  @override
-  void initState() {
-    super.initState();
-    _firstNameController = TextEditingController(text: _firstName);
-    _lastNameController = TextEditingController(text: _lastName);
-    _mobileController = TextEditingController(text: _mobileNumber);
-    _emailController = TextEditingController(text: _email);
-    _passwordController = TextEditingController(text: _password);
-    _addListenersToControllers();
-
-    _loadUserData(); // 👈 Add this line right here
-  }
-
-  // 👇 Paste the function directly after initState()
-  Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('currentUser');
-
-    if (userJson != null) {
-      final user = jsonDecode(userJson);
-
-      setState(() {
-        _firstName = user['firstName'] ?? '';
-        _lastName = user['lastName'] ?? '';
-        _mobileNumber = user['phone'] ?? '';
-        _email = user['email'] ?? '';
-        _password = user['password'] ?? '';
-      });
-
-      _firstNameController.text = _firstName;
-      _lastNameController.text = _lastName;
-      _mobileController.text = _mobileNumber;
-      _emailController.text = _email;
-      _passwordController.text = _password;
-    }
-  }
-
-  @override
-  void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _mobileController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  void _addListenersToControllers() {
-    void listener() {
-      final bool changed =
-          _firstNameController.text != _firstName ||
-          _lastNameController.text != _lastName ||
-          _mobileController.text != _mobileNumber ||
-          _emailController.text != _email ||
-          (_passwordController.text != _password &&
-              _passwordController.text != '********') ||
-          (_profileImage != _originalProfileImage);
-
-      if (_dataHasChanged != changed) {
-        setState(() {
-          _dataHasChanged = changed;
-        });
-      }
-    }
-
-    _firstNameController.addListener(listener);
-    _lastNameController.addListener(listener);
-    _mobileController.addListener(listener);
-    _emailController.addListener(listener);
-    _passwordController.addListener(listener);
-  }
-
   void _onNavItemTapped(int index) {
-    final label = _navItems[index]['label'];
+    // Basic navigation logic based on your previous code
+    // Assuming labels match the list indices logic or switch case
+    final navItems = _getNavItems(
+      Provider.of<UserNotifier>(context, listen: false),
+    );
+    if (index >= navItems.length) return;
+
+    final label = navItems[index]['label'];
+    Widget? nextScreen;
 
     switch (label) {
       case 'Chat':
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ChatScreen()),
-        );
+        nextScreen = const ChatScreen();
         break;
       case 'Bookings':
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const BookingsScreen()),
-        );
+        nextScreen = const BookingsScreen();
         break;
       case 'Home':
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                HomeScreen(themeNotifier: widget.themeNotifier),
-          ),
-        );
-        break;
-      default:
-        // Profile is the default current screen
+        nextScreen = HomeScreen(themeNotifier: widget.themeNotifier);
         break;
     }
-  }
 
-  Future<void> _pickImage() async {
-    if (!_isEditing) return;
-
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() {
-        _profileImage = File(image.path);
-        _dataHasChanged = true;
-      });
-    }
-  }
-
-  void _saveProfile() async {
-    // Update the state variables first
-    setState(() {
-      _firstName = _firstNameController.text;
-      _lastName = _lastNameController.text;
-      _mobileNumber = _mobileController.text;
-      _email = _emailController.text;
-
-      if (_passwordController.text != '********') {
-        _password = _passwordController.text;
-      }
-
-      _originalProfileImage = _profileImage;
-      _dataHasChanged = false;
-      _isEditing = false;
-    });
-
-    // ✅ Update SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('currentUser');
-    if (userJson != null) {
-      final user = jsonDecode(userJson);
-
-      // Update fields in the saved user object
-      user['firstName'] = _firstName;
-      user['lastName'] = _lastName;
-      user['phone'] = _mobileNumber;
-      user['email'] = _email;
-      user['password'] = _password;
-
-      // Update the saved list of all users too
-      final usersJsonList = prefs.getStringList('users') ?? [];
-      final List<Map<String, dynamic>> users = usersJsonList
-          .map((u) => Map<String, dynamic>.from(jsonDecode(u)))
-          .toList();
-
-      // Find and replace the user record
-      for (int i = 0; i < users.length; i++) {
-        if (users[i]['email'] == user['email'] ||
-            users[i]['phone'] == user['phone']) {
-          users[i] = user;
-          break;
-        }
-      }
-
-      await prefs.setStringList(
-        'users',
-        users.map((u) => jsonEncode(u)).toList(),
+    if (nextScreen != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => nextScreen!),
       );
-      await prefs.setString('currentUser', jsonEncode(user));
     }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Profile saved successfully!'),
-        backgroundColor: Colors.green[700],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      ),
-    );
-  }
-
-  void _toggleEditMode() {
-    if (!_isEditing) {
-      _originalProfileImage = _profileImage;
-    } else {
-      if (_dataHasChanged) {
-        _firstNameController.text = _firstName;
-        _lastNameController.text = _lastName;
-        _mobileController.text = _mobileNumber;
-        _emailController.text = _email;
-        _passwordController.text = '********';
-        _profileImage = _originalProfileImage;
-        _dataHasChanged = false;
-      }
-    }
-    setState(() {
-      _isEditing = !_isEditing;
-    });
-  }
-
-  void _toggleNotificationSelection(int index) {
-    setState(() {
-      if (_selectedNotifications.contains(index)) {
-        _selectedNotifications.remove(index);
-      } else {
-        _selectedNotifications.add(index);
-      }
-      _isDeleting = _selectedNotifications.isNotEmpty;
-    });
-  }
-
-  void _deleteSelectedNotifications() {
-    setState(() {
-      final List<Map<String, dynamic>> toKeep = [];
-      for (int i = 0; i < _notifications.length; i++) {
-        if (!_selectedNotifications.contains(i)) {
-          toKeep.add(_notifications[i]);
-        }
-      }
-      _notifications = toKeep;
-      _selectedNotifications.clear();
-      _isDeleting = false;
-    });
-  }
-
-  void _showInfoDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(30.0)),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.info_outline, color: Color(0xFF1976D2)),
-              SizedBox(width: 10),
-              Text('Ajeer Info'),
-            ],
-          ),
-          content: const SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(
-                  'Ajeer is your dedicated platform for booking and managing home services. '
-                  'We connect two main user types: customers who need reliable services, and '
-                  'service providers (professionals) who offer them, ensuring a seamless experience for all.',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Close'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showSignOutDialog() {
-    final Color contentTextColor = Theme.of(
-      context,
-    ).textTheme.bodyLarge!.color!;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(30.0)),
-          ),
-          title: Text(
-            'Sign Out',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.red.shade700,
-            ),
-          ),
-          content: const Text(
-            'Would you like to sign out?',
-            textAlign: TextAlign.center,
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: <Widget>[
-            TextButton(
-              child: Text('No', style: TextStyle(color: contentTextColor)),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade700,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-              ),
-              child: const Text(
-                'SIGN OUT',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.remove('currentUser');
-
-                Navigator.of(context).pop();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (Route<dynamic> route) => false,
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showSwitchModeDialog(BuildContext context, UserNotifier userNotifier) {
-    final bool isProvider = userNotifier.isProvider;
-    final bool isSetupComplete = userNotifier.isProviderSetupComplete;
-    final bool isDarkMode = widget.themeNotifier.isDarkMode;
-
-    final String title = isProvider
-        ? 'Switch to Customer Mode'
-        : 'Switch to Provider Mode';
-    final String content = isProvider
-        ? 'Do you want to switch back to Customer mode?'
-        : 'Do you want to switch to Service Provider mode?';
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDarkMode ? _subtleDark : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(25.0),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(color: _primaryBlue, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        content: Text(
-          content,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black),
-        ),
-        actionsPadding: const EdgeInsets.all(10.0),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Flexible(
-                flex: 3,
-                child: TextButton(
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: isDarkMode ? Colors.grey : Colors.grey.shade700,
-                      fontSize: 16.0,
-                    ),
-                  ),
-                  onPressed: () => Navigator.of(ctx).pop(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                flex: 2,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15.0),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  ),
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-
-                    if (isSetupComplete) {
-                      userNotifier.toggleUserMode();
-                    } else {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ServicesScreen(
-                            themeNotifier: widget.themeNotifier,
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Center(
-                    child: Text(
-                      'Switch',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14.0,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final userNotifier = Provider.of<UserNotifier>(context);
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
+    final navItems = _getNavItems(userNotifier);
 
+    // Status Bar Style
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
           ? SystemUiOverlayStyle.light.copyWith(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
             )
           : SystemUiOverlayStyle.dark.copyWith(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
             ),
     );
 
@@ -577,89 +366,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       extendBody: true,
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
-      drawer: SettingsMenu(
-        themeNotifier: widget.themeNotifier,
-        onInfoTap: _showInfoDialog,
-        onSignOutTap: _showSignOutDialog,
-        notifications: _notifications,
-        selectedNotifications: _selectedNotifications,
-        isDeleting: _isDeleting,
-        onToggleNotificationSelection: _toggleNotificationSelection,
-        onDeleteSelectedNotifications: _deleteSelectedNotifications,
-      ),
+      drawer: _buildDrawer(),
       body: Stack(
         children: [
-          _buildBackgroundGradient(
-            containerTop: whiteContainerTop,
-            isDarkMode: isDarkMode,
-          ),
-          _buildAjeerTitle(context),
+          _buildBackgroundGradient(whiteContainerTop),
+          _buildAjeerTitle(),
           _buildSwitchModeButton(context, isDarkMode, userNotifier),
-          _buildWhiteContainer(
-            containerTop: whiteContainerTop,
-            bottomNavClearance: bottomNavClearance,
-            isDarkMode: isDarkMode,
-            userNotifier: userNotifier,
+          _buildMainContent(
+            whiteContainerTop,
+            bottomNavClearance,
+            isDarkMode,
+            userNotifier,
           ),
           _buildProfileAvatar(avatarTopPosition, isDarkMode),
         ],
       ),
-      bottomNavigationBar: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 400),
-        switchInCurve: Curves.easeOut,
-        switchOutCurve: Curves.easeIn,
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          final inAnimation = Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(animation);
-
-          final outAnimation = Tween<Offset>(
-            begin: Offset.zero,
-            end: const Offset(0, 1),
-          ).animate(animation);
-
-          return AnimatedBuilder(
-            animation: animation,
-            builder: (context, childWidget) {
-              return Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  if (animation.status == AnimationStatus.reverse ||
-                      animation.status == AnimationStatus.completed)
-                    SlideTransition(position: outAnimation, child: childWidget),
-                  if (animation.status != AnimationStatus.reverse)
-                    SlideTransition(position: inAnimation, child: childWidget),
-                ],
-              );
-            },
-            child: child,
-          );
-        },
-        child: CustomBottomNavBar(
-          key: ValueKey(_navItems.length),
-          items: _navItems,
-          selectedIndex: _selectedIndex,
-          onIndexChanged: _onNavItemTapped,
-        ),
+      bottomNavigationBar: CustomBottomNavBar(
+        key: ValueKey(navItems.length),
+        items: navItems,
+        selectedIndex: _selectedIndex,
+        onIndexChanged: _onNavItemTapped,
       ),
     );
   }
 
-  Widget _buildBackgroundGradient({
-    required double containerTop,
-    required bool isDarkMode,
-  }) {
-    final Color endColor = _primaryBlue;
-    final Color startColor = _lightBlue;
+  // --- Widget Builders ---
 
+  Widget _buildDrawer() {
+    return SettingsMenu(
+      themeNotifier: widget.themeNotifier,
+      onInfoTap: () => _showInfoDialog(context),
+      onSignOutTap: () => _showSignOutDialog(context),
+      notifications: _notifications,
+      selectedNotifications: _selectedNotifications,
+      isDeleting: _isDeleting,
+      onToggleNotificationSelection: (i) {
+        setState(() {
+          _selectedNotifications.contains(i)
+              ? _selectedNotifications.remove(i)
+              : _selectedNotifications.add(i);
+          _isDeleting = _selectedNotifications.isNotEmpty;
+        });
+      },
+      onDeleteSelectedNotifications: () {
+        setState(() {
+          _notifications.removeWhere(
+            (n) => _selectedNotifications.contains(_notifications.indexOf(n)),
+          );
+          _selectedNotifications.clear();
+          _isDeleting = false;
+        });
+      },
+    );
+  }
+
+  Widget _buildBackgroundGradient(double containerTop) {
     return Align(
       alignment: Alignment.topCenter,
       child: Container(
         height: containerTop + 50,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [startColor, endColor],
+            colors: [_lightBlue, _primaryBlue],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -668,7 +436,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAjeerTitle(BuildContext context) {
+  Widget _buildAjeerTitle() {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 5,
       left: 0,
@@ -699,26 +467,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     UserNotifier userNotifier,
   ) {
     final double buttonTop = MediaQuery.of(context).padding.top + 70;
-
-    final Color bgColor = isDarkMode ? _subtleDark : Colors.grey.shade300;
-    final Color fgColor = isDarkMode ? Colors.white : _primaryBlue;
-
-    final bool isProvider = userNotifier.isProvider;
     final bool isSetupComplete = userNotifier.isProviderSetupComplete;
 
-    final IconData icon;
-    final String label;
-
-    if (!isSetupComplete) {
-      icon = Icons.rocket_launch;
-      label = 'Become an Ajeer!';
-    } else if (isProvider) {
-      icon = Icons.person;
-      label = 'Switch to Customer Mode';
-    } else {
-      icon = Icons.handyman;
-      label = 'Switch to Provider Mode';
-    }
+    String label = !isSetupComplete
+        ? 'Become an Ajeer!'
+        : (userNotifier.isProvider
+              ? 'Switch to Customer Mode'
+              : 'Switch to Provider Mode');
+    IconData icon = !isSetupComplete
+        ? Icons.rocket_launch
+        : (userNotifier.isProvider ? Icons.person : Icons.handyman);
 
     return Positioned(
       top: buttonTop,
@@ -726,38 +484,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
       right: 0,
       child: Center(
         child: SizedBox(
-          width: _maxButtonWidth,
+          width: 260.0,
           child: ElevatedButton.icon(
             onPressed: () {
               if (!isSetupComplete) {
-                // 🚀 First time provider setup
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ServicesScreen(
-                      themeNotifier: Provider.of<ThemeNotifier>(
-                        context,
-                        listen: false,
-                      ),
-                      isEdit: false,
-                      initialData: null,
-                    ),
+                    builder: (context) =>
+                        ServicesScreen(themeNotifier: widget.themeNotifier),
                   ),
                 );
               } else {
-                // 🔄 Existing provider switching mode
-                _showSwitchModeDialog(context, userNotifier);
+                userNotifier.toggleUserMode();
               }
             },
-
             icon: Icon(icon, size: 20),
             label: Text(
               label,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: bgColor,
-              foregroundColor: fgColor,
+              backgroundColor: isDarkMode ? _subtleDark : Colors.grey.shade300,
+              foregroundColor: isDarkMode ? Colors.white : _primaryBlue,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30.0),
               ),
@@ -770,17 +519,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileAvatar(double avatarTopPosition, bool isDarkMode) {
+  Widget _buildProfileAvatar(double topPosition, bool isDarkMode) {
     final String initial = _firstName.isNotEmpty
         ? _firstName[0].toUpperCase()
         : '?';
-
-    final Color avatarBgColor = isDarkMode ? _darkBlue : _lightBlue;
-    final Color avatarFgColor = isDarkMode ? _lightBlue : _primaryBlue;
-    final Color editIconBg = isDarkMode ? _subtleDark : Colors.white;
-
     return Positioned(
-      top: avatarTopPosition,
+      top: topPosition,
       left: 0,
       right: 0,
       child: Center(
@@ -799,7 +543,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: CircleAvatar(
                   radius: _profileAvatarHeight / 2,
-                  backgroundColor: avatarBgColor,
+                  backgroundColor: isDarkMode ? _darkBlue : _lightBlue,
                   backgroundImage: _profileImage != null
                       ? FileImage(_profileImage!)
                       : null,
@@ -809,7 +553,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           style: TextStyle(
                             fontSize: 40,
                             fontWeight: FontWeight.bold,
-                            color: avatarFgColor,
+                            color: isDarkMode ? _lightBlue : _primaryBlue,
                           ),
                         )
                       : null,
@@ -822,7 +566,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: editIconBg,
+                      color: isDarkMode ? _subtleDark : Colors.white,
                       shape: BoxShape.circle,
                       border: Border.all(color: _primaryBlue, width: 2),
                     ),
@@ -840,23 +584,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildWhiteContainer({
-    required double containerTop,
-    required double bottomNavClearance,
-    required bool isDarkMode,
-    required UserNotifier userNotifier,
-  }) {
-    final Color containerColor = isDarkMode ? _subtleDark : Colors.white;
-    final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
+  Widget _buildMainContent(
+    double top,
+    double bottomPadding,
+    bool isDarkMode,
+    UserNotifier userNotifier,
+  ) {
+    final Color bgColor = isDarkMode ? _subtleDark : Colors.white;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
 
     return Positioned(
-      top: containerTop,
+      top: top,
       left: 0,
       right: 0,
       bottom: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: containerColor,
+          color: bgColor,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(_borderRadius),
             topRight: Radius.circular(_borderRadius),
@@ -878,7 +622,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   0,
-                  (_profileAvatarHeight / 2) + 20.0 - _profileTextGapReduction,
+                  (_profileAvatarHeight / 2) + 10.0,
                   0,
                   20.0,
                 ),
@@ -891,59 +635,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ?.copyWith(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: titleColor,
+                            color: textColor,
                           ),
                     ),
-                    Builder(
-                      builder: (context) {
-                        return _buildEditSaveButtons(context);
-                      },
-                    ),
+                    _buildActionButtons(context, userNotifier),
                   ],
                 ),
               ),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.only(
-                    top: 10.0,
-                    bottom: bottomNavClearance + 20.0,
-                  ),
+                  padding: EdgeInsets.only(bottom: bottomPadding + 20),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildInfoField(
-                        controller: _firstNameController,
-                        label: 'First Name',
-                        icon: Icons.person_outline,
-                        isDarkMode: isDarkMode,
+                      _buildTextField(
+                        _firstNameController,
+                        'First Name',
+                        Icons.person_outline,
+                        isDarkMode,
                       ),
-                      _buildInfoField(
-                        controller: _lastNameController,
-                        label: 'Last Name',
-                        icon: Icons.person_outline,
-                        isDarkMode: isDarkMode,
+                      _buildTextField(
+                        _lastNameController,
+                        'Last Name',
+                        Icons.person_outline,
+                        isDarkMode,
                       ),
-                      _buildInfoField(
-                        controller: _mobileController,
-                        label: 'Mobile Number',
-                        icon: Icons.call_outlined,
-                        keyboardType: TextInputType.phone,
-                        isDarkMode: isDarkMode,
+                      _buildTextField(
+                        _mobileController,
+                        'Mobile Number',
+                        Icons.call_outlined,
+                        isDarkMode,
+                        type: TextInputType.phone,
                       ),
-                      _buildInfoField(
-                        controller: _emailController,
-                        label: 'Email',
-                        icon: Icons.email_outlined,
-                        keyboardType: TextInputType.emailAddress,
-                        isDarkMode: isDarkMode,
+                      _buildTextField(
+                        _emailController,
+                        'Email',
+                        Icons.email_outlined,
+                        isDarkMode,
+                        type: TextInputType.emailAddress,
                       ),
-                      _buildInfoField(
-                        controller: _passwordController,
-                        label: 'Password',
-                        icon: Icons.lock_outline,
+                      _buildTextField(
+                        _passwordController,
+                        'Password',
+                        Icons.lock_outline,
+                        isDarkMode,
                         isPassword: true,
-                        isDarkMode: isDarkMode,
                       ),
+
                       if (userNotifier.isProviderSetupComplete &&
                           userNotifier.providerData != null)
                         _ProviderInfoSection(
@@ -965,51 +702,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildEditSaveButtons(BuildContext context) {
-    final Color saveColor = _dataHasChanged ? _saveGreen : Colors.grey;
-    final bool saveEnabled = _dataHasChanged;
-
-    final Color cancelColor = _isEditing ? _cancelRed : _primaryBlue;
+  Widget _buildActionButtons(BuildContext context, UserNotifier userNotifier) {
+    // Show Reset Button ONLY if setup is complete AND editing
+    bool showReset = userNotifier.isProviderSetupComplete && _isEditing;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (_isEditing)
-          _buildActionButton(
-            icon: Icons.check,
-            tooltip: 'Save Changes',
-            onPressed: saveEnabled ? _saveProfile : null,
-            backgroundColor: saveColor,
+        if (_isEditing) ...[
+          _buildCircleButton(
+            Icons.check,
+            _dataHasChanged ? _saveGreen : Colors.grey,
+            _dataHasChanged ? _saveProfile : null,
+            'Save',
           ),
-        if (_isEditing) const SizedBox(width: 10),
-        _buildActionButton(
-          icon: _isEditing ? Icons.close : Icons.edit,
-          tooltip: _isEditing ? 'Cancel Editing' : 'Edit Profile',
-          onPressed: _toggleEditMode,
-          backgroundColor: cancelColor,
+          const SizedBox(width: 10),
+        ],
+
+        _buildCircleButton(
+          _isEditing ? Icons.close : Icons.edit,
+          _isEditing ? _cancelRed : _primaryBlue,
+          _toggleEditMode,
+          _isEditing ? 'Cancel' : 'Edit',
         ),
+
+        // ✅ THE SIMPLE RESET BUTTON (NO DIALOG)
+        if (showReset) ...[
+          const SizedBox(width: 10),
+          _buildCircleButton(
+            Icons.restart_alt,
+            Colors.orange,
+            _resetProviderData,
+            'Reset Provider',
+          ),
+        ],
+
         const SizedBox(width: 10),
-        _buildActionButton(
-          icon: Icons.settings,
-          tooltip: 'Settings',
-          onPressed: () => Scaffold.of(context).openDrawer(),
-          backgroundColor: _primaryBlue,
+        _buildCircleButton(
+          Icons.settings,
+          _primaryBlue,
+          () => Scaffold.of(context).openDrawer(),
+          'Settings',
         ),
       ],
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback? onPressed,
-    required Color backgroundColor,
-  }) {
+  Widget _buildCircleButton(
+    IconData icon,
+    Color color,
+    VoidCallback? onTap,
+    String tooltip,
+  ) {
     return Container(
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: color,
         shape: BoxShape.circle,
         boxShadow: const [
           BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
@@ -1017,35 +766,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: IconButton(
         icon: Icon(icon, color: Colors.white, size: 24),
-        onPressed: onPressed,
+        onPressed: onTap,
         tooltip: tooltip,
       ),
     );
   }
 
-  Widget _buildInfoField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData icon,
+    bool isDarkMode, {
     bool isPassword = false,
-    TextInputType keyboardType = TextInputType.text,
-    required bool isDarkMode,
+    TextInputType type = TextInputType.text,
   }) {
-    final Color fieldTextColor = _isEditing
+    final Color textColor = _isEditing
         ? (isDarkMode ? Colors.white : Colors.black87)
         : Colors.grey.shade400;
-
-    final Color fieldFillColor = _isEditing
+    final Color fillColor = _isEditing
         ? (isDarkMode ? _subtleLighterDark : Colors.white)
         : (isDarkMode ? _subtleDark : Colors.grey.shade100);
-
-    final Color fieldBorderColor = _isEditing
+    final Color borderColor = _isEditing
         ? (isDarkMode ? _editableBorderColorDark : Colors.grey.shade400)
         : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
-
-    final Color disabledBorderColor = isDarkMode
-        ? Colors.grey.shade700
-        : Colors.grey.shade300;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 15.0),
@@ -1053,9 +796,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         controller: controller,
         readOnly: !_isEditing,
         obscureText: isPassword && !_isPasswordVisible,
-        keyboardType: keyboardType,
-        style: TextStyle(color: fieldTextColor),
-        enableInteractiveSelection: _isEditing,
+        keyboardType: type,
+        style: TextStyle(color: textColor),
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(
@@ -1070,56 +812,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         : Icons.visibility_off,
                     color: _primaryBlue,
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _isPasswordVisible = !_isPasswordVisible;
-                    });
-                  },
+                  onPressed: () =>
+                      setState(() => _isPasswordVisible = !_isPasswordVisible),
                 )
               : null,
-          floatingLabelStyle: _isEditing
-              ? const TextStyle(
-                  color: _primaryBlue,
-                  fontWeight: FontWeight.normal,
-                )
-              : TextStyle(
-                  color: isDarkMode
-                      ? Colors.grey.shade400
-                      : Colors.grey.shade600,
-                  fontWeight: FontWeight.normal,
-                ),
-          labelStyle: TextStyle(
-            color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-            fontWeight: FontWeight.normal,
-          ),
-          fillColor: fieldFillColor,
           filled: true,
+          fillColor: fillColor,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: fieldBorderColor, width: 2.0),
+            borderSide: BorderSide(color: borderColor, width: 2.0),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: fieldBorderColor, width: 2.0),
+            borderSide: BorderSide(color: borderColor, width: 2.0),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: const BorderSide(color: _primaryBlue, width: 3.0),
           ),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: disabledBorderColor, width: 2.0),
-          ),
           contentPadding: const EdgeInsets.symmetric(
-            vertical: _fieldVerticalPadding,
+            vertical: 16.0,
             horizontal: 10,
           ),
         ),
       ),
     );
   }
+
+  // --- Dialogs (Info / SignOut) ---
+  void _showInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: _primaryBlue),
+            SizedBox(width: 10),
+            Text('Ajeer Info'),
+          ],
+        ),
+        content: const Text(
+          'Ajeer connects customers with professional service providers for a seamless experience.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text(
+          'Sign Out',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Are you sure you want to sign out?',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('currentUser');
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (r) => false,
+              );
+            },
+            child: const Text(
+              'Sign Out',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
+// --- Provider Info Section Widget ---
 class _ProviderInfoSection extends StatelessWidget {
   final ProviderData providerData;
   final bool isEnabled;
@@ -1127,9 +913,6 @@ class _ProviderInfoSection extends StatelessWidget {
   final bool isEditing;
   final Color editableBorderColorDark;
   final Color subtleLighterDark;
-
-  static const Color _primaryBlue = Color(0xFF1976D2);
-  static const Color _subtleDark = Color(0xFF1E1E1E);
 
   const _ProviderInfoSection({
     required this.providerData,
@@ -1140,52 +923,11 @@ class _ProviderInfoSection extends StatelessWidget {
     required this.subtleLighterDark,
   });
 
-  Widget _buildSmallEditButton(BuildContext context) {
-    if (!isEditing || !isEnabled) return const SizedBox.shrink();
-
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-        color: _primaryBlue,
-        shape: BoxShape.circle,
-        border: Border.all(color: subtleLighterDark, width: 1.0),
-      ),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        icon: const Icon(Icons.edit, color: Colors.white, size: 16),
-        onPressed: () {
-          final userNotifier = Provider.of<UserNotifier>(
-            context,
-            listen: false,
-          );
-          final providerData = userNotifier.providerData;
-
-          if (providerData != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ServicesScreen(
-                  themeNotifier: Provider.of<ThemeNotifier>(
-                    context,
-                    listen: false,
-                  ),
-                  isEdit: true,
-                  initialData: providerData,
-                ),
-              ),
-            );
-          }
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final Color titleColor = isEnabled
         ? (isDarkMode ? Colors.white : Colors.black87)
-        : (isDarkMode ? Colors.grey.shade600 : Colors.grey.shade500);
+        : Colors.grey;
 
     return Opacity(
       opacity: isEnabled ? 1.0 : 0.5,
@@ -1193,7 +935,7 @@ class _ProviderInfoSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 5.0, bottom: 15.0),
+            padding: const EdgeInsets.symmetric(vertical: 15.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1205,53 +947,66 @@ class _ProviderInfoSection extends StatelessWidget {
                     color: titleColor,
                   ),
                 ),
-                _buildSmallEditButton(context),
+                if (isEditing && isEnabled)
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.white, size: 16),
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFF1976D2),
+                      fixedSize: const Size(30, 30),
+                    ),
+                    onPressed: () {
+                      final providerData = Provider.of<UserNotifier>(
+                        context,
+                        listen: false,
+                      ).providerData;
+                      if (providerData != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ServicesScreen(
+                              themeNotifier: Provider.of<ThemeNotifier>(
+                                context,
+                                listen: false,
+                              ),
+                              isEdit: true,
+                              initialData: providerData,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
               ],
             ),
           ),
-          _buildProviderField(
-            context,
+          _infoBox(
             'My Services',
             Icons.miscellaneous_services_outlined,
-            providerData.selectedServices.entries
-                    .where((entry) => entry.value.isNotEmpty)
-                    .map(
-                      (entry) => '**${entry.key}**: ${entry.value.join(', ')}',
-                    )
-                    .toList()
-                    .cast<String>()
-                    .isEmpty
-                ? ['No services selected.']
-                : providerData.selectedServices.entries
-                      .where((entry) => entry.value.isNotEmpty)
+            providerData.services.isEmpty
+                ? ['No services.']
+                : providerData.services
                       .map(
-                        (entry) =>
-                            '**${entry.key}**: ${entry.value.join(', ')}',
+                        (s) =>
+                            '**${s.name}**: ${s.selectedUnitTypes.join(', ')}',
                       )
                       .toList(),
           ),
-
-          _buildProviderField(
-            context,
+          _infoBox(
             'My Locations',
             Icons.location_on_outlined,
             providerData.selectedLocations.isEmpty
-                ? ['No locations selected.']
+                ? ['No locations.']
                 : providerData.selectedLocations
-                      .map((loc) => '**${loc.city}**: ${loc.areas.join(', ')}')
+                      .map((l) => '**${l.city}**: ${l.areas.join(', ')}')
                       .toList(),
           ),
-          _buildProviderField(
-            context,
+          _infoBox(
             'My Schedule',
             Icons.schedule_outlined,
             providerData.finalSchedule.isEmpty
-                ? ['No schedule set.']
+                ? ['No schedule.']
                 : providerData.finalSchedule
-                      .map(
-                        (schedule) =>
-                            '${schedule.day}: ${schedule.timeSlots.map((t) => t.toString()).join(', ')}',
-                      )
+                      .map((s) => '${s.day}: ${s.timeSlots.join(', ')}')
                       .toList(),
           ),
         ],
@@ -1259,102 +1014,57 @@ class _ProviderInfoSection extends StatelessWidget {
     );
   }
 
-  Widget _buildProviderField(
-    BuildContext context,
-    String label,
-    IconData icon,
-    List<String> contentLines,
-  ) {
-    final bool isReadOnly = !isEnabled || !isEditing;
-
-    final Color fieldTextColor = isReadOnly
-        ? (isDarkMode ? Colors.grey.shade400 : Colors.black54)
+  Widget _infoBox(String label, IconData icon, List<String> content) {
+    final bool readOnly = !isEnabled || !isEditing;
+    final Color bgColor = readOnly
+        ? (isDarkMode ? const Color(0xFF1E1E1E) : Colors.grey.shade100)
+        : (isDarkMode ? subtleLighterDark : Colors.white);
+    final Color borderColor = readOnly
+        ? Colors.grey
+        : (isDarkMode ? editableBorderColorDark : Colors.grey.shade400);
+    final Color textColor = readOnly
+        ? Colors.grey
         : (isDarkMode ? Colors.white70 : Colors.black87);
 
-    final Color fieldFillColor = isReadOnly
-        ? (isDarkMode ? _subtleDark : Colors.grey.shade100)
-        : (isDarkMode ? subtleLighterDark : Colors.white);
-
-    final Color fieldBorderColor = isReadOnly
-        ? (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300)
-        : (isDarkMode ? editableBorderColorDark : Colors.grey.shade400);
-
-    final Color labelColor = isReadOnly
-        ? (isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600)
-        : (isDarkMode ? Colors.white : Colors.black87);
-
-    final Color iconColor = isEnabled && isEditing ? _primaryBlue : Colors.grey;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15.0),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(15.0),
-        decoration: BoxDecoration(
-          color: fieldFillColor,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: fieldBorderColor, width: 2.0),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 24, color: iconColor),
-                const SizedBox(width: 10),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: labelColor,
-                  ),
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: isEditing && isEnabled
+                    ? const Color(0xFF1976D2)
+                    : Colors.grey,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: textColor,
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...content.map(
+            (line) => Text(
+              line.replaceAll('**', ''),
+              style: TextStyle(fontSize: 14, color: textColor),
             ),
-            const SizedBox(height: 8.0),
-            ...contentLines.map((line) {
-              final int separatorIndex = line.indexOf(': ');
-
-              if (separatorIndex != -1 && line.startsWith('**')) {
-                final String keyPart = line.substring(0, separatorIndex);
-                final String valuePart = line.substring(separatorIndex + 2);
-
-                final String plainKey = keyPart.replaceAll('**', '');
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '$plainKey: ',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: fieldTextColor,
-                          ),
-                        ),
-                        TextSpan(
-                          text: valuePart,
-                          style: TextStyle(fontSize: 14, color: fieldTextColor),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              } else {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
-                  child: Text(
-                    line,
-                    style: TextStyle(fontSize: 14, color: fieldTextColor),
-                  ),
-                );
-              }
-            }).toList(),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
