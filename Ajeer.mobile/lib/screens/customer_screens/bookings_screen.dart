@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'dart:io';
+
 import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'home_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import '../../models/booking.dart';
-import 'dart:io';
-import 'package:intl/intl.dart';
 
 enum _BookingStatus { active, pending, closed }
 
@@ -16,6 +17,7 @@ class BookingsScreen extends StatefulWidget {
   final Booking? newBooking;
   final String? resolvedCityArea;
   final String? resolvedAddress;
+
   const BookingsScreen({
     super.key,
     this.newBooking,
@@ -27,33 +29,30 @@ class BookingsScreen extends StatefulWidget {
   State<BookingsScreen> createState() => _BookingsScreenState();
 }
 
-//test
 class _BookingsConstants {
   static const Color primaryBlue = Color(0xFF1976D2);
   static const Color lightBlue = Color(0xFF8CCBFF);
   static const Color primaryRed = Color(0xFFD32F2F);
-  static const Color subtleLighterDark = Color(0xFF2C2C2C);
+  static const Color subtleDark = Color(0xFF2C2C2C);
   static const Color darkBorder = Color(0xFF3A3A3A);
-
   static const double logoHeight = 105.0;
   static const double borderRadius = 50.0;
-  static const double navBarTotalHeight = 56.0 + 20.0 + 10.0;
+  static const double navBarHeight = 86.0;
 }
 
 class _BookingsScreenState extends State<BookingsScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 2;
   late TabController _tabController;
-
   bool _isSelectionMode = false;
   final Set<int> _selectedActiveIndices = {};
   final Set<int> _selectedClosedIndices = {};
-
-  final List<Booking> _realPendingBookings = [];
+  final List<Booking> _pendingBookings = [];
 
   final List<Map<String, dynamic>> _activeBookings = [
     {'provider': 'Fatima K.', 'service': 'Plumbing, Pipe fix'},
   ];
+
   final List<Map<String, dynamic>> _closedBookings = [
     {
       'provider': 'Khalid S.',
@@ -67,187 +66,100 @@ class _BookingsScreenState extends State<BookingsScreen>
     },
   ];
 
-  final List<Map<String, dynamic>> _navItems = const [
-    {
-      'label': 'Profile',
-      'icon': Icons.person_outline,
-      'activeIcon': Icons.person,
-    },
-    {
-      'label': 'Chat',
-      'icon': Icons.chat_bubble_outline,
-      'activeIcon': Icons.chat_bubble,
-    },
-    {
-      'label': 'Bookings',
-      'icon': Icons.book_outlined,
-      'activeIcon': Icons.book,
-      'notificationCount': 3,
-    },
-    {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
-  ];
-
   @override
   void initState() {
     super.initState();
-
-    if (widget.newBooking != null) {
-      _realPendingBookings.add(widget.newBooking!);
-    }
-
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(_onTabChange);
+    if (widget.newBooking != null) _pendingBookings.add(widget.newBooking!);
+    _tabController = TabController(length: 3, vsync: this)
+      ..addListener(_onTabChange);
   }
 
   @override
   void dispose() {
-    _tabController.removeListener(_onTabChange);
     _tabController.dispose();
     super.dispose();
   }
 
   void _onTabChange() {
-    if (_isSelectionMode) {
-      setState(() {
-        _isSelectionMode = false;
-        _selectedActiveIndices.clear();
-        _selectedClosedIndices.clear();
-      });
-    }
+    if (_isSelectionMode) _exitSelectionMode();
   }
 
-  void _onNavItemTapped(int index) {
-    if (_isSelectionMode) {
-      setState(() {
-        _isSelectionMode = false;
-        _selectedActiveIndices.clear();
-        _selectedClosedIndices.clear();
-      });
-    }
-
-    if (index == _selectedIndex) return;
-
-    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
-          ),
-        );
-        break;
-      case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ChatScreen()),
-        );
-        break;
-      case 2:
-        break;
-      case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
-          ),
-        );
-        break;
-    }
-  }
-
-  void _onBookingLongPress(int index) {
+  void _exitSelectionMode() {
     setState(() {
-      _isSelectionMode = true;
+      _isSelectionMode = false;
+      _selectedActiveIndices.clear();
+      _selectedClosedIndices.clear();
+    });
+  }
 
-      switch (_tabController.index) {
-        case 0:
-          _selectedActiveIndices.add(index);
-          break;
-        case 2:
-          _selectedClosedIndices.add(index);
-          break;
+  void _toggleSelection(int index, Set<int> selectionSet) {
+    setState(() {
+      if (selectionSet.contains(index)) {
+        selectionSet.remove(index);
+      } else {
+        selectionSet.add(index);
       }
+      _isSelectionMode = selectionSet.isNotEmpty;
     });
   }
 
   void _onBookingTap(int index) {
-    setState(() {
-      switch (_tabController.index) {
-        case 0:
-          if (_selectedActiveIndices.contains(index)) {
-            _selectedActiveIndices.remove(index);
-          } else {
-            _selectedActiveIndices.add(index);
-          }
-          _isSelectionMode = _selectedActiveIndices.isNotEmpty;
-          break;
+    if (_tabController.index == 0)
+      _toggleSelection(index, _selectedActiveIndices);
+    if (_tabController.index == 2)
+      _toggleSelection(index, _selectedClosedIndices);
+  }
 
-        case 2:
-          if (_selectedClosedIndices.contains(index)) {
-            _selectedClosedIndices.remove(index);
-          } else {
-            _selectedClosedIndices.add(index);
-          }
-          _isSelectionMode = _selectedClosedIndices.isNotEmpty;
-          break;
+  void _onBookingLongPress(int index) {
+    setState(() => _isSelectionMode = true);
+    _onBookingTap(index);
+  }
+
+  void _deleteSelectedClosedBookings() {
+    final sortedIndices = _selectedClosedIndices.toList()
+      ..sort((a, b) => b.compareTo(a));
+    setState(() {
+      for (final index in sortedIndices) {
+        if (index < _closedBookings.length) _closedBookings.removeAt(index);
       }
+      _exitSelectionMode();
     });
   }
 
-  void _deleteSelectedBookings() {
-    if (_tabController.index != 2) return;
-
-    final sortedIndices = _selectedClosedIndices.toList()
-      ..sort((a, b) => b.compareTo(a));
-
+  void _cancelPendingBooking(Booking booking) {
     setState(() {
-      for (final index in sortedIndices) {
-        if (index >= 0 && index < _closedBookings.length) {
-          _closedBookings.removeAt(index);
-        }
-      }
-      _isSelectionMode = false;
-      _selectedClosedIndices.clear();
+      _pendingBookings.remove(booking);
+      _closedBookings.insert(0, {
+        'provider': booking.provider,
+        'service': '${booking.serviceName}, ${booking.unitType}',
+        'status': 'Cancelled',
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
+    final themeParams = Provider.of<ThemeNotifier>(context);
+    final isDarkMode = themeParams.isDarkMode;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final whiteContainerTop = screenHeight * 0.25;
 
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
           ? SystemUiOverlayStyle.light.copyWith(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
             )
           : SystemUiOverlayStyle.dark.copyWith(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.dark,
             ),
     );
-
-    final screenHeight = MediaQuery.of(context).size.height;
-    final double whiteContainerTop = screenHeight * 0.25;
-    final double logoTopPosition =
-        whiteContainerTop - _BookingsConstants.logoHeight + 10.0;
-    final double bottomNavClearance =
-        _BookingsConstants.navBarTotalHeight +
-        MediaQuery.of(context).padding.bottom;
 
     return WillPopScope(
       onWillPop: () async {
         if (_isSelectionMode) {
-          setState(() {
-            _isSelectionMode = false;
-            _selectedActiveIndices.clear();
-            _selectedClosedIndices.clear();
-          });
+          _exitSelectionMode();
           return false;
         }
-
         return true;
       },
       child: Scaffold(
@@ -255,26 +167,45 @@ class _BookingsScreenState extends State<BookingsScreen>
         backgroundColor: isDarkMode ? Colors.black : Colors.white,
         body: Stack(
           children: [
-            _buildBackgroundGradient(whiteContainerTop),
-            _buildBookingsHeader(context, isDarkMode),
-            _buildContentContainer(
-              containerTop: whiteContainerTop,
-              bottomNavClearance: bottomNavClearance,
-              isDarkMode: isDarkMode,
-            ),
-            _buildHomeImage(logoTopPosition, isDarkMode),
+            _buildGradientBackground(whiteContainerTop),
+            _buildHeader(isDarkMode),
+            _buildMainContent(whiteContainerTop, isDarkMode),
+            _buildFloatingHomeIcon(whiteContainerTop, isDarkMode),
           ],
         ),
         bottomNavigationBar: CustomBottomNavBar(
-          items: _navItems,
+          items: const [
+            {
+              'label': 'Profile',
+              'icon': Icons.person_outline,
+              'activeIcon': Icons.person,
+            },
+            {
+              'label': 'Chat',
+              'icon': Icons.chat_bubble_outline,
+              'activeIcon': Icons.chat_bubble,
+            },
+            {
+              'label': 'Bookings',
+              'icon': Icons.book_outlined,
+              'activeIcon': Icons.book,
+              'notificationCount': 3,
+            },
+            {
+              'label': 'Home',
+              'icon': Icons.home_outlined,
+              'activeIcon': Icons.home,
+            },
+          ],
           selectedIndex: _selectedIndex,
-          onIndexChanged: _onNavItemTapped,
+          onIndexChanged: (index) =>
+              _handleNavigation(index, context, themeParams),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        floatingActionButton: _isSelectionMode && _tabController.index == 2
+        floatingActionButton: (_isSelectionMode && _tabController.index == 2)
             ? FloatingActionButton(
                 backgroundColor: _BookingsConstants.primaryRed,
-                onPressed: _deleteSelectedBookings,
+                onPressed: _deleteSelectedClosedBookings,
                 child: const Icon(Icons.delete, color: Colors.white),
               )
             : null,
@@ -282,11 +213,35 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  Widget _buildBackgroundGradient(double containerTop) {
+  void _handleNavigation(int index, BuildContext context, ThemeNotifier theme) {
+    if (_isSelectionMode) _exitSelectionMode();
+    if (index == _selectedIndex) return;
+
+    Widget screen;
+    switch (index) {
+      case 0:
+        screen = ProfileScreen(themeNotifier: theme);
+        break;
+      case 1:
+        screen = const ChatScreen();
+        break;
+      case 3:
+        screen = HomeScreen(themeNotifier: theme);
+        break;
+      default:
+        return;
+    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
+    );
+  }
+
+  Widget _buildGradientBackground(double height) {
     return Align(
       alignment: Alignment.topCenter,
       child: Container(
-        height: containerTop + 50,
+        height: height + 50,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -301,7 +256,7 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  Widget _buildAjeerTitle(BuildContext context, bool isDarkMode) {
+  Widget _buildHeader(bool isDarkMode) {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 5,
       left: 0,
@@ -315,11 +270,11 @@ class _BookingsScreenState extends State<BookingsScreen>
             fontWeight: FontWeight.w900,
             shadows: isDarkMode
                 ? null
-                : const [
-                    Shadow(
-                      blurRadius: 2.0,
+                : [
+                    const Shadow(
+                      blurRadius: 2,
                       color: Colors.black26,
-                      offset: Offset(1.0, 1.0),
+                      offset: Offset(1, 1),
                     ),
                   ],
           ),
@@ -328,21 +283,14 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  Widget _buildBookingsHeader(BuildContext context, bool isDarkMode) {
-    return _buildAjeerTitle(context, isDarkMode);
-  }
-
-  Widget _buildHomeImage(double logoTopPosition, bool isDarkMode) {
-    final String imagePath = isDarkMode
-        ? 'assets/image/home_dark.png'
-        : 'assets/image/home.png';
+  Widget _buildFloatingHomeIcon(double containerTop, bool isDarkMode) {
     return Positioned(
-      top: logoTopPosition,
+      top: containerTop - _BookingsConstants.logoHeight + 10,
       left: 0,
       right: 0,
       child: Center(
         child: Image.asset(
-          imagePath,
+          isDarkMode ? 'assets/image/home_dark.png' : 'assets/image/home.png',
           width: 140,
           height: _BookingsConstants.logoHeight,
           fit: BoxFit.contain,
@@ -351,26 +299,24 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  Widget _buildContentContainer({
-    required double containerTop,
-    required double bottomNavClearance,
-    required bool isDarkMode,
-  }) {
+  Widget _buildMainContent(double top, bool isDarkMode) {
+    final bottomPadding =
+        _BookingsConstants.navBarHeight + MediaQuery.of(context).padding.bottom;
+
     return Positioned(
-      top: containerTop,
+      top: top,
       left: 0,
       right: 0,
       bottom: 0,
       child: Container(
         decoration: BoxDecoration(
           color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(_BookingsConstants.borderRadius),
-            topRight: Radius.circular(_BookingsConstants.borderRadius),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(_BookingsConstants.borderRadius),
           ),
           boxShadow: [
             BoxShadow(
-              color: isDarkMode ? Colors.black45 : Colors.black26,
+              color: Colors.black26,
               spreadRadius: 1,
               blurRadius: 10,
               offset: const Offset(0, -3),
@@ -380,9 +326,9 @@ class _BookingsScreenState extends State<BookingsScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 35.0),
+            const SizedBox(height: 35),
             Padding(
-              padding: const EdgeInsets.only(left: 20.0),
+              padding: const EdgeInsets.only(left: 20),
               child: Text(
                 'Bookings',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -392,39 +338,44 @@ class _BookingsScreenState extends State<BookingsScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 15.0),
+            const SizedBox(height: 15),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: _CustomTabBar(
                 tabController: _tabController,
-                activeCount: _activeBookings.length,
-                pendingCount: _realPendingBookings.length,
-                closedCount: _closedBookings.length,
+                counts: [
+                  _activeBookings.length,
+                  _pendingBookings.length,
+                  _closedBookings.length,
+                ],
                 isDarkMode: isDarkMode,
               ),
             ),
-            const SizedBox(height: 10.0),
+            const SizedBox(height: 10),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildBookingList(
-                    bookings: _activeBookings,
-                    status: _BookingStatus.active,
-                    bottomPadding: bottomNavClearance,
-                    isDarkMode: isDarkMode,
+                  _buildList(
+                    context,
+                    _activeBookings,
+                    _BookingStatus.active,
+                    bottomPadding,
+                    isDarkMode,
                   ),
-                  _buildBookingList(
-                    bookings: const [],
-                    status: _BookingStatus.pending,
-                    bottomPadding: bottomNavClearance,
-                    isDarkMode: isDarkMode,
-                  ),
-                  _buildBookingList(
-                    bookings: _closedBookings,
-                    status: _BookingStatus.closed,
-                    bottomPadding: bottomNavClearance,
-                    isDarkMode: isDarkMode,
+                  _buildList(
+                    context,
+                    [],
+                    _BookingStatus.pending,
+                    bottomPadding,
+                    isDarkMode,
+                  ), // Pending uses local list
+                  _buildList(
+                    context,
+                    _closedBookings,
+                    _BookingStatus.closed,
+                    bottomPadding,
+                    isDarkMode,
                   ),
                 ],
               ),
@@ -435,663 +386,449 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  Widget _buildBookingList({
-    required List<Map<String, dynamic>> bookings,
-    required _BookingStatus status,
-    required double bottomPadding,
-    required bool isDarkMode,
-  }) {
-    final List<Widget> widgets = [];
-
+  Widget _buildList(
+    BuildContext context,
+    List<Map<String, dynamic>> items,
+    _BookingStatus status,
+    double padding,
+    bool isDarkMode,
+  ) {
+    // Handle Pending List (from Booking models)
     if (status == _BookingStatus.pending) {
-      if (_realPendingBookings.isEmpty) {
-        return Center(
-          child: Text(
-            'No pending bookings.',
-            style: TextStyle(
-              color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade600,
-              fontSize: 16,
-            ),
-          ),
-        );
-      }
+      if (_pendingBookings.isEmpty)
+        return _emptyState(isDarkMode, 'No pending bookings.');
 
-      for (final booking in _realPendingBookings) {
-        widgets.add(
-          _BookingItem(
-            providerName: booking.provider,
-            serviceName: '${booking.serviceName} - ${booking.unitType}',
-            status: _BookingStatus.pending,
+      return ListView.builder(
+        padding: EdgeInsets.fromLTRB(20, 10, 20, padding),
+        itemCount: _pendingBookings.length,
+        itemBuilder: (_, i) {
+          final booking = _pendingBookings[i];
+          return _BookingItem(
+            provider: booking.provider,
+            service: '${booking.serviceName} - ${booking.unitType}',
+            status: status,
+            isDarkMode: isDarkMode,
             isSelected: false,
             onTap: () {},
             onLongPress: () {},
-            isDarkMode: isDarkMode,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDarkMode
-                        ? Colors.red.shade900
-                        : Colors.red.shade100,
-                    foregroundColor: isDarkMode
-                        ? Colors.red.shade100
-                        : _BookingsConstants.primaryRed,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                  ),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        backgroundColor: isDarkMode
-                            ? _BookingsConstants.subtleLighterDark
-                            : Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        title: Center(
-                          child: Text(
-                            'Cancel Booking',
-                            style: TextStyle(
-                              color: _BookingsConstants.primaryBlue,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                            ),
-                          ),
-                        ),
-                        content: const Text(
-                          'Are you sure you want to cancel this booking?',
-                          textAlign: TextAlign.center,
-                        ),
-                        actionsAlignment: MainAxisAlignment.center,
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(),
-                            child: Text(
-                              'Back',
-                              style: TextStyle(
-                                color: isDarkMode
-                                    ? Colors.grey.shade400
-                                    : Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: _BookingsConstants.primaryRed,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: TextButton(
-                              onPressed: () {
-                                Navigator.of(ctx).pop();
-                                setState(() {
-                                  _realPendingBookings.remove(booking);
-                                  _closedBookings.insert(0, {
-                                    'provider': booking.provider,
-                                    'service':
-                                        '${booking.serviceName}, ${booking.unitType}',
-                                    'status': 'Cancelled',
-                                  });
-                                });
-                              },
-                              child: const Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                child: Text(
-                                  'Confirm',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                IconButton(
-                  icon: const Icon(Icons.info_outline, color: Colors.blue),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) {
-                        final formattedDate = DateFormat(
-                          'MMMM d, yyyy',
-                        ).format(booking.selectedDate);
-
-                        final formattedTime = DateFormat('h:mm a').format(
-                          DateTime(
-                            0,
-                            1,
-                            1,
-                            booking.selectedTime.hour,
-                            booking.selectedTime.minute,
-                          ),
-                        );
-
-                        final int totalMinutes = booking.totalTimeMinutes;
-                        final int hours = totalMinutes ~/ 60;
-                        final int minutes = totalMinutes % 60;
-
-                        String formattedDuration = '';
-                        if (hours > 0) {
-                          formattedDuration +=
-                              '$hours hr${hours > 1 ? 's' : ''}';
-                        }
-                        if (minutes > 0) {
-                          if (formattedDuration.isNotEmpty)
-                            formattedDuration += ' ';
-                          formattedDuration +=
-                              '$minutes min${minutes > 1 ? 's' : ''}';
-                        }
-
-                        return AlertDialog(
-                          backgroundColor: isDarkMode
-                              ? _BookingsConstants.subtleLighterDark
-                              : Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(35),
-                          ),
-                          title: Center(
-                            child: Text(
-                              booking.serviceName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                              ),
-                            ),
-                          ),
-                          content: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildRichInfoText(
-                                  'Provider',
-                                  booking.provider,
-                                  isDarkMode,
-                                  ctx,
-                                ),
-                                _buildRichInfoText(
-                                  'Phone',
-                                  booking.phone,
-                                  isDarkMode,
-                                  ctx,
-                                ),
-                                _buildRichInfoText(
-                                  'Location',
-                                  '${widget.resolvedCityArea ?? booking.location}'
-                                      '${widget.resolvedAddress != null ? ', ${widget.resolvedAddress}' : ''}',
-                                  isDarkMode,
-                                  ctx,
-                                ),
-                                _buildRichInfoText(
-                                  'Service',
-                                  booking.serviceName,
-                                  isDarkMode,
-                                  ctx,
-                                ),
-                                _buildRichInfoText(
-                                  'Unit Type',
-                                  booking.unitType,
-                                  isDarkMode,
-                                  ctx,
-                                ),
-                                _buildRichInfoText(
-                                  'Date',
-                                  formattedDate,
-                                  isDarkMode,
-                                  ctx,
-                                ),
-                                _buildRichInfoText(
-                                  'Time',
-                                  formattedTime,
-                                  isDarkMode,
-                                  ctx,
-                                ),
-                                _buildRichInfoText(
-                                  'Mode',
-                                  booking.selectionMode,
-                                  isDarkMode,
-                                  ctx,
-                                ),
-                                _buildRichInfoText(
-                                  'Duration',
-                                  formattedDuration,
-                                  isDarkMode,
-                                  ctx,
-                                ),
-                                _buildRichInfoText(
-                                  'Cost',
-                                  'JOD ${booking.totalPrice.toStringAsFixed(2)}',
-                                  isDarkMode,
-                                  ctx,
-                                ),
-                                const SizedBox(height: 12),
-                                if (booking.userDescription?.isNotEmpty == true)
-                                  _buildRichInfoText(
-                                    'Note',
-                                    booking.userDescription!,
-                                    isDarkMode,
-                                    ctx,
-                                  ),
-                                if (booking.uploadedFiles != null &&
-                                    booking.uploadedFiles!.isNotEmpty) ...[
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    'Uploaded Media:',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 10,
-                                    runSpacing: 10,
-                                    children: booking.uploadedFiles!.map((
-                                      file,
-                                    ) {
-                                      final path = file.path;
-                                      final isImage =
-                                          path.endsWith('.jpg') ||
-                                          path.endsWith('.jpeg') ||
-                                          path.endsWith('.png') ||
-                                          path.endsWith('.gif');
-                                      final isVideo =
-                                          path.endsWith('.mp4') ||
-                                          path.endsWith('.mov') ||
-                                          path.endsWith('.avi');
-                                      final isAudio =
-                                          path.endsWith('.mp3') ||
-                                          path.endsWith('.m4a') ||
-                                          path.endsWith('.wav');
-
-                                      if (isImage) {
-                                        return ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                          child: Image.file(
-                                            File(path),
-                                            width: 80,
-                                            height: 80,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        );
-                                      } else if (isVideo) {
-                                        return Container(
-                                          width: 80,
-                                          height: 80,
-                                          alignment: Alignment.center,
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black12,
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.videocam,
-                                            size: 30,
-                                          ),
-                                        );
-                                      } else if (isAudio) {
-                                        return Container(
-                                          width: 80,
-                                          height: 80,
-                                          alignment: Alignment.center,
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.shade100,
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.mic,
-                                            size: 30,
-                                          ),
-                                        );
-                                      } else {
-                                        return const SizedBox.shrink();
-                                      }
-                                    }).toList(),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(),
-                              child: Text(
-                                'Close',
-                                style: TextStyle(
-                                  color: isDarkMode
-                                      ? Colors.grey.shade400
-                                      : Colors.grey.shade600,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      }
+            onCancel: () => _cancelPendingBooking(booking),
+            onInfoTap: () => _showBookingDetails(context, booking, isDarkMode),
+          );
+        },
+      );
     }
 
-    if (status != _BookingStatus.pending) {
-      if (bookings.isEmpty) {
-        return Center(
-          child: Text(
-            'No bookings here.',
-            style: TextStyle(
-              color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade600,
-              fontSize: 16,
-            ),
-          ),
+    // Handle Active/Closed Lists (from Maps)
+    if (items.isEmpty) return _emptyState(isDarkMode, 'No bookings here.');
+
+    return ListView.builder(
+      padding: EdgeInsets.fromLTRB(20, 10, 20, padding),
+      itemCount: items.length,
+      itemBuilder: (_, i) {
+        final item = items[i];
+        final isSelected = status == _BookingStatus.active
+            ? _selectedActiveIndices.contains(i)
+            : _selectedClosedIndices.contains(i);
+
+        return _BookingItem(
+          provider: item['provider'],
+          service: item['service'],
+          status: status,
+          closedStatus: item['status'],
+          isDarkMode: isDarkMode,
+          isSelected: isSelected,
+          onTap: () => _onBookingTap(i),
+          onLongPress: () => _onBookingLongPress(i),
         );
-      }
-
-      for (int index = 0; index < bookings.length; index++) {
-        final booking = bookings[index];
-        final bool isSelected = status == _BookingStatus.closed
-            ? _selectedClosedIndices.contains(index)
-            : status == _BookingStatus.active
-            ? _selectedActiveIndices.contains(index)
-            : false;
-
-        widgets.add(
-          _BookingItem(
-            providerName: booking['provider'],
-            serviceName: booking['service'],
-            status: status,
-            closedStatusText: booking['status'],
-            isSelected: isSelected,
-            onTap: () => _onBookingTap(index),
-            onLongPress: () => _onBookingLongPress(index),
-            isDarkMode: isDarkMode,
-          ),
-        );
-      }
-    }
-
-    return ListView(
-      padding: EdgeInsets.fromLTRB(20, 10, 20, bottomPadding),
-      children: widgets,
+      },
     );
   }
 
-  Widget _buildRichInfoText(
-    String label,
-    String value,
-    bool isDarkMode,
-    BuildContext context,
-  ) {
-    return RichText(
-      text: TextSpan(
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: isDarkMode ? Colors.white70 : Colors.black87,
+  Widget _emptyState(bool isDarkMode, String text) {
+    return Center(
+      child: Text(
+        text,
+        style: TextStyle(
+          color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade600,
+          fontSize: 16,
         ),
-        children: [
-          TextSpan(
-            text: '$label: ',
+      ),
+    );
+  }
+
+  void _showBookingDetails(
+    BuildContext context,
+    Booking booking,
+    bool isDarkMode,
+  ) {
+    final dateFormat = DateFormat('MMMM d, yyyy');
+    final timeFormat = DateFormat('h:mm a');
+    final duration =
+        '${booking.totalTimeMinutes ~/ 60}h ${booking.totalTimeMinutes % 60}m';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDarkMode
+            ? _BookingsConstants.subtleDark
+            : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
+        title: Center(
+          child: Text(
+            booking.serviceName,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          TextSpan(text: value),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _infoRow('Provider', booking.provider, isDarkMode),
+              _infoRow(
+                'Location',
+                widget.resolvedCityArea ?? booking.location,
+                isDarkMode,
+              ),
+              _infoRow(
+                'Date',
+                dateFormat.format(booking.selectedDate),
+                isDarkMode,
+              ),
+              _infoRow(
+                'Time',
+                timeFormat.format(
+                  DateTime(
+                    0,
+                    1,
+                    1,
+                    booking.selectedTime.hour,
+                    booking.selectedTime.minute,
+                  ),
+                ),
+                isDarkMode,
+              ),
+              _infoRow('Duration', duration, isDarkMode),
+              _infoRow(
+                'Cost',
+                'JOD ${booking.totalPrice.toStringAsFixed(2)}',
+                isDarkMode,
+              ),
+              if (booking.userDescription?.isNotEmpty == true)
+                _infoRow('Note', booking.userDescription!, isDarkMode),
+              if (booking.uploadedFiles?.isNotEmpty == true) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Media:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: booking.uploadedFiles!
+                      .map((f) => _buildThumbnail(f))
+                      .toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Close',
+              style: TextStyle(
+                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+
+  Widget _infoRow(String label, String value, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: RichText(
+        text: TextSpan(
+          style: TextStyle(
+            color: isDark ? Colors.white70 : Colors.black87,
+            fontFamily: 'Segoe UI',
+          ),
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(text: value),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThumbnail(File file) {
+    final path = file.path.toLowerCase();
+    IconData icon = Icons.insert_drive_file;
+    if (path.endsWith('.jpg') || path.endsWith('.png')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(file, width: 60, height: 60, fit: BoxFit.cover),
+      );
+    }
+    if (path.endsWith('.mp4')) icon = Icons.videocam;
+    if (path.endsWith('.mp3')) icon = Icons.mic;
+
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(icon, size: 30),
+    );
+  }
 }
 
-class _CustomTabBar extends StatefulWidget {
-  final TabController tabController;
-  final int activeCount;
-  final int pendingCount;
-  final int closedCount;
+class _BookingItem extends StatelessWidget {
+  final String provider;
+  final String service;
+  final _BookingStatus status;
+  final String? closedStatus;
+  final bool isSelected;
   final bool isDarkMode;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  final VoidCallback? onCancel;
+  final VoidCallback? onInfoTap;
 
-  const _CustomTabBar({
-    required this.tabController,
-    required this.activeCount,
-    required this.pendingCount,
-    required this.closedCount,
+  const _BookingItem({
+    required this.provider,
+    required this.service,
+    required this.status,
+    this.closedStatus,
+    required this.isSelected,
     required this.isDarkMode,
+    required this.onTap,
+    required this.onLongPress,
+    this.onCancel,
+    this.onInfoTap,
   });
 
   @override
-  State<_CustomTabBar> createState() => _CustomTabBarState();
-}
-
-class _CustomTabBarState extends State<_CustomTabBar> {
-  int _selectedIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.tabController.addListener(_updateSelectedIndex);
-    _selectedIndex = widget.tabController.index;
-  }
-
-  @override
-  void dispose() {
-    widget.tabController.removeListener(_updateSelectedIndex);
-    super.dispose();
-  }
-
-  void _updateSelectedIndex() {
-    if (mounted) {
-      setState(() {
-        _selectedIndex = widget.tabController.index;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final Color backgroundColor = widget.isDarkMode
-        ? _BookingsConstants.subtleLighterDark
-        : Colors.grey.shade200;
+    final letter = provider.isNotEmpty ? provider[0].toUpperCase() : '?';
+    final avatarColor =
+        Colors.primaries[letter.hashCode % Colors.primaries.length];
 
-    final Color selectedColor = widget.isDarkMode
-        ? const Color(0xFF424242)
-        : Colors.white;
-    final Color shadowColor = widget.isDarkMode
-        ? Colors.black.withOpacity(0.5)
-        : Colors.black.withOpacity(0.1);
-
-    return Container(
-      padding: const EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        children: [
-          _buildTabItem(
-            text: 'Active',
-            count: widget.activeCount,
-            color: Colors.green,
-            index: 0,
-            selectedColor: selectedColor,
-            shadowColor: shadowColor,
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Card(
+        elevation: 0,
+        margin: const EdgeInsets.only(bottom: 12),
+        color: isDarkMode ? _BookingsConstants.subtleDark : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+          side: BorderSide(
+            color: isSelected
+                ? _BookingsConstants.primaryRed
+                : (isDarkMode
+                      ? _BookingsConstants.darkBorder
+                      : Colors.grey.shade300),
+            width: 2,
           ),
-          _buildTabItem(
-            text: 'Pending',
-            count: widget.pendingCount,
-            color: Colors.orange,
-            index: 1,
-            selectedColor: selectedColor,
-            shadowColor: shadowColor,
-          ),
-          _buildTabItem(
-            text: 'Closed',
-            count: widget.closedCount,
-            color: _BookingsConstants.primaryBlue,
-            index: 2,
-            selectedColor: selectedColor,
-            shadowColor: shadowColor,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabItem({
-    required String text,
-    required int count,
-    required Color color,
-    required int index,
-    required Color selectedColor,
-    required Color shadowColor,
-  }) {
-    final bool isSelected = _selectedIndex == index;
-    final Color textColor = isSelected
-        ? (widget.isDarkMode ? Colors.white : Colors.black87)
-        : (widget.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600);
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          widget.tabController.animateTo(index);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? selectedColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: shadowColor,
-                      blurRadius: 5,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : null,
-          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Text(
-                    text,
-                    style: TextStyle(
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.w500,
-                      color: textColor,
-                    ),
+              CircleAvatar(
+                backgroundColor: isDarkMode
+                    ? avatarColor.shade900
+                    : avatarColor.shade100,
+                child: Text(
+                  letter,
+                  style: TextStyle(
+                    color: isDarkMode
+                        ? avatarColor.shade100
+                        : avatarColor.shade700,
+                    fontWeight: FontWeight.bold,
                   ),
-                  if (count > 0)
-                    Positioned(
-                      top: -14,
-                      right: -14,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: selectedColor, width: 1.5),
-                        ),
-                        child: Text(
-                          '$count',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      provider,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                     ),
-                ],
+                    Text(
+                      service,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isDarkMode
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              _buildTrailing(context),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-class _BookingItem extends StatelessWidget {
-  final String providerName;
-  final String serviceName;
-  final _BookingStatus status;
-  final String? closedStatusText;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-  final bool isDarkMode;
-  final Widget? trailing;
-  final VoidCallback? onInfoTap;
+  Widget _buildTrailing(BuildContext context) {
+    if (status == _BookingStatus.active) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(
+              Icons.chat_bubble_outline,
+              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+              size: 22,
+            ),
+            onPressed: () => _confirmAction(
+              context,
+              'Message Provider',
+              'Message $provider?',
+              'Message',
+              _BookingsConstants.primaryBlue,
+              () {},
+            ),
+          ),
+          const SizedBox(width: 4),
+          _actionButton(context, 'Cancel', Colors.red, isDestructive: true),
+        ],
+      );
+    }
 
-  const _BookingItem({
-    required this.providerName,
-    required this.serviceName,
-    required this.status,
-    this.closedStatusText,
-    required this.isSelected,
-    required this.onTap,
-    required this.onLongPress,
-    required this.isDarkMode,
-    this.trailing,
-    this.onInfoTap,
-  });
+    if (status == _BookingStatus.pending) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _actionButton(
+            context,
+            'Cancel',
+            Colors.red,
+            isDestructive: true,
+            onTapOverride: onCancel,
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: Colors.blue),
+            onPressed: onInfoTap,
+            constraints: const BoxConstraints(),
+            padding: EdgeInsets.zero,
+          ),
+        ],
+      );
+    }
 
-  static const double _minActionWidth = 80.0;
+    // Closed
+    final isCompleted = closedStatus == 'Completed';
+    final color = isCompleted ? Colors.green : Colors.red;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDarkMode ? color.shade900 : color.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        closedStatus ?? 'Closed',
+        style: TextStyle(
+          color: isDarkMode ? color.shade100 : color.shade800,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
 
-  void _showConfirmationDialog(
-    BuildContext context, {
-    required String title,
-    required String content,
-    required String confirmText,
-    required Color confirmColor,
-    required VoidCallback onConfirm,
+  Widget _actionButton(
+    BuildContext context,
+    String label,
+    MaterialColor color, {
+    bool isDestructive = false,
+    VoidCallback? onTapOverride,
   }) {
-    final bool isDestructive = confirmColor == _BookingsConstants.primaryRed;
-    final Color titleColor = isDestructive
-        ? _BookingsConstants.primaryRed
-        : _BookingsConstants.primaryBlue;
+    final bg = isDarkMode ? color.shade900 : color.shade100;
+    final fg = isDarkMode ? color.shade100 : color;
+
+    // For the Active "Cancel" specifically, user asked for Red Circle with White text
+    // But generalized for Pending/Active reuse based on "red" intent
+    final isSolidRed = label == 'Cancel' && status == _BookingStatus.active;
+
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isSolidRed ? _BookingsConstants.primaryRed : bg,
+        foregroundColor: isSolidRed ? Colors.white : fg,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        minimumSize: const Size(0, 32),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      onPressed: () => _confirmAction(
+        context,
+        'Cancel Booking',
+        'Are you sure you want to cancel?',
+        'Confirm',
+        _BookingsConstants.primaryRed,
+        onTapOverride ?? () {},
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  void _confirmAction(
+    BuildContext context,
+    String title,
+    String content,
+    String btnText,
+    Color btnColor,
+    VoidCallback onConfirm,
+  ) {
+    // Reuse message style but red text for cancel
+    final isDestructive = btnColor == _BookingsConstants.primaryRed;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: isDarkMode
-            ? _BookingsConstants.subtleLighterDark
+            ? _BookingsConstants.subtleDark
             : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(25.0),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         title: Text(
           title,
-          style: TextStyle(color: titleColor, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isDestructive
+                ? _BookingsConstants.primaryRed
+                : _BookingsConstants.primaryBlue,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: Text(
           content,
@@ -1102,53 +839,36 @@ class _BookingItem extends StatelessWidget {
         ),
         actions: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Expanded(
                 child: TextButton(
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12.0),
-                  ),
+                  onPressed: () => Navigator.pop(ctx),
                   child: Text(
-                    'Cancel',
+                    'Back',
                     style: TextStyle(
                       color: isDarkMode
                           ? Colors.grey.shade400
                           : Colors.grey.shade600,
-                      fontSize: 16.0,
                     ),
                   ),
-                  onPressed: () => Navigator.of(ctx).pop(),
                 ),
               ),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: confirmColor,
-                      foregroundColor: Colors.white,
-                      elevation: 4,
-                      shadowColor: confirmColor.withOpacity(0.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15.0),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: btnColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
                     ),
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                      onConfirm();
-                    },
-                    child: const Center(
-                      child: Text(
-                        'Confirm',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.0,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    onConfirm();
+                  },
+                  child: Text(
+                    btnText,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -1158,245 +878,106 @@ class _BookingItem extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CustomTabBar extends StatelessWidget {
+  final TabController tabController;
+  final List<int> counts;
+  final bool isDarkMode;
+
+  const _CustomTabBar({
+    required this.tabController,
+    required this.counts,
+    required this.isDarkMode,
+  });
 
   @override
   Widget build(BuildContext context) {
-    String letter =
-        providerName.isNotEmpty && providerName.split(' ')[0].isNotEmpty
-        ? providerName.split(' ')[0][0].toUpperCase()
-        : '?';
-
-    final int hash = letter.hashCode;
-    final MaterialColor avatarBaseColor =
-        Colors.primaries[hash % Colors.primaries.length];
-
-    final Color avatarColor = isDarkMode
-        ? avatarBaseColor.shade900
-        : avatarBaseColor.shade100;
-    final Color avatarLetterColor = isDarkMode
-        ? avatarBaseColor.shade100
-        : avatarBaseColor.shade700;
-
-    final Color cardColor = isDarkMode
-        ? _BookingsConstants.subtleLighterDark
-        : Colors.white;
-    final Color borderColor = isSelected
-        ? _BookingsConstants.primaryRed
-        : isDarkMode
-        ? _BookingsConstants.darkBorder
-        : Colors.grey.shade300;
-    final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
-    final Color subtitleColor = isDarkMode
-        ? Colors.grey.shade400
-        : Colors.grey.shade700;
-
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: Card(
-        elevation: 0,
-        margin: const EdgeInsets.only(bottom: 12),
-        color: cardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-          side: BorderSide(color: borderColor, width: 2.0),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
+    return AnimatedBuilder(
+      animation: tabController,
+      builder: (context, _) {
+        return Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? _BookingsConstants.subtleDark
+                : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(30),
+          ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: avatarColor,
-                child: Text(
-                  letter,
-                  style: TextStyle(
-                    color: avatarLetterColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
+              _tabItem('Active', 0, Colors.green),
+              _tabItem('Pending', 1, Colors.orange),
+              _tabItem('Closed', 2, _BookingsConstants.primaryBlue),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _tabItem(String text, int index, Color badgeColor) {
+    final isSelected = tabController.index == index;
+    final bg = isSelected
+        ? (isDarkMode ? const Color(0xFF424242) : Colors.white)
+        : Colors.transparent;
+    final fg = isSelected
+        ? (isDarkMode ? Colors.white : Colors.black87)
+        : (isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => tabController.animateTo(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDarkMode ? 0.5 : 0.1),
+                      blurRadius: 5,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Text(
+                text,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: fg,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      providerName,
-                      style: TextStyle(
+              if (counts[index] > 0)
+                Positioned(
+                  top: -8,
+                  right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: badgeColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '${counts[index]}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        fontSize: 17,
-                        color: titleColor,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    _buildServiceText(serviceName, subtitleColor),
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              trailing ??
-                  (status == _BookingStatus.pending
-                      ? Row(
-                          children: [
-                            _buildTrailingWidget(context),
-                            const SizedBox(width: 4),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.info_outline,
-                                color: Colors.blue,
-                              ),
-                              onPressed: onInfoTap,
-                            ),
-                          ],
-                        )
-                      : _buildTrailingWidget(context)),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildServiceText(String serviceName, Color color) {
-    final parts = serviceName.split(' - ');
-    final first = parts.isNotEmpty ? parts[0] : serviceName;
-    final second = parts.length > 1 ? ' - ${parts[1]}' : '';
-
-    return RichText(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: first,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: color,
-            ),
-          ),
-          TextSpan(
-            text: second,
-            style: TextStyle(
-              fontWeight: FontWeight.normal,
-              fontSize: 14,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTrailingWidget(BuildContext context) {
-    switch (status) {
-      case _BookingStatus.active:
-        final Color iconColor = isDarkMode
-            ? Colors.grey.shade400
-            : Colors.grey.shade700;
-
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              iconSize: 22,
-              icon: Icon(Icons.phone_outlined, color: iconColor),
-              onPressed: () => _showConfirmationDialog(
-                context,
-                title: 'Call Provider',
-                content: 'Would you like to call $providerName?',
-                confirmText: 'Call',
-                confirmColor: _BookingsConstants.primaryBlue,
-                onConfirm: () {},
-              ),
-            ),
-            IconButton(
-              iconSize: 22,
-              icon: Icon(Icons.chat_bubble_outline, color: iconColor),
-              onPressed: () => _showConfirmationDialog(
-                context,
-                title: 'Message Provider',
-                content: 'Would you like to message $providerName?',
-                confirmText: 'Message',
-                confirmColor: _BookingsConstants.primaryBlue,
-                onConfirm: () {},
-              ),
-            ),
-          ],
-        );
-
-      case _BookingStatus.pending:
-        final Color buttonBg = isDarkMode
-            ? Colors.red.shade900
-            : Colors.red.shade100;
-
-        final Color buttonFg = isDarkMode
-            ? Colors.red.shade100
-            : _BookingsConstants.primaryRed;
-
-        return Container(
-          constraints: const BoxConstraints(minWidth: _minActionWidth),
-          child: SizedBox(
-            height: 32,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: buttonBg,
-                foregroundColor: buttonFg,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-              ),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: buttonFg,
-                ),
-              ),
-              onPressed: () => _showConfirmationDialog(
-                context,
-                title: 'Cancel Booking',
-                content: 'Are you sure you want to cancel this booking?',
-                confirmText: 'Cancel Booking',
-                confirmColor: _BookingsConstants.primaryRed,
-                onConfirm: () {},
-              ),
-            ),
-          ),
-        );
-
-      case _BookingStatus.closed:
-        bool isCompleted = closedStatusText == 'Completed';
-        Color color = isCompleted
-            ? (isDarkMode ? Colors.green.shade900 : Colors.green.shade100)
-            : (isDarkMode ? Colors.red.shade900 : Colors.red.shade100);
-
-        Color textColor = isCompleted
-            ? (isDarkMode ? Colors.green.shade100 : Colors.green.shade800)
-            : (isDarkMode ? Colors.red.shade100 : Colors.red.shade800);
-
-        return Container(
-          constraints: const BoxConstraints(minWidth: _minActionWidth),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Center(
-            child: Text(
-              closedStatusText ?? 'Closed',
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        );
-    }
   }
 }
