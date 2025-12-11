@@ -5,30 +5,23 @@ import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import '../../models/chat_models.dart';
 import '../../services/chat_service.dart';
-// Add your imports for Profile/Home/Bookings screens here
 import '../shared_screens/profile_screen.dart';
 import 'bookings_screen.dart';
 import 'home_screen.dart';
 import '../../config/app_config.dart';
 
-// --- CHAT CONSTANTS ---
 class _ChatConstants {
   static const Color primaryBlue = Color(0xFF1976D2);
   static const Color lightBlue = Color(0xFF8CCBFF);
   static const Color primaryRed = Color(0xFFD32F2F);
   static const Color subtleLighterDark = Color(0xFF2C2C2C);
   static const Color darkBorder = Color(0xFF3A3A3A);
-  static const double navBarTotalHeight = 56.0 + 20.0 + 10.0;
-
+  static const double navBarTotalHeight = 86.0;
   static const double logoHeight = 105.0;
   static const double borderRadius = 50.0;
   static const Color chatBackgroundColorLight = Color(0xFFF7F7F7);
   static const Color chatBackgroundColorDark = Color(0xFF1A1A1A);
 }
-
-// ==============================================================================
-// 1. CHAT LIST SCREEN (Inbox)
-// ==============================================================================
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -47,8 +40,6 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // TODO: Ideally, get this token from a UserProvider or SecureStorage wrapper
-    // For now, the service handles retrieval internally via SharedPreferences
     _chatService = ChatService();
     _loadConversations();
   }
@@ -62,7 +53,6 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // Local search filter
   List<ChatConversation> _filterConversations(
     List<ChatConversation> conversations,
   ) {
@@ -88,8 +78,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
         break;
-      case 1:
-        break; // Current
       case 2:
         Navigator.pushReplacement(
           context,
@@ -105,39 +93,6 @@ class _ChatScreenState extends State<ChatScreen> {
         );
         break;
     }
-  }
-
-  Widget _buildSearchBar(bool isDarkMode) {
-    return TextField(
-      onChanged: (value) {
-        setState(() {
-          _searchQuery = value;
-        });
-      },
-      decoration: InputDecoration(
-        hintText: 'Search chats...',
-        hintStyle: TextStyle(
-          color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade500,
-        ),
-        prefixIcon: Icon(
-          Icons.search,
-          color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-        ),
-        filled: true,
-        fillColor: isDarkMode
-            ? _ChatConstants.subtleLighterDark
-            : Colors.grey.shade100,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.0),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 0,
-          horizontal: 8.0,
-        ),
-      ),
-      style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
-    );
   }
 
   @override
@@ -156,7 +111,6 @@ class _ChatScreenState extends State<ChatScreen> {
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
       body: Stack(
         children: [
-          // Background Gradient
           Align(
             alignment: Alignment.topCenter,
             child: Container(
@@ -173,8 +127,6 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
           ),
-
-          // Title
           Positioned(
             top: MediaQuery.of(context).padding.top + 5,
             left: 0,
@@ -199,8 +151,6 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
           ),
-
-          // Main White Container
           Positioned(
             top: whiteContainerTop,
             left: 0,
@@ -244,8 +194,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: _buildSearchBar(isDarkMode),
                   ),
                   const SizedBox(height: 10.0),
-
-                  // Chat List
                   Expanded(
                     child: FutureBuilder<List<ChatConversation>>(
                       future: _conversationsFuture,
@@ -285,6 +233,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           itemCount: conversations.length,
                           itemBuilder: (context, index) {
                             final chat = conversations[index];
+
                             return _ChatListItem(
                               chat: chat,
                               isDarkMode: isDarkMode,
@@ -299,9 +248,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                       isDarkMode: isDarkMode,
                                     ),
                                   ),
-                                ).then(
-                                  (_) => _loadConversations(),
-                                ); // Refresh on return
+                                ).then((_) => _loadConversations());
                               },
                             );
                           },
@@ -313,8 +260,6 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
           ),
-
-          // Home Image Overlay
           Positioned(
             top: logoTopPosition,
             left: 0,
@@ -360,6 +305,35 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
+
+  Widget _buildSearchBar(bool isDarkMode) {
+    return TextField(
+      onChanged: (value) => setState(() => _searchQuery = value),
+      decoration: InputDecoration(
+        hintText: 'Search chats...',
+        hintStyle: TextStyle(
+          color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade500,
+        ),
+        prefixIcon: Icon(
+          Icons.search,
+          color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+        ),
+        filled: true,
+        fillColor: isDarkMode
+            ? _ChatConstants.subtleLighterDark
+            : Colors.grey.shade100,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 0,
+          horizontal: 8.0,
+        ),
+      ),
+      style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
+    );
+  }
 }
 
 class _ChatListItem extends StatelessWidget {
@@ -376,9 +350,7 @@ class _ChatListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String? imageUrl = chat.otherSideImageUrl;
-    if (imageUrl != null) {
-        imageUrl = AppConfig.getFullImageUrl(imageUrl);
-    }
+    if (imageUrl != null) imageUrl = AppConfig.getFullImageUrl(imageUrl);
 
     final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
     final Color subtitleColor = isDarkMode
@@ -483,10 +455,6 @@ class _ChatListItem extends StatelessWidget {
   }
 }
 
-// ==============================================================================
-// 2. CHAT DETAIL SCREEN (Conversation)
-// ==============================================================================
-
 class ChatDetailScreen extends StatefulWidget {
   final int bookingId;
   final String otherSideName;
@@ -510,14 +478,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = true;
-  int? _selectedMessageId; // For delete menu
+  int? _selectedMessageId;
 
   @override
   void initState() {
     super.initState();
     _loadMessages();
-
-    // Initialize SignalR listener
     widget.chatService.initSignalR(
       onMessageReceived: _onNewMessageReceived,
       onMessageDeleted: _onMessageDeleted,
@@ -533,24 +499,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     super.dispose();
   }
 
-  // --- SignalR Handlers ---
-
   void _onNewMessageReceived(ChatMessage message) {
     if (mounted) {
-      setState(() {
-        _messages.add(message);
-      });
+      setState(() => _messages.add(message));
       _scrollToBottom();
-      // Ideally, tell backend we read it now (optional optimization)
     }
   }
 
   void _onMessageDeleted(int messageId) {
-    if (mounted) {
-      setState(() {
-        _messages.removeWhere((m) => m.id == messageId);
-      });
-    }
+    if (mounted)
+      setState(() => _messages.removeWhere((m) => m.id == messageId));
   }
 
   void _onMessageRead(int messageId) {
@@ -558,7 +516,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       setState(() {
         final index = _messages.indexWhere((m) => m.id == messageId);
         if (index != -1) {
-          // Recreate message with isRead = true
           final old = _messages[index];
           _messages[index] = ChatMessage(
             id: old.id,
@@ -572,8 +529,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       });
     }
   }
-
-  // --- Logic ---
 
   Future<void> _loadMessages() async {
     try {
@@ -590,7 +545,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text("Error loading messages: $e")));
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
       }
     }
   }
@@ -610,18 +565,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-
     _messageController.clear();
-
     try {
       final sentMsg = await widget.chatService.sendMessage(
         widget.bookingId,
         text,
       );
       if (mounted) {
-        setState(() {
-          _messages.add(sentMsg);
-        });
+        setState(() => _messages.add(sentMsg));
         _scrollToBottom();
       }
     } catch (e) {
@@ -648,23 +599,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   void _onMessageLongPress(ChatMessage message) {
-    // Only allow selecting MY messages for deletion
     if (message.isMine) {
-      setState(() {
-        if (_selectedMessageId == message.id) {
-          _selectedMessageId = null;
-        } else {
-          _selectedMessageId = message.id;
-        }
-      });
-    }
-  }
-
-  void _onScreenTap() {
-    if (_selectedMessageId != null) {
-      setState(() {
-        _selectedMessageId = null;
-      });
+      setState(
+        () => _selectedMessageId = (_selectedMessageId == message.id)
+            ? null
+            : message.id,
+      );
     }
   }
 
@@ -673,9 +613,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Message copied!')));
-    setState(() {
-      _selectedMessageId = null;
-    });
+    setState(() => _selectedMessageId = null);
   }
 
   @override
@@ -698,10 +636,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           color: widget.isDarkMode ? Colors.white : Colors.black87,
         ),
         elevation: 1,
-        // Removed Actions (Call/Info) as requested
       ),
       body: GestureDetector(
-        onTap: _onScreenTap,
+        onTap: () => setState(() => _selectedMessageId = null),
         child: Column(
           children: [
             Expanded(
@@ -715,14 +652,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         itemCount: _messages.length,
                         itemBuilder: (context, index) {
                           final message = _messages[index];
-                          final bool isSelected =
-                              _selectedMessageId == message.id;
-
                           return _MessageBubble(
                             message: message,
                             isDarkMode: widget.isDarkMode,
-                            isSelected: isSelected,
-                            onTap: _onScreenTap,
+                            isSelected: _selectedMessageId == message.id,
+                            onTap: () =>
+                                setState(() => _selectedMessageId = null),
                             onLongPress: () => _onMessageLongPress(message),
                             onCopy: () => _copyMessage(message.content),
                             onDelete: () => _deleteMessage(message.id),
@@ -754,9 +689,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       ),
       child: Row(
         children: [
-          // Simplified: Removed Attachment Button as requested
           const SizedBox(width: 8.0),
-
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -793,10 +726,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 }
 
-// ----------------------------------------------------------------------
-// MESSAGE BUBBLE WIDGET
-// ----------------------------------------------------------------------
-
 class _MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final bool isDarkMode;
@@ -819,7 +748,6 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isMe = message.isMine;
-
     final Color bubbleColor = isMe
         ? _ChatConstants.primaryBlue
         : (isDarkMode ? _ChatConstants.subtleLighterDark : Colors.white);
@@ -830,13 +758,6 @@ class _MessageBubble extends StatelessWidget {
         ? Colors.white70
         : (isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600);
 
-    final BorderRadius messageBorderRadius = BorderRadius.only(
-      topLeft: const Radius.circular(16),
-      topRight: const Radius.circular(16),
-      bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
-      bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
-    );
-
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
@@ -846,7 +767,6 @@ class _MessageBubble extends StatelessWidget {
               ? CrossAxisAlignment.end
               : CrossAxisAlignment.start,
           children: [
-            // Action Menu
             if (isSelected)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -865,7 +785,6 @@ class _MessageBubble extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // Delete Button only shows if isMe is true (controlled by onLongPress logic in parent)
                     InkWell(
                       onTap: onDelete,
                       child: const Padding(
@@ -880,14 +799,22 @@ class _MessageBubble extends StatelessWidget {
                   ],
                 ),
               ),
-
             GestureDetector(
               onTap: onTap,
               onLongPress: onLongPress,
               child: Material(
                 elevation: isSelected ? 4 : 1,
                 color: bubbleColor,
-                borderRadius: messageBorderRadius,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(16),
+                  topRight: const Radius.circular(16),
+                  bottomLeft: isMe
+                      ? const Radius.circular(16)
+                      : const Radius.circular(4),
+                  bottomRight: isMe
+                      ? const Radius.circular(4)
+                      : const Radius.circular(16),
+                ),
                 child: Container(
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.75,
@@ -919,9 +846,7 @@ class _MessageBubble extends StatelessWidget {
                               color: message.isRead
                                   ? (isDarkMode
                                         ? Colors.lightBlueAccent
-                                        : Colors
-                                              .lightBlue
-                                              .shade100) // Blue check for read
+                                        : Colors.lightBlue.shade100)
                                   : timestampColor,
                             ),
                           ],

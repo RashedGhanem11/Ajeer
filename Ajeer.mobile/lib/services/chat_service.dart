@@ -146,4 +146,19 @@ class ChatService {
   void disconnectSignalR() {
     _hubConnection?.stop();
   }
+
+  Future<ChatConversation?> getConversationByBookingId(int bookingId) async {
+    final conversations = await getConversations();
+    try {
+      // Try to find an existing conversation for this booking
+      return conversations.firstWhere((c) => c.bookingId == bookingId);
+    } catch (e) {
+      // If no conversation exists, we might need to "create" one or just return null
+      // implying the UI should open a fresh chat.
+      // However, usually GET /chats returns all active chats.
+      // If the backend automatically creates a chat entry when a booking is made,
+      // this logic works. If not, you might need a createChat endpoint.
+      return null;
+    }
+  }
 }

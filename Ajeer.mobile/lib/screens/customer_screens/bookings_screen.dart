@@ -3,19 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-// Config & Theme
 import '../../config/app_config.dart';
 import '../../themes/theme_notifier.dart';
-
-// Widgets
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'home_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
-
-// Models & Services
 import '../../models/booking_models.dart';
 import '../../services/booking_service.dart';
+import '../../services/chat_service.dart';
+import '../../models/chat_models.dart';
 
 class BookingsScreen extends StatefulWidget {
   const BookingsScreen({super.key});
@@ -41,11 +38,9 @@ class _BookingsScreenState extends State<BookingsScreen>
   late TabController _tabController;
   final BookingService _bookingService = BookingService();
 
-  // State
   bool _isLoading = true;
   List<BookingListItem> _allBookings = [];
 
-  // Filtered Getters
   List<BookingListItem> get _activeBookings => _allBookings
       .where(
         (b) =>
@@ -97,10 +92,10 @@ class _BookingsScreenState extends State<BookingsScreen>
     final success = await _bookingService.cancelBooking(id);
 
     if (!mounted) return;
-    Navigator.pop(context); // Close loading
+    Navigator.pop(context);
 
     if (success) {
-      _fetchBookings(); // Refresh list
+      _fetchBookings();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Booking cancelled successfully')),
       );
@@ -121,7 +116,7 @@ class _BookingsScreenState extends State<BookingsScreen>
     final details = await _bookingService.getBookingDetails(id);
 
     if (!mounted) return;
-    Navigator.pop(context); // Close loading
+    Navigator.pop(context);
 
     if (details != null) {
       showDialog(
@@ -406,7 +401,6 @@ class _BookingsScreenState extends State<BookingsScreen>
   }
 }
 
-// Helper enum for UI Rendering logic
 enum _BookingListType { active, pending, closed }
 
 class _BookingCard extends StatelessWidget {
@@ -489,6 +483,44 @@ class _BookingCard extends StatelessWidget {
     );
   }
 
+  void _navigateToChat(BuildContext context) async {
+    final ChatService chatService = ChatService();
+    int targetBookingId = booking.id;
+
+    try {
+      final conversations = await chatService.getConversations();
+      final existing = conversations.firstWhere(
+        (c) => c.otherSideName == booking.otherSideName,
+        orElse: () => ChatConversation(
+          bookingId: -1,
+          otherSideName: '',
+          lastMessage: '',
+          lastMessageFormattedTime: '',
+          unreadCount: 0,
+        ),
+      );
+
+      if (existing.bookingId != -1) {
+        targetBookingId = existing.bookingId;
+      }
+    } catch (e) {
+      debugPrint("Error finding existing chat: $e");
+    }
+
+    if (!context.mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatDetailScreen(
+          bookingId: targetBookingId,
+          otherSideName: booking.otherSideName,
+          chatService: chatService,
+          isDarkMode: isDarkMode,
+        ),
+      ),
+    );
+  }
+
   void _showMessageDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -539,7 +571,7 @@ class _BookingCard extends StatelessWidget {
                   ),
                   onPressed: () {
                     Navigator.pop(ctx);
-                    // TODO: Navigate to Chat Screen
+                    _navigateToChat(context);
                   },
                   child: const Text(
                     'Message',
@@ -563,18 +595,17 @@ class _BookingCard extends StatelessWidget {
         Colors.primaries[letter.hashCode % Colors.primaries.length];
     final fullImageUrl = AppConfig.getFullImageUrl(booking.otherSideImageUrl);
 
+    final borderColor = isDarkMode
+        ? _BookingsConstants.darkBorder
+        : Colors.grey.shade300;
+
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
       color: isDarkMode ? _BookingsConstants.subtleDark : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide(
-          color: isDarkMode
-              ? _BookingsConstants.darkBorder
-              : Colors.grey.shade300,
-          width: 2,
-        ),
+        side: BorderSide(color: borderColor, width: 2.0),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -628,7 +659,7 @@ class _BookingCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 4), // Kept tight spacing
+            const SizedBox(width: 4),
             _buildActionButtons(context),
           ],
         ),
@@ -637,7 +668,6 @@ class _BookingCard extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    // Shared Layout for Active AND Pending: [Info] -> [Chat] -> [Cancel]
     if (listType == _BookingListType.active ||
         listType == _BookingListType.pending) {
       return Row(
@@ -654,7 +684,7 @@ class _BookingCard extends StatelessWidget {
             padding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
           ),
-          const SizedBox(width: 4), // Tighter spacing
+          const SizedBox(width: 4),
           IconButton(
             icon: Icon(
               Icons.chat_bubble_outline,
@@ -666,13 +696,12 @@ class _BookingCard extends StatelessWidget {
             padding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
           ),
-          const SizedBox(width: 6), // Slightly more spacing before button
+          const SizedBox(width: 6),
           _cancelButton(context),
         ],
       );
     }
 
-    // Closed Tab
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -699,7 +728,6 @@ class _BookingCard extends StatelessWidget {
         backgroundColor: _BookingsConstants.primaryRed,
         foregroundColor: Colors.white,
         elevation: 0,
-        // Reverted to larger padding (14) and removed VisualDensity.compact
         padding: const EdgeInsets.symmetric(horizontal: 14),
         minimumSize: const Size(0, 32),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -717,7 +745,6 @@ class _BookingCard extends StatelessWidget {
     Color textColor;
     String text;
 
-    // Explicit colors based on status
     Color getBg(MaterialColor c) => isDarkMode ? c.shade900 : c.shade100;
     Color getTxt(MaterialColor c) => isDarkMode ? c.shade100 : c.shade800;
 
@@ -815,7 +842,6 @@ class _DetailDialog extends StatelessWidget {
               const SizedBox(height: 8),
               _infoRow('Notes', details.notes!, isDarkMode),
             ],
-
             if (details.attachmentUrls.isNotEmpty) ...[
               const SizedBox(height: 16),
               Text(
