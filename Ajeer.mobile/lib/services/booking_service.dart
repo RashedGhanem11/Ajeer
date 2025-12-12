@@ -34,8 +34,12 @@ class BookingService {
     request.fields['ScheduledDate'] = scheduledDate.toIso8601String();
     if (notes != null) request.fields['Notes'] = notes;
 
+    // ✅ FIX: Use request.files.add with fromString to support duplicate keys (List of IDs)
+    // The standard request.fields map overwrites values if the key is the same.
     for (var id in serviceIds) {
-      request.fields['ServiceIds'] = id.toString();
+      request.files.add(
+        http.MultipartFile.fromString('ServiceIds', id.toString()),
+      );
     }
 
     if (attachments != null) {

@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 enum BookingStatus {
   pending,
   accepted,
@@ -25,12 +23,11 @@ class BookingListItem {
   });
 
   factory BookingListItem.fromJson(Map<String, dynamic> json) {
-    // Helper to safely get value regardless of casing (Id vs id)
     dynamic getVal(String key) =>
         json[key] ?? json[key[0].toUpperCase() + key.substring(1)];
 
     return BookingListItem(
-      id: getVal('id') ?? 0, // Fallback to 0 if ID is missing to prevent crash
+      id: getVal('id') ?? 0,
       otherSideName: getVal('otherSideName') ?? 'Unknown Provider',
       otherSideImageUrl: getVal('otherSideImageUrl'),
       serviceName: getVal('serviceName') ?? 'Service',
@@ -48,14 +45,15 @@ class BookingListItem {
     }
 
     if (status is String) {
-      final String lowerStatus = status.toLowerCase();
-      if (lowerStatus == 'active') return BookingStatus.accepted;
+      final lower = status.toLowerCase();
+      if (lower == 'active') return BookingStatus.accepted;
 
       return BookingStatus.values.firstWhere(
-        (e) => e.name.toLowerCase() == lowerStatus,
+        (e) => e.name.toLowerCase() == lower,
         orElse: () => BookingStatus.pending,
       );
     }
+
     return BookingStatus.pending;
   }
 }
@@ -90,18 +88,33 @@ class BookingDetail extends BookingListItem {
     required this.attachmentUrls,
   });
 
+  /// ✅ Safe backend DateTime parser (fixes 12:00 AM bug)
+  static DateTime _parseBackendDateTime(dynamic raw) {
+    if (raw == null) return DateTime.now();
+    if (raw is DateTime) return raw;
+
+    var s = raw.toString().trim();
+
+    // Convert "yyyy-MM-dd HH:mm:ss" → ISO "yyyy-MM-ddTHH:mm:ss"
+    if (s.contains(' ') && !s.contains('T')) {
+      s = s.replaceFirst(' ', 'T');
+    }
+
+    // Trim fractional seconds to max 6 digits (microseconds)
+    s = s.replaceAllMapped(RegExp(r'\.(\d+)(?=Z|[+-]\d\d:\d\d|$)'), (m) {
+      var frac = m.group(1)!;
+      if (frac.length > 6) frac = frac.substring(0, 6);
+      return '.$frac';
+    });
+
+    return DateTime.tryParse(s) ?? DateTime.now();
+  }
+
   factory BookingDetail.fromJson(Map<String, dynamic> json) {
-    // Helper to safely get value regardless of casing
     dynamic getVal(String key) =>
         json[key] ?? json[key[0].toUpperCase() + key.substring(1)];
 
-    DateTime date = DateTime.now();
-    try {
-      final dateStr = getVal('scheduledDate');
-      if (dateStr != null) {
-        date = DateTime.parse(dateStr);
-      }
-    } catch (_) {}
+    final scheduledDate = _parseBackendDateTime(getVal('scheduledDate'));
 
     return BookingDetail(
       id: getVal('id') ?? 0,
@@ -110,7 +123,7 @@ class BookingDetail extends BookingListItem {
       serviceName: getVal('serviceName') ?? 'Service',
       status: BookingListItem._parseStatus(getVal('status')),
       otherSidePhone: getVal('otherSidePhone') ?? '',
-      scheduledDate: date,
+      scheduledDate: scheduledDate,
       areaName: getVal('areaName') ?? '',
       address: getVal('address') ?? '',
       latitude: (getVal('latitude') as num?)?.toDouble() ?? 0.0,
@@ -120,7 +133,6 @@ class BookingDetail extends BookingListItem {
       notes: getVal('notes'),
       attachmentUrls:
           (getVal('attachments') as List?)?.map((e) {
-            // Handle if attachment is an object {url: "..."} or just a string
             if (e is Map) return (e['url'] ?? e['Url'] ?? '').toString();
             return e.toString();
           }).toList() ??

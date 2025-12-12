@@ -796,19 +796,62 @@ class _DetailDialog extends StatelessWidget {
 
   const _DetailDialog({required this.details, required this.isDarkMode});
 
+  void _showImageDialog(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Image.network(imageUrl, fit: BoxFit.contain),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: CircleAvatar(
+                backgroundColor: Colors.black54,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMMM d, yyyy');
-    final timeFormat = DateFormat('h:mm a');
+
+    // ✅ TIME RESTORED: Always formatting the time from the date object.
+    // If this still shows "12:00 AM", it confirms the backend is sending T00:00:00.
+    final String timeString = DateFormat(
+      'h:mm a',
+    ).format(details.scheduledDate);
+
+    // EST TIME FIX: Remove duplicate "Est. Time:" text
+    final String cleanEstTime = details.estimatedTime
+        .replaceAll('Est. Time:', '')
+        .replaceAll('Est. Time', '')
+        .trim();
 
     return AlertDialog(
-      backgroundColor: isDarkMode
-          ? _BookingsConstants.subtleDark
-          : Colors.white,
+      backgroundColor: isDarkMode ? const Color(0xFF2C2C2C) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
       title: Center(
         child: Text(
-          details.serviceName,
+          'Details', // Title fixed
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isDarkMode ? Colors.white : Colors.black,
@@ -820,35 +863,42 @@ class _DetailDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Service Name first
+            _infoRow('Service(s)', details.serviceName, isDarkMode),
+
             _infoRow('Provider', details.otherSideName, isDarkMode),
             if (details.otherSidePhone.isNotEmpty)
               _infoRow('Phone', details.otherSidePhone, isDarkMode),
             _infoRow('Area', details.areaName, isDarkMode),
             _infoRow('Address', details.address, isDarkMode),
+
             _infoRow(
               'Date',
               dateFormat.format(details.scheduledDate),
               isDarkMode,
             ),
-            _infoRow(
-              'Time',
-              timeFormat.format(details.scheduledDate),
-              isDarkMode,
-            ),
-            if (details.estimatedTime.isNotEmpty)
-              _infoRow('Est. Time', details.estimatedTime, isDarkMode),
+
+            // ✅ Time is always shown now
+            _infoRow('Time', timeString, isDarkMode),
+
+            if (cleanEstTime.isNotEmpty)
+              _infoRow('Est. Time', cleanEstTime, isDarkMode),
+
             _infoRow('Price', details.formattedPrice, isDarkMode),
+
             if (details.notes != null && details.notes!.isNotEmpty) ...[
               const SizedBox(height: 8),
               _infoRow('Notes', details.notes!, isDarkMode),
             ],
+
             if (details.attachmentUrls.isNotEmpty) ...[
               const SizedBox(height: 16),
               Text(
-                'Attachments:',
+                'Attachments (Tap to view):',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: isDarkMode ? Colors.white : Colors.black,
+                  fontSize: 14,
                 ),
               ),
               const SizedBox(height: 8),
@@ -857,18 +907,23 @@ class _DetailDialog extends StatelessWidget {
                 runSpacing: 8,
                 children: details.attachmentUrls.map((url) {
                   final fullUrl = AppConfig.getFullImageUrl(url);
-                  return ClipRRect(
+                  return InkWell(
+                    // Clickable attachments
+                    onTap: () => _showImageDialog(context, fullUrl),
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      fullUrl,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        fullUrl,
                         width: 60,
                         height: 60,
-                        color: Colors.grey.shade300,
-                        child: const Icon(Icons.broken_image, size: 20),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.broken_image, size: 20),
+                        ),
                       ),
                     ),
                   );
