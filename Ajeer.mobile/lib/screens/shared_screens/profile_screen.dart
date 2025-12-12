@@ -40,6 +40,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const double _navBarTotalHeight = 86.0;
   static const double _whiteContainerHeightRatio = 0.3;
 
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   int _selectedIndex = 0;
   bool _isPasswordVisible = false;
   bool _isEditing = false;
@@ -325,6 +327,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
+      key: _scaffoldKey,
       extendBody: true,
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
       drawer: _buildDrawer(),
@@ -639,7 +642,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         isDarkMode,
                         isPassword: true,
                       ),
-
                       if (userNotifier.isProviderSetupComplete &&
                           userNotifier.providerData != null)
                         _ProviderInfoSection(
@@ -674,19 +676,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(width: 10),
         ],
-
         _buildCircleButton(
           _isEditing ? Icons.close : Icons.edit,
           _isEditing ? _cancelRed : _primaryBlue,
           _toggleEditMode,
           _isEditing ? 'Cancel' : 'Edit',
         ),
-
         const SizedBox(width: 10),
         _buildCircleButton(
           Icons.settings,
           _primaryBlue,
-          () => Scaffold.of(context).openDrawer(),
+          () => _scaffoldKey.currentState?.openDrawer(),
           'Settings',
         ),
       ],

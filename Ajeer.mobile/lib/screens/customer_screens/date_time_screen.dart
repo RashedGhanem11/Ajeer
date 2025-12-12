@@ -190,30 +190,65 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       context: context,
       initialTime: _selectedTime,
       builder: (context, child) {
+        // 1. Define colors to match the DatePicker style
         final ColorScheme colorScheme = isDarkMode
             ? const ColorScheme.dark(
-                primary: _primaryBlue,
+                primary: _primaryBlue, // Dial hand, Active AM/PM text/border
                 onPrimary: Colors.white,
-                surface: _subtleLighterDark,
+                surface: _subtleDark, // Dialog Background
                 onSurface: Colors.white,
+                // This controls the fill color of the selected AM/PM toggle
+                secondaryContainer: _primaryBlue,
+                onSecondaryContainer: Colors.white,
               )
             : const ColorScheme.light(
                 primary: _primaryBlue,
                 onPrimary: Colors.white,
+                surface: Colors.white,
                 onSurface: Colors.black87,
+                secondaryContainer: _secondaryLightBlue,
               );
 
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: colorScheme,
+            // 2. Button Styles (OK/Cancel)
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: _primaryBlue),
-            ),
-            timePickerTheme: TimePickerThemeData(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(_dialogBorderRadius),
+              style: TextButton.styleFrom(
+                foregroundColor: _primaryBlue,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
+            ),
+            // 3. Specific Time Picker Overrides
+            timePickerTheme: TimePickerThemeData(
               backgroundColor: isDarkMode ? _subtleDark : Colors.white,
+              dialBackgroundColor: isDarkMode
+                  ? _subtleLighterDark
+                  : Colors.grey.shade200,
+              dialHandColor: _primaryBlue,
+              dialTextColor: isDarkMode ? Colors.white : Colors.black87,
+              entryModeIconColor: _primaryBlue,
+
+              // AM/PM Box Styles
+              dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return isDarkMode ? Colors.white70 : Colors.black87;
+              }),
+              dayPeriodColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return _primaryBlue; // Blue fill when selected
+                }
+                return Colors.transparent;
+              }),
+              dayPeriodBorderSide: const BorderSide(color: _primaryBlue),
+
+              // Input decoration (for keyboard mode)
+              hourMinuteTextColor: isDarkMode ? Colors.white : Colors.black87,
+              hourMinuteColor: isDarkMode
+                  ? _subtleLighterDark
+                  : Colors.grey.shade200,
             ),
           ),
           child: child!,
@@ -515,19 +550,24 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 
   Widget _buildModeChip(String label, bool isSelected, bool isDarkMode) {
+    final Color selectedGray = isDarkMode
+        ? Colors.grey.shade800
+        : Colors.grey.shade300;
+    final Color selectedTextColor = isDarkMode ? Colors.white : Colors.black87;
+
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
+      showCheckmark: false,
       onSelected: (selected) {
         if (selected) _onModeSelected(label);
       },
       backgroundColor: isDarkMode ? _subtleLighterDark : Colors.grey[100],
-      selectedColor: _primaryBlue,
-      checkmarkColor: Colors.white,
+      selectedColor: selectedGray,
       labelStyle: TextStyle(
         fontWeight: FontWeight.bold,
         color: isSelected
-            ? Colors.white
+            ? selectedTextColor
             : isDarkMode
             ? Colors.white70
             : Colors.black54,
@@ -535,13 +575,13 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       shape: StadiumBorder(
         side: BorderSide(
           color: isSelected
-              ? _primaryBlue
+              ? selectedGray
               : isDarkMode
               ? Colors.grey[700]!
               : Colors.grey[400]!,
         ),
       ),
-      elevation: isSelected ? 3 : 0,
+      elevation: isSelected ? 1 : 0,
     );
   }
 

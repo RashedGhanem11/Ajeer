@@ -283,10 +283,82 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
   }
 
   Future<void> _pickTime(BuildContext context, bool isStart) async {
+    final bool isDarkMode = widget.themeNotifier.isDarkMode;
+
+    // Define specific dark mode colors locally to match the other screen exactly
+    const Color subtleDark = Color(0xFF1E1E1E);
+    const Color subtleLighterDark = Color(0xFF2C2C2C);
+
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: isStart ? _startTime : _endTime,
+      builder: (context, child) {
+        // 1. Define colors to match the DatePicker style
+        final ColorScheme colorScheme = isDarkMode
+            ? const ColorScheme.dark(
+                primary: kPrimaryBlue, // Dial hand, Active AM/PM text/border
+                onPrimary: Colors.white,
+                surface: subtleDark, // Dialog Background
+                onSurface: Colors.white,
+                // This controls the fill color of the selected AM/PM toggle
+                secondaryContainer: kPrimaryBlue,
+                onSecondaryContainer: Colors.white,
+              )
+            : const ColorScheme.light(
+                primary: kPrimaryBlue,
+                onPrimary: Colors.white,
+                surface: Colors.white,
+                onSurface: Colors.black87,
+                secondaryContainer: kLightBlue,
+              );
+
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: colorScheme,
+            // 2. Button Styles (OK/Cancel)
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: kPrimaryBlue,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            // 3. Specific Time Picker Overrides
+            timePickerTheme: TimePickerThemeData(
+              backgroundColor: isDarkMode ? subtleDark : Colors.white,
+              dialBackgroundColor: isDarkMode
+                  ? subtleLighterDark
+                  : Colors.grey.shade200,
+              dialHandColor: kPrimaryBlue,
+              dialTextColor: isDarkMode ? Colors.white : Colors.black87,
+              entryModeIconColor: kPrimaryBlue,
+
+              // AM/PM Box Styles
+              dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return isDarkMode ? Colors.white70 : Colors.black87;
+              }),
+              dayPeriodColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return kPrimaryBlue; // Blue fill when selected
+                }
+                return Colors.transparent;
+              }),
+              dayPeriodBorderSide: const BorderSide(color: kPrimaryBlue),
+
+              // Input decoration (for keyboard mode)
+              hourMinuteTextColor: isDarkMode ? Colors.white : Colors.black87,
+              hourMinuteColor: isDarkMode
+                  ? subtleLighterDark
+                  : Colors.grey.shade200,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
+
     if (picked != null) {
       setState(() {
         if (isStart) {
