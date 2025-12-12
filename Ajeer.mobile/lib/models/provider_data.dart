@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+int _toInt(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
+}
+
 class WorkTime {
   final TimeOfDay startTimeOfDay;
   final TimeOfDay endTimeOfDay;
@@ -27,10 +34,13 @@ class WorkTime {
 
   factory WorkTime.fromJson(Map<String, dynamic> json) => WorkTime(
     startTimeOfDay: TimeOfDay(
-      hour: json['startHour'],
-      minute: json['startMinute'],
+      hour: _toInt(json['startHour']),
+      minute: _toInt(json['startMinute']),
     ),
-    endTimeOfDay: TimeOfDay(hour: json['endHour'], minute: json['endMinute']),
+    endTimeOfDay: TimeOfDay(
+      hour: _toInt(json['endHour']),
+      minute: _toInt(json['endMinute']),
+    ),
   );
 }
 
@@ -51,6 +61,34 @@ class WorkSchedule {
         .map((t) => WorkTime.fromJson(t))
         .toList(),
   );
+
+  List<Map<String, dynamic>> toApiDto() {
+    int getDayOfWeek(String dayName) {
+      const days = [
+        'Sunday',
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+      ];
+      return days.indexOf(dayName);
+    }
+
+    return timeSlots.map((slot) {
+      final start =
+          "${slot.startTimeOfDay.hour.toString().padLeft(2, '0')}:${slot.startTimeOfDay.minute.toString().padLeft(2, '0')}:00";
+      final end =
+          "${slot.endTimeOfDay.hour.toString().padLeft(2, '0')}:${slot.endTimeOfDay.minute.toString().padLeft(2, '0')}:00";
+
+      return {
+        "dayOfWeek": getDayOfWeek(day),
+        "startTime": start,
+        "endTime": end,
+      };
+    }).toList();
+  }
 }
 
 class LocationSelection {
@@ -72,14 +110,21 @@ class ProviderData {
   final Map<String, Set<String>> selectedServices;
   final List<LocationSelection> selectedLocations;
   final List<WorkSchedule> finalSchedule;
+  final List<int> _serviceIds;
+  final List<int> _areaIds;
 
   ProviderData({
     required this.selectedServices,
     required this.selectedLocations,
     required this.finalSchedule,
-  });
+    List<int>? serviceIds,
+    List<int>? areaIds,
+  }) : _serviceIds = serviceIds ?? [],
+       _areaIds = areaIds ?? [];
 
-  /// ✅ Used to prefill services when editing
+  List<int> getAllServiceIds() => _serviceIds;
+  List<int> getAllAreaIds() => _areaIds;
+
   List<ServiceSelection> get services => selectedServices.entries
       .map(
         (entry) => ServiceSelection(
@@ -89,7 +134,6 @@ class ProviderData {
       )
       .toList();
 
-  /// ✅ Save to JSON
   Map<String, dynamic> toJson() => {
     'selectedServices': selectedServices.map(
       (key, value) => MapEntry(key, value.toList()),
@@ -98,7 +142,6 @@ class ProviderData {
     'finalSchedule': finalSchedule.map((s) => s.toJson()).toList(),
   };
 
-  /// ✅ Load from JSON
   factory ProviderData.fromJson(Map<String, dynamic> json) => ProviderData(
     selectedServices: Map<String, Set<String>>.fromEntries(
       (json['selectedServices'] as Map<String, dynamic>).entries.map(
@@ -112,6 +155,116 @@ class ProviderData {
         .map((s) => WorkSchedule.fromJson(s))
         .toList(),
   );
+
+  factory ProviderData.fromApi(Map<String, dynamic> json) {
+    try {
+      Map<String, Set<String>> servicesMap = {};
+      List<int> sIds = [];
+
+      if (json['serviceCategory'] != null) {
+        String catName = json['serviceCategory']['name'] ?? 'Service';
+        Set<String> types = {};
+
+        var servicesList = json['services'] as List?;
+        if (servicesList != null) {
+          for (var s in servicesList) {
+            if (s['name'] != null) types.add(s['name']);
+            if (s['id'] != null) sIds.add(_toInt(s['id']));
+          }
+        }
+        servicesMap[catName] = types;
+      }
+
+      List<LocationSelection> locs = [];
+      List<int> aIds = [];
+
+      var citiesList = json['cities'] as List?;
+      if (citiesList != null) {
+        for (var c in citiesList) {
+          Set<String> areaNames = {};
+          var areasList = c['areas'] as List?;
+          if (areasList != null) {
+            for (var a in areasList) {
+              if (a['name'] != null) areaNames.add(a['name']);
+              if (a['id'] != null) aIds.add(_toInt(a['id']));
+            }
+          }
+          locs.add(
+            LocationSelection(
+              city: c['cityName'] ?? 'Unknown',
+              areas: areaNames,
+            ),
+          );
+        }
+      }
+
+      List<WorkSchedule> schedules = [];
+      var schedList = json['schedules'] as List?;
+
+      if (schedList != null) {
+        Map<int, List<WorkTime>> grouped = {};
+
+        for (var s in schedList) {
+          int day = _toInt(s['dayOfWeek']);
+
+          TimeOfDay parseTime(String? t) {
+            if (t == null || !t.contains(':')) {
+              return const TimeOfDay(hour: 0, minute: 0);
+            }
+            try {
+              final parts = t.split(':');
+              return TimeOfDay(
+                hour: _toInt(parts[0]),
+                minute: _toInt(parts[1]),
+              );
+            } catch (e) {
+              return const TimeOfDay(hour: 0, minute: 0);
+            }
+          }
+
+          final slot = WorkTime(
+            startTimeOfDay: parseTime(s['startTime']),
+            endTimeOfDay: parseTime(s['endTime']),
+          );
+
+          if (!grouped.containsKey(day)) {
+            grouped[day] = [];
+          }
+          grouped[day]!.add(slot);
+        }
+
+        const days = [
+          'Sunday',
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+        ];
+
+        grouped.forEach((dayIndex, slots) {
+          if (dayIndex >= 0 && dayIndex < days.length) {
+            schedules.add(WorkSchedule(day: days[dayIndex], timeSlots: slots));
+          }
+        });
+      }
+
+      return ProviderData(
+        selectedServices: servicesMap,
+        selectedLocations: locs,
+        finalSchedule: schedules,
+        serviceIds: sIds,
+        areaIds: aIds,
+      );
+    } catch (e) {
+      return ProviderData(
+        selectedServices: {},
+        selectedLocations: [],
+        finalSchedule: [],
+      );
+    }
+  }
 }
 
 class ServiceSelection {

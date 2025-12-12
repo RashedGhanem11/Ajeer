@@ -1,7 +1,7 @@
-import 'dart:convert'; // ✅ Add this
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/provider_data.dart';
+import '../services/provider_service.dart';
 
 enum UserMode { customer, provider }
 
@@ -10,104 +10,75 @@ class UserNotifier extends ChangeNotifier {
   bool _isProviderSetupComplete = false;
   ProviderData? _providerData;
 
-  static const String _modeKey = 'userModeIndex';
-  static const String _setupCompleteKey = 'isProviderSetupComplete';
-  static const String _providerDataKey = 'providerData';
+  static const String _userModeKey = 'last_user_mode';
+  final ProviderService _apiService = ProviderService();
 
   UserNotifier() {
-    _loadUserData();
+    loadUserData();
   }
 
   UserMode get userMode => _userMode;
   bool get isProviderSetupComplete => _isProviderSetupComplete;
   ProviderData? get providerData => _providerData;
-
   bool get isProvider => _userMode == UserMode.provider;
 
-  // ✅ Load user mode, provider data, and setup state
-  Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> loadUserData() async {
+    try {
+      final data = await _apiService.getProviderProfile();
+      final prefs = await SharedPreferences.getInstance();
 
-    final modeIndex = prefs.getInt(_modeKey) ?? 0;
-    _userMode = UserMode.values[modeIndex];
+      if (data != null) {
+        _providerData = data;
+        _isProviderSetupComplete = true;
 
-    _isProviderSetupComplete = prefs.getBool(_setupCompleteKey) ?? false;
-
-    final providerJson = prefs.getString(_providerDataKey);
-    if (providerJson != null && providerJson.isNotEmpty) {
-      try {
-        final decoded = jsonDecode(providerJson);
-        _providerData = ProviderData.fromJson(decoded);
-      } catch (e) {
-        if (kDebugMode) {
-          print('⚠️ Error loading provider data: $e');
-        }
+        final int lastModeIndex = prefs.getInt(_userModeKey) ?? 0;
+        _userMode = lastModeIndex == 1 ? UserMode.provider : UserMode.customer;
+      } else {
+        _providerData = null;
+        _isProviderSetupComplete = false;
+        _userMode = UserMode.customer;
       }
+    } catch (e) {
+      if (kDebugMode) print("Error loading profile: $e");
     }
-
     notifyListeners();
   }
 
-  // ✅ Save user mode to SharedPreferences
-  Future<void> _saveUserMode(UserMode mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_modeKey, mode.index);
+  Future<void> completeProviderSetup(ProviderData data) async {
+    await _saveToBackend(data);
   }
 
-  // ✅ Save full provider data persistently
-  Future<void> _saveProviderData() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (_providerData != null) {
-      await prefs.setString(
-        _providerDataKey,
-        jsonEncode(_providerData!.toJson()),
-      );
+  Future<void> updateProviderData(ProviderData data) async {
+    await _saveToBackend(data);
+  }
+
+  Future<void> _saveToBackend(ProviderData data) async {
+    try {
+      await _apiService.updateProviderProfile(data);
+      final prefs = await SharedPreferences.getInstance();
+
+      _providerData = data;
+      _isProviderSetupComplete = true;
+      _userMode = UserMode.provider;
+
+      await prefs.setInt(_userModeKey, UserMode.provider.index);
+
+      notifyListeners();
+    } catch (e) {
+      rethrow;
     }
-    await prefs.setBool(_setupCompleteKey, _isProviderSetupComplete);
   }
 
-  // ✅ Switch between modes only if provider setup is done
-  void toggleUserMode() {
+  Future<void> toggleUserMode() async {
     if (_isProviderSetupComplete) {
       _userMode = _userMode == UserMode.customer
           ? UserMode.provider
           : UserMode.customer;
 
-      _saveUserMode(_userMode);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_userModeKey, _userMode.index);
+
       notifyListeners();
     }
-  }
-
-  // ✅ Called after provider completes setup
-  Future<void> completeProviderSetup(ProviderData data) async {
-    _providerData = data;
-    _isProviderSetupComplete = true;
-    _userMode = UserMode.provider;
-
-    await _saveUserMode(_userMode);
-    await _saveProviderData();
-
-    notifyListeners();
-  }
-
-  // ✅ Update existing provider data and re-save it
-  Future<void> updateProviderData(ProviderData data) async {
-    _providerData = data;
-    await _saveProviderData();
-    notifyListeners();
-  }
-
-  // ✅ Optional: clear provider data completely
-  Future<void> clearProviderData() async {
-    _providerData = null;
-    _isProviderSetupComplete = false;
-    _userMode = UserMode.customer;
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_providerDataKey);
-    await prefs.remove(_setupCompleteKey);
-    await prefs.setInt(_modeKey, _userMode.index);
-
-    notifyListeners();
   }
 }

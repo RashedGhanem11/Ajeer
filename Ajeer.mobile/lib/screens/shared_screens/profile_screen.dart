@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import '../../widgets/shared_widgets/settings_menu.dart';
 import '../../themes/theme_notifier.dart';
-import '../../notifiers/user_notifier.dart'; // ✅ Ensure this is imported
+import '../../notifiers/user_notifier.dart';
 import '../../models/provider_data.dart';
 
 import '../customer_screens/bookings_screen.dart';
@@ -27,7 +27,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // --- Constants ---
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _darkBlue = Color(0xFF0D47A1);
@@ -38,16 +37,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const Color _cancelRed = Color(0xFFF44336);
   static const double _borderRadius = 50.0;
   static const double _profileAvatarHeight = 100.0;
-  static const double _navBarTotalHeight = 86.0; // 56 + 20 + 10
+  static const double _navBarTotalHeight = 86.0;
   static const double _whiteContainerHeightRatio = 0.3;
 
-  // --- State Variables ---
   int _selectedIndex = 0;
   bool _isPasswordVisible = false;
   bool _isEditing = false;
   bool _dataHasChanged = false;
 
-  // Profile Data
   String _firstName = '';
   String _lastName = '';
   String _mobileNumber = '';
@@ -56,17 +53,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   File? _profileImage;
   File? _originalProfileImage;
 
-  // Controllers
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
   late TextEditingController _mobileController;
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
 
-  // Notifications
   final Set<int> _selectedNotifications = {};
   bool _isDeleting = false;
-  List<Map<String, dynamic>> _notifications = [
+  final List<Map<String, dynamic>> _notifications = [
     {
       'title': 'New Booking Confirmation',
       'subtitle': 'Your booking #1023 is confirmed.',
@@ -140,12 +135,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _email = user['email'] ?? '';
           _password = user['password'] ?? '';
 
-          // Update controllers
           _firstNameController.text = _firstName;
           _lastNameController.text = _lastName;
           _mobileController.text = _mobileNumber;
           _emailController.text = _email;
-          _passwordController.text = '********'; // Mask password initially
+          _passwordController.text = '********';
         });
       }
     }
@@ -160,8 +154,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-
-  // --- Actions ---
 
   Future<void> _pickImage() async {
     if (!_isEditing) return;
@@ -200,7 +192,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       user['email'] = _email;
       user['password'] = _password;
 
-      // Update in the main list as well
       final usersJsonList = prefs.getStringList('users') ?? [];
       final List<Map<String, dynamic>> users = usersJsonList
           .map((u) => Map<String, dynamic>.from(jsonDecode(u)))
@@ -238,7 +229,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _toggleEditMode() {
     setState(() {
       if (_isEditing) {
-        // Cancel Editing: Revert
         _firstNameController.text = _firstName;
         _lastNameController.text = _lastName;
         _mobileController.text = _mobileNumber;
@@ -247,38 +237,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _profileImage = _originalProfileImage;
         _dataHasChanged = false;
       } else {
-        // Start Editing: Store original image state
         _originalProfileImage = _profileImage;
       }
       _isEditing = !_isEditing;
     });
   }
 
-  // --- Reset Provider Logic (No Dialog) ---
-  Future<void> _resetProviderData() async {
-    final userNotifier = Provider.of<UserNotifier>(context, listen: false);
-
-    // 1. Clear Data in Logic
-    await userNotifier.clearProviderData();
-
-    // 2. Exit Edit Mode
-    setState(() {
-      _isEditing = false;
-      _dataHasChanged = false;
-    });
-
-    // 3. Feedback
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Provider data has been completely reset.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
-  }
-
-  // --- Navigation Helpers ---
   List<Map<String, dynamic>> _getNavItems(UserNotifier userNotifier) {
     final baseItems = [
       {
@@ -309,8 +273,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    // Basic navigation logic based on your previous code
-    // Assuming labels match the list indices logic or switch case
     final navItems = _getNavItems(
       Provider.of<UserNotifier>(context, listen: false),
     );
@@ -345,7 +307,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
     final navItems = _getNavItems(userNotifier);
 
-    // Status Bar Style
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
           ? SystemUiOverlayStyle.light.copyWith(
@@ -389,8 +350,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-
-  // --- Widget Builders ---
 
   Widget _buildDrawer() {
     return SettingsMenu(
@@ -703,9 +662,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildActionButtons(BuildContext context, UserNotifier userNotifier) {
-    // Show Reset Button ONLY if setup is complete AND editing
-    bool showReset = userNotifier.isProviderSetupComplete && _isEditing;
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -725,17 +681,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _toggleEditMode,
           _isEditing ? 'Cancel' : 'Edit',
         ),
-
-        // ✅ THE SIMPLE RESET BUTTON (NO DIALOG)
-        if (showReset) ...[
-          const SizedBox(width: 10),
-          _buildCircleButton(
-            Icons.restart_alt,
-            Colors.orange,
-            _resetProviderData,
-            'Reset Provider',
-          ),
-        ],
 
         const SizedBox(width: 10),
         _buildCircleButton(
@@ -839,7 +784,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- Dialogs (Info / SignOut) ---
   void _showInfoDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -905,7 +849,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// --- Provider Info Section Widget ---
 class _ProviderInfoSection extends StatelessWidget {
   final ProviderData providerData;
   final bool isEnabled;

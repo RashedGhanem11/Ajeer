@@ -4,7 +4,7 @@ import '../../models/service_models.dart';
 import '../../services/service_category_service.dart';
 import '../shared_screens/profile_screen.dart';
 import '../../themes/theme_notifier.dart';
-import '../../config/app_config.dart'; // ✅ Required for AppConfig.getFullImageUrl
+import '../../config/app_config.dart';
 import 'location_screen.dart';
 import '../../../models/provider_data.dart';
 
@@ -91,7 +91,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
   void _prefillIfEditing() {
     if (widget.isEdit && widget.initialData != null) {
       _selectedUnitTypes.clear();
-      // Ensure only one service is selected even if legacy data had multiple
       if (widget.initialData!.services.isNotEmpty) {
         final service = widget.initialData!.services.first;
         _selectedUnitTypes[service.name] = service.selectedUnitTypes.toSet();
@@ -122,14 +121,42 @@ class _ServicesScreenState extends State<ServicesScreen> {
     }
   }
 
+  // ✅ CRITICAL FIX: Extract IDs from selected names
+  List<int> _getSelectedServiceIds() {
+    List<int> ids = [];
+
+    // Iterate through all categories to match names with IDs
+    for (var category in _categories) {
+      final selectedNames = _selectedUnitTypes[category.name];
+
+      // If this category has selections
+      if (selectedNames != null && selectedNames.isNotEmpty) {
+        final items = _categoryItems[category.id];
+        if (items != null) {
+          for (var item in items) {
+            // If the item name is in the selection set, capture the ID
+            if (selectedNames.contains(item.name)) {
+              ids.add(item.id);
+            }
+          }
+        }
+      }
+    }
+    return ids;
+  }
+
   void _onNextTap() {
     if (_isNextEnabled) {
+      // ✅ Capture IDs before navigating
+      final ids = _getSelectedServiceIds();
+
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => LocationScreen(
             themeNotifier: widget.themeNotifier,
             selectedServices: _selectedUnitTypes,
+            serviceIds: ids, // ✅ PASSING IDs
             isEdit: widget.isEdit,
             initialData: widget.initialData,
           ),
@@ -314,7 +341,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       selectedUnitTypes: _selectedUnitTypes,
                       onUnitTypeSelectionChanged: (newSelection) {
                         setState(() {
-                          // ✅ Enforce Single Selection
                           _selectedUnitTypes.clear();
                           _selectedUnitTypes.addAll(newSelection);
                         });
@@ -424,13 +450,11 @@ class _ProviderServiceGridView extends StatelessWidget {
       String name = category.name;
       List<ServiceItem> items = categoryItems[category.id] ?? [];
 
-      // ✅ LOGIC: Create Fresh Map (Enforce Single Selection)
       final Map<String, Set<String>> newSelection = {};
 
       if (!isCategorySelected(name)) {
         newSelection[name] = items.map((i) => i.name).toSet();
       }
-      // If it WAS selected, newSelection remains empty (deselect)
 
       onUnitTypeSelectionChanged(newSelection);
     }
@@ -444,7 +468,6 @@ class _ProviderServiceGridView extends StatelessWidget {
             items: categoryItems[category.id] ?? [],
             initialSelectedUnitTypes: selectedUnitTypes[category.name] ?? {},
             onSave: (newSelection) {
-              // ✅ LOGIC: Dialog Single Selection Support
               final Map<String, Set<String>> updatedSelection = {};
               if (newSelection.isNotEmpty) {
                 updatedSelection[category.name] = newSelection;
@@ -539,7 +562,7 @@ class _ProviderServiceGridItem extends StatelessWidget {
         : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
 
     const double iconContainerSize = 80.0;
-    const double iconSize = 40.0; // Adjusted for better fit inside circle
+    const double iconSize = 40.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -557,17 +580,14 @@ class _ProviderServiceGridItem extends StatelessWidget {
                   border: Border.all(color: itemBorderColor, width: 2),
                 ),
                 child: Center(
-                  // ✅ FIXED: Using AppConfig.getFullImageUrl just like Home Screen
                   child: SizedBox(
                     width: iconSize,
                     height: iconSize,
                     child: FadeInImage.assetNetwork(
-                      placeholder:
-                          'assets/image/placeholder.png', // Ensure this asset exists
+                      placeholder: 'assets/image/placeholder.png',
                       image: AppConfig.getFullImageUrl(iconUrl),
                       fit: BoxFit.contain,
                       imageErrorBuilder: (context, error, stackTrace) {
-                        // Fallback icon if image fails completely
                         return Icon(
                           Icons.broken_image,
                           size: iconSize,

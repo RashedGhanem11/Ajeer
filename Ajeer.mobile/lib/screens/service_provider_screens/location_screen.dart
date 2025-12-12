@@ -54,6 +54,10 @@ const double kListContainerHeight = 310.0;
 class LocationScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
   final Map<String, Set<String>> selectedServices;
+
+  // ✅ NEW: Receive Service IDs from previous screen
+  final List<int> serviceIds;
+
   final bool isEdit;
   final ProviderData? initialData;
 
@@ -61,6 +65,7 @@ class LocationScreen extends StatefulWidget {
     super.key,
     required this.themeNotifier,
     required this.selectedServices,
+    required this.serviceIds, // ✅ Add this
     this.isEdit = false,
     this.initialData,
   });
@@ -155,8 +160,37 @@ class _LocationScreenState extends State<LocationScreen> {
 
   bool get _isNextEnabled => _finalLocations.isNotEmpty;
 
+  // ✅ CRITICAL FIX: Extract IDs for selected areas
+  List<int> _getSelectedAreaIds() {
+    List<int> ids = [];
+
+    // Loop through all our finalized locations
+    for (var loc in _finalLocations) {
+      // Find the city object in API data
+      final cityData = _apiData.firstWhere(
+        (c) => c.cityName == loc.city,
+        orElse: () => CityResponse(cityName: '', areas: []),
+      );
+
+      // Loop through selected area names for this city
+      for (var areaName in loc.areas) {
+        final areaData = cityData.areas.firstWhere(
+          (a) => a.name == areaName,
+          orElse: () => AreaResponse(id: 0, name: ''),
+        );
+        if (areaData.id != 0) {
+          ids.add(areaData.id);
+        }
+      }
+    }
+    return ids;
+  }
+
   void _onNextTap() {
     if (_isNextEnabled) {
+      // ✅ Calculate Area IDs before navigating
+      final areaIds = _getSelectedAreaIds();
+
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -164,6 +198,11 @@ class _LocationScreenState extends State<LocationScreen> {
             themeNotifier: widget.themeNotifier,
             selectedServices: widget.selectedServices,
             selectedLocations: _finalLocations,
+
+            // ✅ PASS BOTH LISTS OF IDs
+            serviceIds: widget.serviceIds,
+            areaIds: areaIds,
+
             isEdit: widget.isEdit,
             initialData: widget.initialData,
           ),
@@ -631,6 +670,8 @@ class _LocationSelectionContent extends StatelessWidget {
   }
 }
 
+// ... _CityAreaSelector, _LocationBox, _CityList, _AreaList, _AreaSearchBar
+// (Just ensure these standard widgets from your original file are included here at the bottom)
 class _CityAreaSelector extends StatelessWidget {
   final List<String> availableCities;
   final String? selectedCity;

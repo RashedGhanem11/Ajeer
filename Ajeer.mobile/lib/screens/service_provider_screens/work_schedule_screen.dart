@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +13,7 @@ const Color kDeleteRed = Color(0xFFF44336);
 const Color kSelectedGreen = Colors.green;
 const double kBorderRadius = 50.0;
 const double kWhiteContainerTopRatio = 0.15;
-const double kSaveButtonHeight = 50.0; // Increased slightly for better fit
+const double kSaveButtonHeight = 50.0;
 const double kContentHorizontalPadding = 5.0;
 const double kBoxRadius = 15.0;
 
@@ -30,6 +31,8 @@ class WorkScheduleScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
   final Map<String, Set<String>> selectedServices;
   final List<LocationSelection> selectedLocations;
+  final List<int> serviceIds;
+  final List<int> areaIds;
   final bool isEdit;
   final ProviderData? initialData;
 
@@ -38,6 +41,8 @@ class WorkScheduleScreen extends StatefulWidget {
     required this.themeNotifier,
     required this.selectedServices,
     required this.selectedLocations,
+    required this.serviceIds,
+    required this.areaIds,
     this.isEdit = false,
     this.initialData,
   });
@@ -60,13 +65,11 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
   @override
   void initState() {
     super.initState();
-
     if (widget.isEdit && widget.initialData != null) {
       _finalSchedule = List<WorkSchedule>.from(
         widget.initialData!.finalSchedule,
       );
     }
-
     _selectedDay = _availableDays.isNotEmpty ? _availableDays.first : null;
   }
 
@@ -85,8 +88,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
       if (newStart == existingStart && newEnd == existingEnd) {
         return true;
       }
-
-      // Check for overlap
       if (newStart < existingEnd && newEnd > existingStart) {
         return true;
       }
@@ -133,7 +134,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
               ),
               const SizedBox(height: 15.0),
               Text(
-                widget.isEdit ? 'Changes saved' : 'You have become an Ajeer!',
+                widget.isEdit ? 'Save Changes?' : 'Become an Ajeer!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -161,7 +162,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                       ),
                       TextSpan(
                         text:
-                            '. After this period, you will need to subscribe to the Ajeer App to continue using it. You can check subscription information on your profile page, which you will be directed to shortly.',
+                            '. After this period, you will need to subscribe to continue.',
                       ),
                     ],
                   ),
@@ -191,11 +192,20 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (c) =>
+                              const Center(child: CircularProgressIndicator()),
+                        );
+
                         final providerData = ProviderData(
                           selectedServices: widget.selectedServices,
                           selectedLocations: widget.selectedLocations,
                           finalSchedule: _finalSchedule,
+                          serviceIds: widget.serviceIds,
+                          areaIds: widget.areaIds,
                         );
 
                         final userNotifier = Provider.of<UserNotifier>(
@@ -203,24 +213,43 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                           listen: false,
                         );
 
-                        if (widget.isEdit) {
-                          // Update the existing provider data
-                          userNotifier.updateProviderData(providerData);
-                        } else {
-                          // First-time setup
-                          userNotifier.completeProviderSetup(providerData);
+                        try {
+                          if (widget.isEdit) {
+                            await userNotifier.updateProviderData(providerData);
+                          } else {
+                            await userNotifier.completeProviderSetup(
+                              providerData,
+                            );
+                          }
+
+                          if (mounted) {
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pop();
+
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (context) => ProfileScreen(
+                                  themeNotifier: widget.themeNotifier,
+                                ),
+                              ),
+                              (Route<dynamic> route) => false,
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            Navigator.of(context).pop();
+
+                            String cleanMessage = extractErrorMessage(e);
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(cleanMessage),
+                                backgroundColor: kDeleteRed,
+                                duration: const Duration(seconds: 4),
+                              ),
+                            );
+                          }
                         }
-
-                        Navigator.of(context).pop();
-
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (context) => ProfileScreen(
-                              themeNotifier: widget.themeNotifier,
-                            ),
-                          ),
-                          (Route<dynamic> route) => false,
-                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: kPrimaryBlue,
@@ -855,7 +884,7 @@ class _TimeSlotCreator extends StatelessWidget {
               const SizedBox(width: 10),
               SizedBox(
                 height: kSaveButtonHeight,
-                width: kSaveButtonHeight, // Making width equal to height
+                width: kSaveButtonHeight,
                 child: ElevatedButton(
                   onPressed: isEnabled ? onAddTimeSlot : null,
                   style: ElevatedButton.styleFrom(
@@ -863,7 +892,7 @@ class _TimeSlotCreator extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(kBoxRadius),
                     ),
-                    padding: EdgeInsets.zero, // Remove inner padding
+                    padding: EdgeInsets.zero,
                   ),
                   child: const Icon(Icons.add, color: Colors.white),
                 ),
@@ -1091,4 +1120,31 @@ class _WorkScheduleList extends StatelessWidget {
       ),
     );
   }
+}
+
+String extractErrorMessage(dynamic error) {
+  String errorString = error.toString();
+  try {
+    int jsonStartIndex = errorString.indexOf('{');
+    if (jsonStartIndex != -1) {
+      String jsonString = errorString.substring(jsonStartIndex);
+      Map<String, dynamic> decoded = jsonDecode(jsonString);
+      if (decoded.containsKey('errors') && decoded['errors'] != null) {
+        Map<String, dynamic> errors = decoded['errors'];
+        if (errors.isNotEmpty) {
+          String firstKey = errors.keys.first;
+          var messages = errors[firstKey];
+          if (messages is List && messages.isNotEmpty) {
+            return messages.first.toString();
+          }
+        }
+      }
+      if (decoded.containsKey('title')) {
+        return decoded['title'];
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return "An unexpected error occurred.";
 }
