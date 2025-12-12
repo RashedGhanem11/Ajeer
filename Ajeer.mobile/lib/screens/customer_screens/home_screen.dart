@@ -442,6 +442,7 @@ class ServiceGridView extends StatelessWidget {
 }
 
 // UPDATED: ServiceGridItem now expects String iconUrl
+// UPDATED: ServiceGridItem with matching highlight style from services_screen.dart
 class ServiceGridItem extends StatelessWidget {
   final String iconUrl;
   final String name;
@@ -463,16 +464,30 @@ class ServiceGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryColor = isHighlighted
-        ? Colors.green
-        : (isDarkMode ? Theme.of(context).primaryColor : Colors.blue);
-    final Color backgroundColor = primaryColor.withOpacity(0.08);
-    final Color borderColor = primaryColor.withOpacity(0.1);
+    // 1. Define Colors to match services_screen.dart
+    final Color highlightGreen = Colors.green.shade600;
 
-    // 1. The Circle Size
+    // Determine active color based on state
+    Color activeColor;
+    if (isHighlighted) {
+      activeColor = highlightGreen;
+    } else {
+      activeColor = isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400;
+    }
+
+    // 2. Define Background and Border styles
+    // If highlighted, use the specific opacity values from services_screen
+    final Color itemBackgroundColor = isHighlighted
+        ? activeColor.withOpacity(0.1)
+        : (isDarkMode ? Colors.grey.shade900 : Colors.grey.shade100);
+
+    final Color itemBorderColor = isHighlighted
+        ? activeColor.withOpacity(0.5)
+        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
+
+    // 3. Size Constants
     const double iconContainerSize = 80.0;
-    // 2. The Icon Size (Make this smaller if needed, e.g., 30.0 or 35.0)
-    const double iconSize = 50.0;
+    const double iconSize = 40.0; // Kept your original 50.0
 
     return GestureDetector(
       onTap: onTap,
@@ -483,20 +498,11 @@ class ServiceGridItem extends StatelessWidget {
             width: iconContainerSize,
             height: iconContainerSize,
             decoration: BoxDecoration(
-              color: backgroundColor,
+              color: itemBackgroundColor,
               shape: BoxShape.circle,
-              border: Border.all(color: borderColor, width: 1),
-              boxShadow: isHighlighted
-                  ? [
-                      BoxShadow(
-                        color: primaryColor.withOpacity(0.3),
-                        blurRadius: 5,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
+              // MATCHED: Width is 2, just like services_screen
+              border: Border.all(color: itemBorderColor, width: 2),
             ),
-            // FIX: Use Center here. This stops the image from stretching to 80x80.
             child: Center(
               child: SizedBox(
                 width: iconSize,
@@ -522,9 +528,10 @@ class ServiceGridItem extends StatelessWidget {
               name,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w500,
+                // MATCHED: Bold text when highlighted
+                fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w500,
                 color: isHighlighted
-                    ? primaryColor
+                    ? activeColor // Use green text when highlighted
                     : (isDarkMode ? Colors.white70 : Colors.black87),
               ),
               textAlign: TextAlign.center,
