@@ -22,8 +22,18 @@ class UserNotifier extends ChangeNotifier {
   ProviderData? get providerData => _providerData;
   bool get isProvider => _userMode == UserMode.provider;
 
+  /// ✅ NEW: Clears all user data from memory (Call this on Logout)
+  void clearData() {
+    _providerData = null;
+    _isProviderSetupComplete = false;
+    _userMode = UserMode.customer;
+    notifyListeners();
+  }
+
+  /// ✅ UPDATED: Force fetch from backend
   Future<void> loadUserData() async {
     try {
+      // 1. Fetch fresh data from API
       final data = await _apiService.getProviderProfile();
       final prefs = await SharedPreferences.getInstance();
 
@@ -31,15 +41,19 @@ class UserNotifier extends ChangeNotifier {
         _providerData = data;
         _isProviderSetupComplete = true;
 
+        // Restore last mode if applicable
         final int lastModeIndex = prefs.getInt(_userModeKey) ?? 0;
         _userMode = lastModeIndex == 1 ? UserMode.provider : UserMode.customer;
       } else {
+        // User is not a provider or error occurred
         _providerData = null;
         _isProviderSetupComplete = false;
         _userMode = UserMode.customer;
       }
     } catch (e) {
       if (kDebugMode) print("Error loading profile: $e");
+      // On error, we shouldn't wipe data immediately unless it's a 401,
+      // but for now, keeping existing state is safer than nulling it out on network error.
     }
     notifyListeners();
   }

@@ -89,6 +89,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _initializeControllers();
     _loadUserData();
+
+    // ✅ NEW: Force backend fetch for Provider Data when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<UserNotifier>(context, listen: false).loadUserData();
+    });
   }
 
   void _initializeControllers() {
@@ -830,13 +835,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
+              // ✅ NEW: Clear Provider Data logic on Sign Out
+              Provider.of<UserNotifier>(context, listen: false).clearData();
+
               final prefs = await SharedPreferences.getInstance();
               await prefs.remove('currentUser');
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (r) => false,
-              );
+              await prefs.remove('authToken'); // Ensure token is removed too
+
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (r) => false,
+                );
+              }
             },
             child: const Text(
               'Sign Out',

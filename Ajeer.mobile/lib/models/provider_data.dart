@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+// Helper: Safely convert anything to int
 int _toInt(dynamic value) {
   if (value == null) return 0;
   if (value is int) return value;
+  if (value is double) return value.toInt();
   if (value is String) return int.tryParse(value) ?? 0;
   return 0;
 }
@@ -156,15 +158,15 @@ class ProviderData {
         .toList(),
   );
 
+  // ✅ UPDATED: Robust Parsing Logic
   factory ProviderData.fromApi(Map<String, dynamic> json) {
     try {
+      // --- 1. Services Parsing ---
       Map<String, Set<String>> servicesMap = {};
       List<int> sIds = [];
-
       if (json['serviceCategory'] != null) {
         String catName = json['serviceCategory']['name'] ?? 'Service';
         Set<String> types = {};
-
         var servicesList = json['services'] as List?;
         if (servicesList != null) {
           for (var s in servicesList) {
@@ -175,9 +177,9 @@ class ProviderData {
         servicesMap[catName] = types;
       }
 
+      // --- 2. Locations Parsing ---
       List<LocationSelection> locs = [];
       List<int> aIds = [];
-
       var citiesList = json['cities'] as List?;
       if (citiesList != null) {
         for (var c in citiesList) {
@@ -198,19 +200,65 @@ class ProviderData {
         }
       }
 
+      // --- 3. Schedule Parsing (The Fix) ---
       List<WorkSchedule> schedules = [];
       var schedList = json['schedules'] as List?;
 
       if (schedList != null) {
         Map<int, List<WorkTime>> grouped = {};
 
-        for (var s in schedList) {
-          int day = _toInt(s['dayOfWeek']);
+        // Define days for String matching
+        const days = [
+          'Sunday',
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+        ];
 
-          TimeOfDay parseTime(String? t) {
-            if (t == null || !t.contains(':')) {
-              return const TimeOfDay(hour: 0, minute: 0);
+        for (var s in schedList) {
+          // DEBUG: Uncomment this line if it still fails to see exactly what keys you have!
+          // print('DEBUG SCHEDULE ITEM: $s');
+
+          // A. Try to find the day value using multiple common keys
+          var dayVal =
+              s['dayOfWeek'] ??
+              s['DayOfWeek'] ??
+              s['day'] ??
+              s['day_of_week'] ??
+              s['dow'];
+
+          if (dayVal == null) {
+            print('Warning: No day key found in schedule item: $s');
+            continue; // Skip if we really can't find a day
+          }
+
+          // B. Convert dayVal to an integer index (0-6)
+          int dayIndex = 0;
+          if (dayVal is int) {
+            dayIndex = dayVal;
+          } else if (dayVal is String) {
+            // Check if it's a number string like "1"
+            int? parsed = int.tryParse(dayVal);
+            if (parsed != null) {
+              dayIndex = parsed;
+            } else {
+              // Check if it's a name string like "Monday"
+              int nameIndex = days.indexWhere(
+                (d) => d.toLowerCase() == dayVal.toLowerCase(),
+              );
+              if (nameIndex != -1) {
+                dayIndex = nameIndex;
+              }
             }
+          }
+
+          // C. Parse Times (checking both camelCase and PascalCase)
+          TimeOfDay parseTime(String? t) {
+            if (t == null || !t.contains(':'))
+              return const TimeOfDay(hour: 0, minute: 0);
             try {
               final parts = t.split(':');
               return TimeOfDay(
@@ -222,27 +270,21 @@ class ProviderData {
             }
           }
 
+          final startTimeStr = s['startTime'] ?? s['StartTime'];
+          final endTimeStr = s['endTime'] ?? s['EndTime'];
+
           final slot = WorkTime(
-            startTimeOfDay: parseTime(s['startTime']),
-            endTimeOfDay: parseTime(s['endTime']),
+            startTimeOfDay: parseTime(startTimeStr),
+            endTimeOfDay: parseTime(endTimeStr),
           );
 
-          if (!grouped.containsKey(day)) {
-            grouped[day] = [];
+          if (!grouped.containsKey(dayIndex)) {
+            grouped[dayIndex] = [];
           }
-          grouped[day]!.add(slot);
+          grouped[dayIndex]!.add(slot);
         }
 
-        const days = [
-          'Sunday',
-          'Monday',
-          'Tuesday',
-          'Wednesday',
-          'Thursday',
-          'Friday',
-          'Saturday',
-        ];
-
+        // D. Build Final List
         grouped.forEach((dayIndex, slots) {
           if (dayIndex >= 0 && dayIndex < days.length) {
             schedules.add(WorkSchedule(day: days[dayIndex], timeSlots: slots));
@@ -258,6 +300,7 @@ class ProviderData {
         areaIds: aIds,
       );
     } catch (e) {
+      debugPrint("Error parsing ProviderData: $e");
       return ProviderData(
         selectedServices: {},
         selectedLocations: [],
