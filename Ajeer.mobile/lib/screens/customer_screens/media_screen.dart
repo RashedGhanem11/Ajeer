@@ -416,6 +416,8 @@ class _MediaScreenState extends State<MediaScreen> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [_secondaryLightBlue, _secondaryBlue],
           ),
           boxShadow: const [
