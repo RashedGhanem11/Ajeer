@@ -53,7 +53,7 @@ Content-Type: {{contentType}}
     "password": "Password"
 }
 ###
-@tokenPro3 = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiItNSIsInVuaXF1ZV9uYW1lIjoiU2FhZCBKYmFyYWgiLCJlbWFpbCI6InNhYWRAZXhhbXBsZS5jb20iLCJyb2xlIjoiU2VydmljZVByb3ZpZGVyIiwibmJmIjoxNzY0NTMwMjAwLCJleHAiOjE3NjQ2MTY2MDAsImlhdCI6MTc2NDUzMDIwMCwiaXNzIjoiQWplZXJCYWNrZW5kQVBJIiwiYXVkIjoiQWplZXJDbGllbnRzIn0.-Ki4WNILC5-L-PXpdT7ABjJOCvaab2UwBp2EEE2Rnl0
+@tokenPro3 = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiItNSIsInVuaXF1ZV9uYW1lIjoiU2FhZCBKYmFyYWgiLCJlbWFpbCI6InNhYWRAZXhhbXBsZS5jb20iLCJyb2xlIjoiU2VydmljZVByb3ZpZGVyIiwibmJmIjoxNzY1NjMyMzU2LCJleHAiOjE3NjU3MTg3NTYsImlhdCI6MTc2NTYzMjM1NiwiaXNzIjoiQWplZXJCYWNrZW5kQVBJIiwiYXVkIjoiQWplZXJDbGllbnRzIn0.sN6gYAo35JETDj1S9QYDQ9dTFOYT5vfGL87VneS2-_Y
 
 
 # ==============================================================================
@@ -117,7 +117,7 @@ Content-Type: image/jpeg
 < ./test-image.jpg
 --boundary123--
 ###
-@bookingId = 2
+@bookingId = 3005
 
 
 # ==============================================================================
@@ -144,7 +144,7 @@ Authorization: Bearer {{tokenPro2}}
 ### 3.3 Get Bookings (As Provider 3 - Saad)
 # Check if Saad got it.
 GET {{host}}/api/bookings?role=ServiceProvider
-Authorization: Bearer {{tokenPro1}}
+Authorization: Bearer {{tokenPro3}}
 
 ### 3.4 REJECT BOOKING (As the Assigned Provider)
 # REPLACE {{tokenPro1}} with the token of the provider who ACTUALLY got the job.
@@ -166,12 +166,12 @@ Authorization: Bearer {{tokenPro1}}
 ### 4.1 Accept Booking (As the New Provider)
 # Result: Status changes to 'Active'.
 PUT {{host}}/api/bookings/{{bookingId}}/accept
-Authorization: Bearer {{tokenPro2}}
+Authorization: Bearer {{tokenPro3}}
 
 ### 4.2 Complete Booking (As the New Provider)
 # Result: Status changes to 'Completed'.
 PUT {{host}}/api/bookings/{{bookingId}}/complete
-Authorization: Bearer {{tokenPro2}}
+Authorization: Bearer {{tokenPro3}}
 
 
 # ==============================================================================
