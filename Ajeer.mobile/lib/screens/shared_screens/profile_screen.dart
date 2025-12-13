@@ -806,6 +806,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: EdgeInsets.only(bottom: bottomPadding + 20),
                   child: Column(
                     children: [
+                      const SizedBox(height: 7),
                       _buildTextField(
                         _fullNameController,
                         'Full Name',
