@@ -91,10 +91,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _initializeControllers();
-    _loadUserData();
+    _loadUserData(); // Loads local name/email from shared prefs
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<UserNotifier>(context, listen: false).loadUserData();
+      final notifier = Provider.of<UserNotifier>(context, listen: false);
+
+      // ✅ FIX: Only fetch from backend if we DON'T have provider data yet.
+      // This prevents overwriting the fresh data you just created.
+      if (!notifier.isProviderSetupComplete) {
+        notifier.loadUserData();
+      }
     });
   }
 

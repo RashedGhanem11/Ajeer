@@ -192,7 +192,10 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton(
+                      // Inside _showConfirmationDialog...
+                      // Inside the ElevatedButton onPressed:
                       onPressed: () async {
+                        // 1. Show Loading
                         showDialog(
                           context: context,
                           barrierDismissible: false,
@@ -200,6 +203,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                               const Center(child: CircularProgressIndicator()),
                         );
 
+                        // 2. Prepare Data
                         final providerData = ProviderData(
                           selectedServices: widget.selectedServices,
                           selectedLocations: widget.selectedLocations,
@@ -214,6 +218,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                         );
 
                         try {
+                          // 3. Attempt Registration/Update
                           if (widget.isEdit) {
                             await userNotifier.updateProviderData(providerData);
                           } else {
@@ -222,10 +227,13 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                             );
                           }
 
+                          // 4. Success Navigation
                           if (mounted) {
+                            // Close loading dialog AND confirmation dialog
                             Navigator.of(context).pop();
                             Navigator.of(context).pop();
 
+                            // Go to Profile Screen
                             Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
                                 builder: (context) => ProfileScreen(
@@ -236,16 +244,31 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                             );
                           }
                         } catch (e) {
+                          // 🔴 ERROR HANDLING FIXED
                           if (mounted) {
-                            Navigator.of(context).pop();
+                            Navigator.of(context).pop(); // Close loading dialog
 
-                            String cleanMessage = extractErrorMessage(e);
+                            // Get the raw error string
+                            String errorMsg = e
+                                .toString()
+                                .replaceAll("Exception:", "")
+                                .trim();
+
+                            // If it looks like a JSON object (starts with {), try to parse it.
+                            // Otherwise, just show the raw text (which unmasks 500/400 errors).
+                            if (errorMsg.startsWith('{')) {
+                              errorMsg = extractErrorMessage(e);
+                            }
+
+                            print(
+                              "REAL ERROR: $errorMsg",
+                            ); // Print to VS Code Console
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(cleanMessage),
+                                content: Text(errorMsg), // Show the REAL error
                                 backgroundColor: kDeleteRed,
-                                duration: const Duration(seconds: 4),
+                                duration: const Duration(seconds: 5),
                               ),
                             );
                           }

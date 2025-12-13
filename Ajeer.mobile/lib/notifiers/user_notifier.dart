@@ -22,7 +22,6 @@ class UserNotifier extends ChangeNotifier {
   ProviderData? get providerData => _providerData;
   bool get isProvider => _userMode == UserMode.provider;
 
-  /// ✅ NEW: Clears all user data from memory (Call this on Logout)
   void clearData() {
     _providerData = null;
     _isProviderSetupComplete = false;
@@ -30,10 +29,8 @@ class UserNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// ✅ UPDATED: Force fetch from backend
   Future<void> loadUserData() async {
     try {
-      // 1. Fetch fresh data from API
       final data = await _apiService.getProviderProfile();
       final prefs = await SharedPreferences.getInstance();
 
@@ -41,46 +38,80 @@ class UserNotifier extends ChangeNotifier {
         _providerData = data;
         _isProviderSetupComplete = true;
 
-        // Restore last mode if applicable
         final int lastModeIndex = prefs.getInt(_userModeKey) ?? 0;
         _userMode = lastModeIndex == 1 ? UserMode.provider : UserMode.customer;
-      } else {
-        // User is not a provider or error occurred
-        _providerData = null;
-        _isProviderSetupComplete = false;
-        _userMode = UserMode.customer;
       }
+      // ✅ CHANGE: Don't wipe data immediately if data is null (could be network error)
+      // Only wipe if you specifically get a 404/403 which we can't easily distinguish here
+      // without changing the service return type.
+      // For now, removing the 'else' block or being more selective is safer,
+      // but the ProfileScreen fix above is the most critical one.
     } catch (e) {
       if (kDebugMode) print("Error loading profile: $e");
-      // On error, we shouldn't wipe data immediately unless it's a 401,
-      // but for now, keeping existing state is safer than nulling it out on network error.
     }
     notifyListeners();
   }
 
+  // ✅ REGISTER: Called when becoming a provider for the first time
+  // Update this method in UserNotifier.dart
+
   Future<void> completeProviderSetup(ProviderData data) async {
-    await _saveToBackend(data);
-  }
-
-  Future<void> updateProviderData(ProviderData data) async {
-    await _saveToBackend(data);
-  }
-
-  Future<void> _saveToBackend(ProviderData data) async {
     try {
+      // Try to register
+      await _apiService.registerProvider(data);
+      await _updateLocalState(data, isNewProvider: true);
+    } catch (e) {
+      // ✅ NEW: Handle "Already registered" error
+      if (e.toString().contains("already registered") ||
+          e.toString().contains("already a service provider")) {
+        // If backend says we exist, just fetch the existing profile!
+        await loadUserData();
+
+        // If we successfully loaded data, switch mode and return success
+        if (_isProviderSetupComplete) {
+          final prefs = await SharedPreferences.getInstance();
+          _userMode = UserMode.provider;
+          await prefs.setInt(_userModeKey, UserMode.provider.index);
+          notifyListeners();
+          return; // Exit successfully
+        }
+      }
+
+      // If it wasn't that error, or fetching failed, rethrow the error
+      rethrow;
+    }
+  }
+
+  // ✅ UPDATE: Called when editing existing provider details
+  Future<void> updateProviderData(ProviderData data) async {
+    try {
+      // 1. Call the explicit UPDATE method
       await _apiService.updateProviderProfile(data);
-      final prefs = await SharedPreferences.getInstance();
 
-      _providerData = data;
-      _isProviderSetupComplete = true;
-      _userMode = UserMode.provider;
-
-      await prefs.setInt(_userModeKey, UserMode.provider.index);
-
-      notifyListeners();
+      // 2. Update Local State (isNewProvider = false)
+      await _updateLocalState(data, isNewProvider: false);
     } catch (e) {
       rethrow;
     }
+  }
+
+  // Helper to update state and SharedPreferences
+  Future<void> _updateLocalState(
+    ProviderData data, {
+    required bool isNewProvider,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    _providerData = data;
+    _isProviderSetupComplete = true;
+
+    // If new provider, auto-switch to provider mode
+    if (isNewProvider) {
+      _userMode = UserMode.provider;
+      await prefs.setInt(_userModeKey, UserMode.provider.index);
+    }
+
+    notifyListeners();
   }
 
   Future<void> toggleUserMode() async {
