@@ -9,4 +9,5 @@ public class BookingListResponse
     public string? OtherSideImageUrl { get; set; }
     public string ServiceName { get; set; } = null!;
     public BookingStatus Status { get; set; }
+    public bool HasReview { get; set; }
 }

@@ -136,6 +136,7 @@ public class BookingService(AppDbContext _context, IFileService _fileService,
             .Include(b => b.User)
             .Include(b => b.ServiceProvider).ThenInclude(sp => sp.User)
             .Include(b => b.BookingServiceItems).ThenInclude(bsi => bsi.Service)
+            .Include(b => b.Review)
             .AsQueryable();
 
         if (role == UserRole.Customer)
@@ -166,8 +167,9 @@ public class BookingService(AppDbContext _context, IFileService _fileService,
 
             OtherSideImageUrl = role == UserRole.Customer
                 ? _fileService.GetPublicUrl("profilePictures", b.ServiceProvider.User.ProfilePictureUrl)
-                : _fileService.GetPublicUrl("profilePictures", b.User.ProfilePictureUrl)
+                : _fileService.GetPublicUrl("profilePictures", b.User.ProfilePictureUrl),
 
+            HasReview = b.Review is not null
         }).ToList();
     }
 
