@@ -10,9 +10,10 @@ import 'home_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import 'chat_screen.dart';
 import '../../models/booking_models.dart';
+import '../../models/review_models.dart';
 import '../../services/booking_service.dart';
 import '../../services/chat_service.dart';
-import '../../models/chat_models.dart';
+import '../../services/review_service.dart';
 
 class BookingsScreen extends StatefulWidget {
   const BookingsScreen({super.key});
@@ -483,36 +484,13 @@ class _BookingCard extends StatelessWidget {
     );
   }
 
-  void _navigateToChat(BuildContext context) async {
+  void _navigateToChat(BuildContext context) {
     final ChatService chatService = ChatService();
-    int targetBookingId = booking.id;
-
-    try {
-      final conversations = await chatService.getConversations();
-      final existing = conversations.firstWhere(
-        (c) => c.otherSideName == booking.otherSideName,
-        orElse: () => ChatConversation(
-          bookingId: -1,
-          otherSideName: '',
-          lastMessage: '',
-          lastMessageFormattedTime: '',
-          unreadCount: 0,
-        ),
-      );
-
-      if (existing.bookingId != -1) {
-        targetBookingId = existing.bookingId;
-      }
-    } catch (e) {
-      debugPrint("Error finding existing chat: $e");
-    }
-
-    if (!context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ChatDetailScreen(
-          bookingId: targetBookingId,
+          bookingId: booking.id,
           otherSideName: booking.otherSideName,
           chatService: chatService,
           isDarkMode: isDarkMode,
@@ -583,6 +561,14 @@ class _BookingCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showReviewDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) =>
+          _ReviewDialog(bookingId: booking.id, isDarkMode: isDarkMode),
     );
   }
 
@@ -668,8 +654,7 @@ class _BookingCard extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    if (listType == _BookingListType.active ||
-        listType == _BookingListType.pending) {
+    if (listType == _BookingListType.active) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -702,6 +687,27 @@ class _BookingCard extends StatelessWidget {
       );
     }
 
+    if (listType == _BookingListType.pending) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(
+              Icons.info_outline,
+              color: _BookingsConstants.primaryBlue,
+              size: 24,
+            ),
+            onPressed: onInfoTap,
+            constraints: const BoxConstraints(),
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+          const SizedBox(width: 6),
+          _cancelButton(context),
+        ],
+      );
+    }
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -712,11 +718,22 @@ class _BookingCard extends StatelessWidget {
               color: Colors.amber,
               size: 28,
             ),
-            onPressed: () {},
+            onPressed: () => _showReviewDialog(context),
             constraints: const BoxConstraints(),
             padding: const EdgeInsets.only(right: 8),
             visualDensity: VisualDensity.compact,
           ),
+        IconButton(
+          icon: const Icon(
+            Icons.info_outline,
+            color: _BookingsConstants.primaryBlue,
+            size: 24,
+          ),
+          onPressed: onInfoTap,
+          constraints: const BoxConstraints(),
+          padding: const EdgeInsets.only(right: 8),
+          visualDensity: VisualDensity.compact,
+        ),
         _statusBadge(),
       ],
     );
@@ -790,6 +807,155 @@ class _BookingCard extends StatelessWidget {
   }
 }
 
+class _ReviewDialog extends StatefulWidget {
+  final int bookingId;
+  final bool isDarkMode;
+
+  const _ReviewDialog({required this.bookingId, required this.isDarkMode});
+
+  @override
+  State<_ReviewDialog> createState() => _ReviewDialogState();
+}
+
+class _ReviewDialogState extends State<_ReviewDialog> {
+  final TextEditingController _commentController = TextEditingController();
+  final ReviewService _reviewService = ReviewService();
+  int _rating = 5;
+  bool _isSubmitting = false;
+
+  Future<void> _submitReview() async {
+    setState(() => _isSubmitting = true);
+
+    final request = CreateReviewRequest(
+      bookingId: widget.bookingId,
+      rating: _rating,
+      comment: _commentController.text.trim(),
+    );
+
+    // Now returns a ReviewResult object containing the specific message
+    final result = await _reviewService.submitReview(request);
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+    Navigator.pop(context);
+
+    // Show the actual message from the backend (success or error)
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.message), // e.g. "You have already reviewed..."
+        backgroundColor: result.success ? Colors.green : Colors.red,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // ... (The rest of the build method remains exactly the same)
+    final bgColor = widget.isDarkMode
+        ? _BookingsConstants.subtleDark
+        : Colors.white;
+    final textColor = widget.isDarkMode ? Colors.white : Colors.black87;
+
+    return AlertDialog(
+      backgroundColor: bgColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+      title: Center(
+        child: Text(
+          'Review',
+          style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+        ),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (index) {
+                return IconButton(
+                  onPressed: () => setState(() => _rating = index + 1),
+                  icon: Icon(
+                    index < _rating
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: Colors.amber,
+                    size: 32,
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _commentController,
+              maxLines: 3,
+              maxLength: 500,
+              style: TextStyle(color: textColor),
+              decoration: InputDecoration(
+                hintText: 'Leave a comment...',
+                hintStyle: TextStyle(
+                  color: widget.isDarkMode ? Colors.grey : Colors.grey.shade600,
+                ),
+                filled: true,
+                fillColor: widget.isDarkMode
+                    ? Colors.grey.shade900
+                    : Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        Row(
+          children: [
+            Expanded(
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: widget.isDarkMode
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _BookingsConstants.primaryBlue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                onPressed: _isSubmitting ? null : _submitReview,
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Submit',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _DetailDialog extends StatelessWidget {
   final BookingDetail details;
   final bool isDarkMode;
@@ -833,14 +999,10 @@ class _DetailDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMMM d, yyyy');
-
-    // ✅ TIME RESTORED: Always formatting the time from the date object.
-    // If this still shows "12:00 AM", it confirms the backend is sending T00:00:00.
     final String timeString = DateFormat(
       'h:mm a',
     ).format(details.scheduledDate);
 
-    // EST TIME FIX: Remove duplicate "Est. Time:" text
     final String cleanEstTime = details.estimatedTime
         .replaceAll('Est. Time:', '')
         .replaceAll('Est. Time', '')
@@ -851,7 +1013,7 @@ class _DetailDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
       title: Center(
         child: Text(
-          'Details', // Title fixed
+          'Details',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isDarkMode ? Colors.white : Colors.black,
@@ -863,34 +1025,25 @@ class _DetailDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Service Name first
             _infoRow('Service(s)', details.serviceName, isDarkMode),
-
             _infoRow('Provider', details.otherSideName, isDarkMode),
             if (details.otherSidePhone.isNotEmpty)
               _infoRow('Phone', details.otherSidePhone, isDarkMode),
             _infoRow('Area', details.areaName, isDarkMode),
             _infoRow('Address', details.address, isDarkMode),
-
             _infoRow(
               'Date',
               dateFormat.format(details.scheduledDate),
               isDarkMode,
             ),
-
-            // ✅ Time is always shown now
             _infoRow('Time', timeString, isDarkMode),
-
             if (cleanEstTime.isNotEmpty)
               _infoRow('Est. Time', cleanEstTime, isDarkMode),
-
             _infoRow('Price', details.formattedPrice, isDarkMode),
-
             if (details.notes != null && details.notes!.isNotEmpty) ...[
               const SizedBox(height: 8),
               _infoRow('Notes', details.notes!, isDarkMode),
             ],
-
             if (details.attachmentUrls.isNotEmpty) ...[
               const SizedBox(height: 16),
               Text(
@@ -908,7 +1061,6 @@ class _DetailDialog extends StatelessWidget {
                 children: details.attachmentUrls.map((url) {
                   final fullUrl = AppConfig.getFullImageUrl(url);
                   return InkWell(
-                    // Clickable attachments
                     onTap: () => _showImageDialog(context, fullUrl),
                     borderRadius: BorderRadius.circular(8),
                     child: ClipRRect(
