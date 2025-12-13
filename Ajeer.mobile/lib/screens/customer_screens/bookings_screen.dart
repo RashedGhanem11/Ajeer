@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../config/app_config.dart';
 import '../../themes/theme_notifier.dart';
@@ -14,7 +15,6 @@ import '../../models/review_models.dart';
 import '../../services/booking_service.dart';
 import '../../services/chat_service.dart';
 import '../../services/review_service.dart';
-import 'package:video_player/video_player.dart';
 
 class BookingsScreen extends StatefulWidget {
   const BookingsScreen({super.key});
@@ -23,38 +23,35 @@ class BookingsScreen extends StatefulWidget {
   State<BookingsScreen> createState() => _BookingsScreenState();
 }
 
-class _BookingsConstants {
-  static const Color primaryBlue = Color(0xFF1976D2);
-  static const Color lightBlue = Color(0xFF8CCBFF);
-  static const Color primaryRed = Color(0xFFD32F2F);
-  static const Color subtleDark = Color(0xFF2C2C2C);
-  static const Color darkBorder = Color(0xFF3A3A3A);
-  static const double logoHeight = 105.0;
-  static const double borderRadius = 50.0;
-  static const double navBarHeight = 86.0;
+class _Consts {
+  static const primaryBlue = Color(0xFF1976D2);
+  static const lightBlue = Color(0xFF8CCBFF);
+  static const primaryRed = Color(0xFFD32F2F);
+  static const subtleDark = Color(0xFF2C2C2C);
+  static const darkBorder = Color(0xFF3A3A3A);
+  static const logoHeight = 105.0;
+  static const borderRadius = 50.0;
+  static const navBarHeight = 86.0;
 }
 
 class _BookingsScreenState extends State<BookingsScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 2;
   late TabController _tabController;
-  final BookingService _bookingService = BookingService();
-
+  final _bookingService = BookingService();
   bool _isLoading = true;
   List<BookingListItem> _allBookings = [];
 
-  List<BookingListItem> get _activeBookings => _allBookings
+  List<BookingListItem> get _active => _allBookings
       .where(
         (b) =>
             b.status == BookingStatus.accepted ||
             b.status == BookingStatus.inProgress,
       )
       .toList();
-
-  List<BookingListItem> get _pendingBookings =>
+  List<BookingListItem> get _pending =>
       _allBookings.where((b) => b.status == BookingStatus.pending).toList();
-
-  List<BookingListItem> get _closedBookings => _allBookings
+  List<BookingListItem> get _closed => _allBookings
       .where(
         (b) =>
             b.status == BookingStatus.completed ||
@@ -70,32 +67,28 @@ class _BookingsScreenState extends State<BookingsScreen>
     _fetchBookings();
   }
 
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchBookings() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-
     final bookings = await _bookingService.getBookings();
-
-    if (mounted) {
+    if (mounted)
       setState(() {
         _allBookings = bookings;
         _isLoading = false;
       });
-    }
   }
 
   Future<void> _handleCancel(int id) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
+    _showLoading();
     final success = await _bookingService.cancelBooking(id);
-
     if (!mounted) return;
     Navigator.pop(context);
-
     if (success) {
       _fetchBookings();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -109,22 +102,14 @@ class _BookingsScreenState extends State<BookingsScreen>
   }
 
   Future<void> _showBookingDetails(int id, bool isDarkMode) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
+    _showLoading();
     final details = await _bookingService.getBookingDetails(id);
-
     if (!mounted) return;
     Navigator.pop(context);
-
     if (details != null) {
       showDialog(
         context: context,
-        builder: (ctx) =>
-            _DetailDialog(details: details, isDarkMode: isDarkMode),
+        builder: (_) => _DetailDialog(details: details, isDarkMode: isDarkMode),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -133,16 +118,17 @@ class _BookingsScreenState extends State<BookingsScreen>
     }
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  void _showLoading() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
   }
 
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
     final theme = Provider.of<ThemeNotifier>(context, listen: false);
-
     Widget nextScreen;
     switch (index) {
       case 0:
@@ -167,7 +153,7 @@ class _BookingsScreenState extends State<BookingsScreen>
   Widget build(BuildContext context) {
     final isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
     final screenHeight = MediaQuery.of(context).size.height;
-    final whiteContainerTop = screenHeight * 0.25;
+    final topHeight = screenHeight * 0.25;
 
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
@@ -184,10 +170,10 @@ class _BookingsScreenState extends State<BookingsScreen>
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
       body: Stack(
         children: [
-          _buildGradient(whiteContainerTop),
+          _buildGradient(topHeight),
           _buildHeader(isDarkMode),
-          _buildContent(whiteContainerTop, isDarkMode),
-          _buildLogo(whiteContainerTop, isDarkMode),
+          _buildContent(topHeight, isDarkMode),
+          _buildLogo(topHeight, isDarkMode),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -220,72 +206,60 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  Widget _buildGradient(double height) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Container(
-        height: height + 50,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              _BookingsConstants.lightBlue,
-              _BookingsConstants.primaryBlue,
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+  Widget _buildGradient(double height) => Align(
+    alignment: Alignment.topCenter,
+    child: Container(
+      height: height + 50,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_Consts.lightBlue, _Consts.primaryBlue],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
       ),
-    );
-  }
+    ),
+  );
 
-  Widget _buildHeader(bool isDarkMode) {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 5,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Text(
-          'Ajeer',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 34,
-            fontWeight: FontWeight.w900,
-            shadows: isDarkMode
-                ? null
-                : [
-                    const Shadow(
-                      blurRadius: 2,
-                      color: Colors.black26,
-                      offset: Offset(1, 1),
-                    ),
-                  ],
-          ),
+  Widget _buildHeader(bool isDark) => Positioned(
+    top: MediaQuery.of(context).padding.top + 5,
+    left: 0,
+    right: 0,
+    child: Center(
+      child: Text(
+        'Ajeer',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 34,
+          fontWeight: FontWeight.w900,
+          shadows: isDark
+              ? null
+              : [
+                  const Shadow(
+                    blurRadius: 2,
+                    color: Colors.black26,
+                    offset: Offset(1, 1),
+                  ),
+                ],
         ),
       ),
-    );
-  }
+    ),
+  );
 
-  Widget _buildLogo(double top, bool isDarkMode) {
-    return Positioned(
-      top: top - _BookingsConstants.logoHeight + 10,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Image.asset(
-          isDarkMode ? 'assets/image/home_dark.png' : 'assets/image/home.png',
-          width: 140,
-          height: _BookingsConstants.logoHeight,
-          fit: BoxFit.contain,
-        ),
+  Widget _buildLogo(double top, bool isDark) => Positioned(
+    top: top - _Consts.logoHeight + 10,
+    left: 0,
+    right: 0,
+    child: Center(
+      child: Image.asset(
+        isDark ? 'assets/image/home_dark.png' : 'assets/image/home.png',
+        width: 140,
+        height: _Consts.logoHeight,
+        fit: BoxFit.contain,
       ),
-    );
-  }
+    ),
+  );
 
-  Widget _buildContent(double top, bool isDarkMode) {
-    final bottomPadding =
-        _BookingsConstants.navBarHeight + MediaQuery.of(context).padding.bottom;
-
+  Widget _buildContent(double top, bool isDark) {
     return Positioned(
       top: top,
       left: 0,
@@ -293,9 +267,9 @@ class _BookingsScreenState extends State<BookingsScreen>
       bottom: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
+          color: isDark ? Theme.of(context).cardColor : Colors.white,
           borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(_BookingsConstants.borderRadius),
+            top: Radius.circular(_Consts.borderRadius),
           ),
           boxShadow: [
             BoxShadow(
@@ -317,7 +291,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black87,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
             ),
@@ -326,12 +300,8 @@ class _BookingsScreenState extends State<BookingsScreen>
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: _CustomTabBar(
                 tabController: _tabController,
-                counts: [
-                  _activeBookings.length,
-                  _pendingBookings.length,
-                  _closedBookings.length,
-                ],
-                isDarkMode: isDarkMode,
+                counts: [_active.length, _pending.length, _closed.length],
+                isDarkMode: isDark,
               ),
             ),
             const SizedBox(height: 10),
@@ -341,24 +311,9 @@ class _BookingsScreenState extends State<BookingsScreen>
                   : TabBarView(
                       controller: _tabController,
                       children: [
-                        _buildList(
-                          _activeBookings,
-                          _BookingListType.active,
-                          bottomPadding,
-                          isDarkMode,
-                        ),
-                        _buildList(
-                          _pendingBookings,
-                          _BookingListType.pending,
-                          bottomPadding,
-                          isDarkMode,
-                        ),
-                        _buildList(
-                          _closedBookings,
-                          _BookingListType.closed,
-                          bottomPadding,
-                          isDarkMode,
-                        ),
+                        _buildList(_active, _BookingListType.active, isDark),
+                        _buildList(_pending, _BookingListType.pending, isDark),
+                        _buildList(_closed, _BookingListType.closed, isDark),
                       ],
                     ),
             ),
@@ -371,34 +326,28 @@ class _BookingsScreenState extends State<BookingsScreen>
   Widget _buildList(
     List<BookingListItem> items,
     _BookingListType type,
-    double padding,
-    bool isDarkMode,
+    bool isDark,
   ) {
     if (items.isEmpty) {
       return Center(
         child: Text(
           'No bookings here.',
-          style: TextStyle(
-            color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade600,
-            fontSize: 16,
-          ),
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
         ),
       );
     }
-
+    final padding =
+        _Consts.navBarHeight + MediaQuery.of(context).padding.bottom;
     return ListView.builder(
       padding: EdgeInsets.fromLTRB(20, 10, 20, padding),
       itemCount: items.length,
-      itemBuilder: (_, i) {
-        final booking = items[i];
-        return _BookingCard(
-          booking: booking,
-          listType: type,
-          isDarkMode: isDarkMode,
-          onCancel: () => _handleCancel(booking.id),
-          onInfoTap: () => _showBookingDetails(booking.id, isDarkMode),
-        );
-      },
+      itemBuilder: (_, i) => _BookingCard(
+        booking: items[i],
+        listType: type,
+        isDarkMode: isDark,
+        onCancel: () => _handleCancel(items[i].id),
+        onInfoTap: () => _showBookingDetails(items[i].id, isDark),
+      ),
     );
   }
 }
@@ -420,179 +369,25 @@ class _BookingCard extends StatelessWidget {
     required this.onInfoTap,
   });
 
-  void _showCancelDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDarkMode
-            ? _BookingsConstants.subtleDark
-            : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: const Text(
-          'Cancel Booking',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: _BookingsConstants.primaryRed,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to cancel this booking?',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isDarkMode ? Colors.grey.shade300 : Colors.black87,
-          ),
-        ),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(
-                    'Back',
-                    style: TextStyle(
-                      color: isDarkMode
-                          ? Colors.grey.shade400
-                          : Colors.grey.shade600,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _BookingsConstants.primaryRed,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    onCancel();
-                  },
-                  child: const Text(
-                    'Confirm',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _navigateToChat(BuildContext context) {
-    final ChatService chatService = ChatService();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChatDetailScreen(
-          bookingId: booking.id,
-          otherSideName: booking.otherSideName,
-          chatService: chatService,
-          isDarkMode: isDarkMode,
-        ),
-      ),
-    );
-  }
-
-  void _showMessageDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDarkMode
-            ? _BookingsConstants.subtleDark
-            : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: const Text(
-          'Message Provider',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: _BookingsConstants.primaryBlue,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'Would you like to message ${booking.otherSideName}?',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isDarkMode ? Colors.grey.shade300 : Colors.black87,
-          ),
-        ),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: isDarkMode
-                          ? Colors.grey.shade400
-                          : Colors.grey.shade600,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _BookingsConstants.primaryBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _navigateToChat(context);
-                  },
-                  child: const Text(
-                    'Message',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showReviewDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) =>
-          _ReviewDialog(bookingId: booking.id, isDarkMode: isDarkMode),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final letter = booking.otherSideName.isNotEmpty
         ? booking.otherSideName[0].toUpperCase()
         : '?';
-    final MaterialColor avatarColor =
+    final avatarColor =
         Colors.primaries[letter.hashCode % Colors.primaries.length];
     final fullImageUrl = AppConfig.getFullImageUrl(booking.otherSideImageUrl);
-
-    final borderColor = isDarkMode
-        ? _BookingsConstants.darkBorder
-        : Colors.grey.shade300;
 
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
-      color: isDarkMode ? _BookingsConstants.subtleDark : Colors.white,
+      color: isDarkMode ? _Consts.subtleDark : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide(color: borderColor, width: 2.0),
+        side: BorderSide(
+          color: isDarkMode ? _Consts.darkBorder : Colors.grey.shade300,
+          width: 2.0,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -647,203 +442,253 @@ class _BookingCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            _buildActionButtons(context),
+            _buildActions(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
-    if (listType == _BookingListType.active) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(
-              Icons.info_outline,
-              color: _BookingsConstants.primaryBlue,
-              size: 24,
-            ),
-            onPressed: onInfoTap,
-            constraints: const BoxConstraints(),
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-          ),
-          const SizedBox(width: 4),
-          IconButton(
-            icon: Icon(
-              Icons.chat_bubble_outline,
-              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
-              size: 22,
-            ),
-            onPressed: () => _showMessageDialog(context),
-            constraints: const BoxConstraints(),
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-          ),
-          const SizedBox(width: 6),
-          _cancelButton(context),
-        ],
-      );
-    }
+  Widget _buildActions(BuildContext context) {
+    final icons = <Widget>[];
 
-    if (listType == _BookingListType.pending) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(
-              Icons.info_outline,
-              color: _BookingsConstants.primaryBlue,
-              size: 24,
-            ),
-            onPressed: onInfoTap,
-            constraints: const BoxConstraints(),
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-          ),
-          const SizedBox(width: 6),
-          _cancelButton(context),
-        ],
-      );
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (booking.status == BookingStatus.completed)
-          IconButton(
-            icon: const Icon(
-              Icons.star_rate_rounded,
-              color: Colors.amber,
-              size: 28,
-            ),
-            onPressed: () => _showReviewDialog(context),
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.only(right: 8),
-            visualDensity: VisualDensity.compact,
-          ),
-        IconButton(
-          icon: const Icon(
-            Icons.info_outline,
-            color: _BookingsConstants.primaryBlue,
-            size: 24,
-          ),
-          onPressed: onInfoTap,
-          constraints: const BoxConstraints(),
-          padding: const EdgeInsets.only(right: 8),
-          visualDensity: VisualDensity.compact,
+    if (booking.status == BookingStatus.completed &&
+        listType == _BookingListType.closed) {
+      icons.add(
+        _iconBtn(
+          Icons.star_rate_rounded,
+          Colors.amber,
+          28,
+          () => _showReviewDialog(context),
         ),
-        _statusBadge(),
-      ],
-    );
+      );
+    }
+
+    icons.add(_iconBtn(Icons.info_outline, _Consts.primaryBlue, 24, onInfoTap));
+
+    if (listType == _BookingListType.active) {
+      icons.add(
+        _iconBtn(
+          Icons.chat_bubble_outline,
+          isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+          22,
+          () => _showMessageDialog(context),
+        ),
+      );
+    }
+
+    if (listType != _BookingListType.closed) {
+      icons.add(const SizedBox(width: 6));
+      icons.add(
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _Consts.primaryRed,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            minimumSize: const Size(0, 32),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+          onPressed: () => _showCancelDialog(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+    } else {
+      icons.add(_statusBadge());
+    }
+
+    return Row(mainAxisSize: MainAxisSize.min, children: icons);
   }
 
-  Widget _cancelButton(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: _BookingsConstants.primaryRed,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        minimumSize: const Size(0, 32),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-      onPressed: () => _showCancelDialog(context),
-      child: const Text(
-        'Cancel',
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-      ),
+  Widget _iconBtn(IconData icon, Color color, double size, VoidCallback onTap) {
+    return IconButton(
+      icon: Icon(icon, color: color, size: size),
+      onPressed: onTap,
+      constraints: const BoxConstraints(),
+      padding: const EdgeInsets.only(right: 8),
+      visualDensity: VisualDensity.compact,
     );
   }
 
   Widget _statusBadge() {
-    Color backgroundColor;
-    Color textColor;
+    Color bg, txt;
     String text;
-
     Color getBg(MaterialColor c) => isDarkMode ? c.shade900 : c.shade100;
     Color getTxt(MaterialColor c) => isDarkMode ? c.shade100 : c.shade800;
 
     switch (booking.status) {
       case BookingStatus.completed:
-        backgroundColor = getBg(Colors.green);
-        textColor = getTxt(Colors.green);
+        bg = getBg(Colors.green);
+        txt = getTxt(Colors.green);
         text = "Completed";
         break;
       case BookingStatus.cancelled:
-        backgroundColor = getBg(Colors.red);
-        textColor = getTxt(Colors.red);
+        bg = getBg(Colors.red);
+        txt = getTxt(Colors.red);
         text = "Cancelled";
         break;
       case BookingStatus.rejected:
-        backgroundColor = getBg(Colors.red);
-        textColor = getTxt(Colors.red);
+        bg = getBg(Colors.red);
+        txt = getTxt(Colors.red);
         text = "Rejected";
         break;
       default:
-        backgroundColor = isDarkMode
-            ? Colors.grey.shade800
-            : Colors.grey.shade300;
-        textColor = isDarkMode ? Colors.grey.shade300 : Colors.grey.shade800;
+        bg = isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
+        txt = isDarkMode ? Colors.grey.shade300 : Colors.grey.shade800;
         text = "Closed";
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: bg,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         text,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-        ),
+        style: TextStyle(color: txt, fontWeight: FontWeight.bold, fontSize: 12),
       ),
     );
   }
+
+  void _showCancelDialog(BuildContext context) => _genericDialog(
+    context,
+    'Cancel Booking',
+    'Are you sure you want to cancel this booking?',
+    _Consts.primaryRed,
+    'Confirm',
+    onCancel,
+  );
+
+  void _showMessageDialog(BuildContext context) => _genericDialog(
+    context,
+    'Message Provider',
+    'Would you like to message ${booking.otherSideName}?',
+    _Consts.primaryBlue,
+    'Message',
+    () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatDetailScreen(
+            bookingId: booking.id,
+            otherSideName: booking.otherSideName,
+            chatService: ChatService(),
+            isDarkMode: isDarkMode,
+          ),
+        ),
+      );
+    },
+  );
+
+  void _genericDialog(
+    BuildContext context,
+    String title,
+    String content,
+    Color mainColor,
+    String btnText,
+    VoidCallback onConfirm,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDarkMode ? _Consts.subtleDark : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        title: Text(
+          title,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: mainColor, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          content,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isDarkMode ? Colors.grey.shade300 : Colors.black87,
+          ),
+        ),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    'Back',
+                    style: TextStyle(
+                      color: isDarkMode
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: mainColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    onConfirm();
+                  },
+                  child: Text(
+                    btnText,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReviewDialog(BuildContext context) => showDialog(
+    context: context,
+    builder: (_) =>
+        _ReviewDialog(bookingId: booking.id, isDarkMode: isDarkMode),
+  );
 }
 
 class _ReviewDialog extends StatefulWidget {
   final int bookingId;
   final bool isDarkMode;
-
   const _ReviewDialog({required this.bookingId, required this.isDarkMode});
-
   @override
   State<_ReviewDialog> createState() => _ReviewDialogState();
 }
 
 class _ReviewDialogState extends State<_ReviewDialog> {
-  final TextEditingController _commentController = TextEditingController();
-  final ReviewService _reviewService = ReviewService();
+  final _commentController = TextEditingController();
+  final _reviewService = ReviewService();
   int _rating = 5;
   bool _isSubmitting = false;
 
-  Future<void> _submitReview() async {
+  Future<void> _submit() async {
     setState(() => _isSubmitting = true);
-
-    final request = CreateReviewRequest(
-      bookingId: widget.bookingId,
-      rating: _rating,
-      comment: _commentController.text.trim(),
+    final result = await _reviewService.submitReview(
+      CreateReviewRequest(
+        bookingId: widget.bookingId,
+        rating: _rating,
+        comment: _commentController.text.trim(),
+      ),
     );
-
-    // Now returns a ReviewResult object containing the specific message
-    final result = await _reviewService.submitReview(request);
-
     if (!mounted) return;
     setState(() => _isSubmitting = false);
     Navigator.pop(context);
-
-    // Show the actual message from the backend (success or error)
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(result.message), // e.g. "You have already reviewed..."
+        content: Text(result.message),
         backgroundColor: result.success ? Colors.green : Colors.red,
       ),
     );
@@ -851,11 +696,8 @@ class _ReviewDialogState extends State<_ReviewDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // ... (The rest of the build method remains exactly the same)
-    final bgColor = widget.isDarkMode
-        ? _BookingsConstants.subtleDark
-        : Colors.white;
-    final textColor = widget.isDarkMode ? Colors.white : Colors.black87;
+    final bgColor = widget.isDarkMode ? _Consts.subtleDark : Colors.white;
+    final txtColor = widget.isDarkMode ? Colors.white : Colors.black87;
 
     return AlertDialog(
       backgroundColor: bgColor,
@@ -863,7 +705,7 @@ class _ReviewDialogState extends State<_ReviewDialog> {
       title: Center(
         child: Text(
           'Review',
-          style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+          style: TextStyle(fontWeight: FontWeight.bold, color: txtColor),
         ),
       ),
       content: SingleChildScrollView(
@@ -872,25 +714,26 @@ class _ReviewDialogState extends State<_ReviewDialog> {
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(5, (index) {
-                return IconButton(
-                  onPressed: () => setState(() => _rating = index + 1),
+              children: List.generate(
+                5,
+                (i) => IconButton(
+                  onPressed: () => setState(() => _rating = i + 1),
                   icon: Icon(
-                    index < _rating
+                    i < _rating
                         ? Icons.star_rounded
                         : Icons.star_border_rounded,
                     color: Colors.amber,
                     size: 32,
                   ),
-                );
-              }),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _commentController,
               maxLines: 3,
               maxLength: 500,
-              style: TextStyle(color: textColor),
+              style: TextStyle(color: txtColor),
               decoration: InputDecoration(
                 hintText: 'Leave a comment...',
                 hintStyle: TextStyle(
@@ -928,13 +771,13 @@ class _ReviewDialogState extends State<_ReviewDialog> {
             Expanded(
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _BookingsConstants.primaryBlue,
+                  backgroundColor: _Consts.primaryBlue,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-                onPressed: _isSubmitting ? null : _submitReview,
+                onPressed: _isSubmitting ? null : _submit,
                 child: _isSubmitting
                     ? const SizedBox(
                         width: 20,
@@ -960,71 +803,21 @@ class _ReviewDialogState extends State<_ReviewDialog> {
 class _DetailDialog extends StatelessWidget {
   final BookingDetail details;
   final bool isDarkMode;
-
   const _DetailDialog({required this.details, required this.isDarkMode});
 
-  bool _isVideo(String url) {
-    final u = url.toLowerCase();
-    return u.endsWith('.mp4') ||
-        u.endsWith('.mov') ||
-        u.endsWith('.avi') ||
-        u.endsWith('.mkv');
-  }
-
-  void _openAttachment(BuildContext context, String url) {
-    if (_isVideo(url)) {
-      showDialog(
-        context: context,
-        builder: (_) => _VideoPlayerDialog(videoUrl: url),
-      );
-    } else {
-      _showImageDialog(context, url);
-    }
-  }
-
-  void _showImageDialog(BuildContext context, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            InteractiveViewer(
-              panEnabled: true,
-              minScale: 0.5,
-              maxScale: 4,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: Image.network(imageUrl, fit: BoxFit.contain),
-              ),
-            ),
-            Positioned(
-              top: 10,
-              right: 10,
-              child: CircleAvatar(
-                backgroundColor: Colors.black54,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  bool _isVideo(String url) => [
+    '.mp4',
+    '.mov',
+    '.avi',
+    '.mkv',
+  ].any((ext) => url.toLowerCase().endsWith(ext));
 
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMMM d, yyyy');
-    final String timeString = DateFormat(
-      'h:mm a',
-    ).format(details.scheduledDate);
-    final String cleanEstTime = details.estimatedTime
-        .replaceAll('Est. Time:', '')
-        .replaceAll('Est. Time', '')
+    final timeString = DateFormat('h:mm a').format(details.scheduledDate);
+    final cleanEst = details.estimatedTime
+        .replaceAll(RegExp(r'Est\. Time:?'), '')
         .trim();
 
     return AlertDialog(
@@ -1044,29 +837,24 @@ class _DetailDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _infoRow('Service(s)', details.serviceName, isDarkMode),
-            _infoRow('Provider', details.otherSideName, isDarkMode),
+            _row('Service(s)', details.serviceName),
+            _row('Provider', details.otherSideName),
             if (details.otherSidePhone.isNotEmpty)
-              _infoRow('Phone', details.otherSidePhone, isDarkMode),
-            _infoRow('Area', details.areaName, isDarkMode),
-            _infoRow('Address', details.address, isDarkMode),
-            _infoRow(
-              'Date',
-              dateFormat.format(details.scheduledDate),
-              isDarkMode,
-            ),
-            _infoRow('Time', timeString, isDarkMode),
-            if (cleanEstTime.isNotEmpty)
-              _infoRow('Est. Time', cleanEstTime, isDarkMode),
-            _infoRow('Price', details.formattedPrice, isDarkMode),
-            if (details.notes != null && details.notes!.isNotEmpty) ...[
+              _row('Phone', details.otherSidePhone),
+            _row('Area', details.areaName),
+            _row('Address', details.address),
+            _row('Date', dateFormat.format(details.scheduledDate)),
+            _row('Time', timeString),
+            if (cleanEst.isNotEmpty) _row('Est. Time', cleanEst),
+            _row('Price', details.formattedPrice),
+            if (details.notes?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
-              _infoRow('Notes', details.notes!, isDarkMode),
+              _row('Notes', details.notes!),
             ],
             if (details.attachmentUrls.isNotEmpty) ...[
               const SizedBox(height: 16),
               Text(
-                'Attachments (Tap to view):',
+                'Attachments:',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: isDarkMode ? Colors.white : Colors.black,
@@ -1077,44 +865,14 @@ class _DetailDialog extends StatelessWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: details.attachmentUrls.map((url) {
-                  final fullUrl = AppConfig.getFullImageUrl(url);
-                  final isVideo = _isVideo(fullUrl);
-
-                  return InkWell(
-                    onTap: () => _openAttachment(context, fullUrl),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: isVideo ? Colors.black : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
+                children: details.attachmentUrls
+                    .map(
+                      (url) => _buildAttachment(
+                        context,
+                        AppConfig.getFullImageUrl(url),
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: isVideo
-                            ? const Center(
-                                child: Icon(
-                                  Icons.play_arrow,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Image.network(
-                                fullUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  color: Colors.grey.shade300,
-                                  child: const Icon(
-                                    Icons.broken_image,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                    )
+                    .toList(),
               ),
             ],
           ],
@@ -1134,154 +892,204 @@ class _DetailDialog extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(String label, String value, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: RichText(
-        text: TextSpan(
-          style: TextStyle(
-            color: isDark ? Colors.white70 : Colors.black87,
-            fontFamily: 'Segoe UI',
-            fontSize: 14,
+  Widget _row(String label, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: RichText(
+      text: TextSpan(
+        style: TextStyle(
+          color: isDarkMode ? Colors.white70 : Colors.black87,
+          fontFamily: 'Segoe UI',
+          fontSize: 14,
+        ),
+        children: [
+          TextSpan(
+            text: '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          children: [
-            TextSpan(
-              text: '$label: ',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            TextSpan(text: value),
-          ],
+          TextSpan(text: value),
+        ],
+      ),
+    ),
+  );
+
+  Widget _buildAttachment(BuildContext context, String fullUrl) {
+    final isVid = _isVideo(fullUrl);
+    return InkWell(
+      onTap: () => showDialog(
+        context: context,
+        builder: (_) => isVid
+            ? _VideoPlayerDialog(videoUrl: fullUrl)
+            : _imageDialog(context, fullUrl),
+      ),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: isVid ? Colors.black : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: isVid
+              ? const Center(child: Icon(Icons.play_arrow, color: Colors.white))
+              : Image.network(
+                  fullUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: Colors.grey.shade300,
+                    child: const Icon(Icons.broken_image, size: 20),
+                  ),
+                ),
         ),
       ),
     );
   }
+
+  Widget _imageDialog(BuildContext context, String url) => Dialog(
+    backgroundColor: Colors.transparent,
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: Image.network(url, fit: BoxFit.contain),
+          ),
+        ),
+        Positioned(
+          top: 10,
+          right: 10,
+          child: CircleAvatar(
+            backgroundColor: Colors.black54,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _VideoPlayerDialog extends StatefulWidget {
   final String videoUrl;
-
   const _VideoPlayerDialog({required this.videoUrl});
-
   @override
   State<_VideoPlayerDialog> createState() => _VideoPlayerDialogState();
 }
 
 class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
-  late VideoPlayerController _controller;
-  bool _initialized = false;
-  bool _hasError = false;
+  late VideoPlayerController _c;
+  bool _init = false, _err = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+    _c = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
       ..initialize()
           .then((_) {
             if (mounted) {
-              setState(() => _initialized = true);
-              _controller.play();
+              setState(() => _init = true);
+              _c.play();
             }
           })
           .catchError((_) {
-            if (mounted) setState(() => _hasError = true);
+            if (mounted) setState(() => _err = true);
           });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _c.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(10),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (_initialized)
-            AspectRatio(
-              aspectRatio: _controller.value.aspectRatio,
-              child: Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  VideoPlayer(_controller),
-                  _ControlsOverlay(controller: _controller),
-                ],
-              ),
-            )
-          else if (_hasError)
-            Container(
-              width: 300,
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                color: Colors.black,
-              ),
-              child: const Center(
-                child: Text(
-                  'Video failed to load',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            )
-          else
-            const CircularProgressIndicator(color: Colors.white),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: CircleAvatar(
-              backgroundColor: Colors.black54,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
+  Widget build(BuildContext context) => Dialog(
+    backgroundColor: Colors.transparent,
+    insetPadding: const EdgeInsets.all(10),
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        if (_init)
+          AspectRatio(
+            aspectRatio: _c.value.aspectRatio,
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                VideoPlayer(_c),
+                _Controls(c: _c),
+              ],
+            ),
+          )
+        else if (_err)
+          Container(
+            width: 300,
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              color: Colors.black,
+            ),
+            child: const Center(
+              child: Text(
+                'Video failed to load',
+                style: TextStyle(color: Colors.white),
               ),
             ),
+          )
+        else
+          const CircularProgressIndicator(color: Colors.white),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: CircleAvatar(
+            backgroundColor: Colors.black54,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 }
 
-class _ControlsOverlay extends StatelessWidget {
-  final VideoPlayerController controller;
-
-  const _ControlsOverlay({required this.controller});
-
+class _Controls extends StatelessWidget {
+  final VideoPlayerController c;
+  const _Controls({required this.c});
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        controller.value.isPlaying ? controller.pause() : controller.play();
-      },
-      child: Stack(
-        children: [
-          Container(color: Colors.transparent),
-          if (!controller.value.isPlaying)
-            Center(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black45,
-                  shape: BoxShape.circle,
-                ),
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: () => c.value.isPlaying ? c.pause() : c.play(),
+    child: Stack(
+      children: [
+        Container(color: Colors.transparent),
+        if (!c.value.isPlaying)
+          const Center(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black45,
+                shape: BoxShape.circle,
+              ),
+              child: Padding(
                 padding: EdgeInsets.all(12),
                 child: Icon(Icons.play_arrow, color: Colors.white, size: 50.0),
               ),
             ),
-        ],
-      ),
-    );
-  }
+          ),
+      ],
+    ),
+  );
 }
 
 class _CustomTabBar extends StatelessWidget {
   final TabController tabController;
   final List<int> counts;
   final bool isDarkMode;
-
   const _CustomTabBar({
     required this.tabController,
     required this.counts,
@@ -1289,49 +1097,38 @@ class _CustomTabBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: tabController,
-      builder: (context, _) {
-        return Container(
-          padding: const EdgeInsets.all(5),
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? _BookingsConstants.subtleDark
-                : Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Row(
-            children: [
-              _tabItem('Active', 0, Colors.green),
-              _tabItem('Pending', 1, Colors.orange),
-              _tabItem('Closed', 2, _BookingsConstants.primaryBlue),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: tabController,
+    builder: (context, _) => Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: isDarkMode ? _Consts.subtleDark : Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        children: [
+          _tab('Active', 0, Colors.green),
+          _tab('Pending', 1, Colors.orange),
+          _tab('Closed', 2, _Consts.primaryBlue),
+        ],
+      ),
+    ),
+  );
 
-  Widget _tabItem(String text, int index, Color badgeColor) {
-    final isSelected = tabController.index == index;
-    final bg = isSelected
-        ? (isDarkMode ? const Color(0xFF424242) : Colors.white)
-        : Colors.transparent;
-    final fg = isSelected
-        ? (isDarkMode ? Colors.white : Colors.black87)
-        : (isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600);
-
+  Widget _tab(String text, int i, Color color) {
+    final sel = tabController.index == i;
     return Expanded(
       child: GestureDetector(
-        onTap: () => tabController.animateTo(index),
+        onTap: () => tabController.animateTo(i),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: bg,
+            color: sel
+                ? (isDarkMode ? const Color(0xFF424242) : Colors.white)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(30),
-            boxShadow: isSelected
+            boxShadow: sel
                 ? [
                     BoxShadow(
                       color: Colors.black.withOpacity(isDarkMode ? 0.5 : 0.1),
@@ -1347,22 +1144,26 @@ class _CustomTabBar extends StatelessWidget {
               Text(
                 text,
                 style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: fg,
+                  fontWeight: sel ? FontWeight.bold : FontWeight.w500,
+                  color: sel
+                      ? (isDarkMode ? Colors.white : Colors.black87)
+                      : (isDarkMode
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600),
                 ),
               ),
-              if (counts[index] > 0)
+              if (counts[i] > 0)
                 Positioned(
                   top: -8,
                   right: 10,
                   child: Container(
                     padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
-                      color: badgeColor,
+                      color: color,
                       shape: BoxShape.circle,
                     ),
                     child: Text(
-                      '${counts[index]}',
+                      '${counts[i]}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
