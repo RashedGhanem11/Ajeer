@@ -14,6 +14,7 @@ import '../../models/review_models.dart';
 import '../../services/booking_service.dart';
 import '../../services/chat_service.dart';
 import '../../services/review_service.dart';
+import 'package:video_player/video_player.dart';
 
 class BookingsScreen extends StatefulWidget {
   const BookingsScreen({super.key});
@@ -962,6 +963,25 @@ class _DetailDialog extends StatelessWidget {
 
   const _DetailDialog({required this.details, required this.isDarkMode});
 
+  bool _isVideo(String url) {
+    final u = url.toLowerCase();
+    return u.endsWith('.mp4') ||
+        u.endsWith('.mov') ||
+        u.endsWith('.avi') ||
+        u.endsWith('.mkv');
+  }
+
+  void _openAttachment(BuildContext context, String url) {
+    if (_isVideo(url)) {
+      showDialog(
+        context: context,
+        builder: (_) => _VideoPlayerDialog(videoUrl: url),
+      );
+    } else {
+      _showImageDialog(context, url);
+    }
+  }
+
   void _showImageDialog(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
@@ -1002,7 +1022,6 @@ class _DetailDialog extends StatelessWidget {
     final String timeString = DateFormat(
       'h:mm a',
     ).format(details.scheduledDate);
-
     final String cleanEstTime = details.estimatedTime
         .replaceAll('Est. Time:', '')
         .replaceAll('Est. Time', '')
@@ -1060,22 +1079,38 @@ class _DetailDialog extends StatelessWidget {
                 runSpacing: 8,
                 children: details.attachmentUrls.map((url) {
                   final fullUrl = AppConfig.getFullImageUrl(url);
+                  final isVideo = _isVideo(fullUrl);
+
                   return InkWell(
-                    onTap: () => _showImageDialog(context, fullUrl),
+                    onTap: () => _openAttachment(context, fullUrl),
                     borderRadius: BorderRadius.circular(8),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        fullUrl,
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 60,
-                          height: 60,
-                          color: Colors.grey.shade300,
-                          child: const Icon(Icons.broken_image, size: 20),
-                        ),
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: isVideo ? Colors.black : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: isVideo
+                            ? const Center(
+                                child: Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Image.network(
+                                fullUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: Colors.grey.shade300,
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
                       ),
                     ),
                   );
@@ -1117,6 +1152,126 @@ class _DetailDialog extends StatelessWidget {
             TextSpan(text: value),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _VideoPlayerDialog extends StatefulWidget {
+  final String videoUrl;
+
+  const _VideoPlayerDialog({required this.videoUrl});
+
+  @override
+  State<_VideoPlayerDialog> createState() => _VideoPlayerDialogState();
+}
+
+class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
+  late VideoPlayerController _controller;
+  bool _initialized = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+      ..initialize()
+          .then((_) {
+            if (mounted) {
+              setState(() => _initialized = true);
+              _controller.play();
+            }
+          })
+          .catchError((_) {
+            if (mounted) setState(() => _hasError = true);
+          });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(10),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (_initialized)
+            AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  VideoPlayer(_controller),
+                  _ControlsOverlay(controller: _controller),
+                ],
+              ),
+            )
+          else if (_hasError)
+            Container(
+              width: 300,
+              height: 200,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                color: Colors.black,
+              ),
+              child: const Center(
+                child: Text(
+                  'Video failed to load',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            )
+          else
+            const CircularProgressIndicator(color: Colors.white),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: CircleAvatar(
+              backgroundColor: Colors.black54,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ControlsOverlay extends StatelessWidget {
+  final VideoPlayerController controller;
+
+  const _ControlsOverlay({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        controller.value.isPlaying ? controller.pause() : controller.play();
+      },
+      child: Stack(
+        children: [
+          Container(color: Colors.transparent),
+          if (!controller.value.isPlaying)
+            Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black45,
+                  shape: BoxShape.circle,
+                ),
+                padding: EdgeInsets.all(12),
+                child: Icon(Icons.play_arrow, color: Colors.white, size: 50.0),
+              ),
+            ),
+        ],
       ),
     );
   }
