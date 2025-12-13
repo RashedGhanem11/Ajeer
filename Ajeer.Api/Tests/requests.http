@@ -117,7 +117,7 @@ Content-Type: image/jpeg
 < ./test-image.jpg
 --boundary123--
 ###
-@bookingId = 3005
+@bookingId = 3004
 
 
 # ==============================================================================

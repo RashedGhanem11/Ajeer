@@ -4,13 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import '../models/review_models.dart';
 
-class ReviewResult {
-  final bool success;
-  final String message;
-
-  ReviewResult({required this.success, required this.message});
-}
-
 class ReviewService {
   Future<ReviewResult> submitReview(CreateReviewRequest request) async {
     final uri = Uri.parse('${AppConfig.apiUrl}/Reviews');
@@ -38,6 +31,39 @@ class ReviewService {
       }
     } catch (e) {
       return ReviewResult(success: false, message: 'Connection error');
+    }
+  }
+
+  // Added method to fetch review details
+  Future<ReviewResponse?> getReview(int bookingId) async {
+    // Endpoint based on ReviewsController [HttpGet("booking/{bookingId}")]
+    final uri = Uri.parse('${AppConfig.apiUrl}/Reviews/booking/$bookingId');
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken');
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      // Handle 204 No Content (No review exists)
+      if (response.statusCode == 204) {
+        return null;
+      }
+      // Handle 200 OK (Review exists)
+      else if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return ReviewResponse.fromJson(data);
+      }
+
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 }

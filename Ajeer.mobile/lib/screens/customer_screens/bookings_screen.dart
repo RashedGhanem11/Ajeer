@@ -77,11 +77,12 @@ class _BookingsScreenState extends State<BookingsScreen>
     if (!mounted) return;
     setState(() => _isLoading = true);
     final bookings = await _bookingService.getBookings();
-    if (mounted)
+    if (mounted) {
       setState(() {
         _allBookings = bookings;
         _isLoading = false;
       });
+    }
   }
 
   Future<void> _handleCancel(int id) async {
@@ -347,6 +348,7 @@ class _BookingsScreenState extends State<BookingsScreen>
         isDarkMode: isDark,
         onCancel: () => _handleCancel(items[i].id),
         onInfoTap: () => _showBookingDetails(items[i].id, isDark),
+        onRefresh: _fetchBookings,
       ),
     );
   }
@@ -360,6 +362,7 @@ class _BookingCard extends StatelessWidget {
   final bool isDarkMode;
   final VoidCallback onCancel;
   final VoidCallback onInfoTap;
+  final VoidCallback onRefresh;
 
   const _BookingCard({
     required this.booking,
@@ -367,7 +370,43 @@ class _BookingCard extends StatelessWidget {
     required this.isDarkMode,
     required this.onCancel,
     required this.onInfoTap,
+    required this.onRefresh,
   });
+
+  Future<void> _handleReviewTap(BuildContext context) async {
+    if (!booking.hasReview) {
+      final result = await showDialog(
+        context: context,
+        builder: (_) =>
+            _ReviewDialog(bookingId: booking.id, isDarkMode: isDarkMode),
+      );
+      if (result == true) {
+        onRefresh();
+      }
+    } else {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final service = ReviewService();
+      final review = await service.getReview(booking.id);
+
+      if (context.mounted) Navigator.pop(context);
+
+      if (context.mounted && review != null) {
+        showDialog(
+          context: context,
+          builder: (_) => _ReviewDialog(
+            bookingId: booking.id,
+            isDarkMode: isDarkMode,
+            existingReview: review,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -456,10 +495,10 @@ class _BookingCard extends StatelessWidget {
         listType == _BookingListType.closed) {
       icons.add(
         _iconBtn(
-          Icons.star_rate_rounded,
+          booking.hasReview ? Icons.star_rounded : Icons.star_border_rounded,
           Colors.amber,
           28,
-          () => _showReviewDialog(context),
+          () => _handleReviewTap(context),
         ),
       );
     }
@@ -652,27 +691,49 @@ class _BookingCard extends StatelessWidget {
       ),
     );
   }
-
-  void _showReviewDialog(BuildContext context) => showDialog(
-    context: context,
-    builder: (_) =>
-        _ReviewDialog(bookingId: booking.id, isDarkMode: isDarkMode),
-  );
 }
 
 class _ReviewDialog extends StatefulWidget {
   final int bookingId;
   final bool isDarkMode;
-  const _ReviewDialog({required this.bookingId, required this.isDarkMode});
+  final ReviewResponse? existingReview;
+
+  const _ReviewDialog({
+    required this.bookingId,
+    required this.isDarkMode,
+    this.existingReview,
+  });
+
   @override
   State<_ReviewDialog> createState() => _ReviewDialogState();
 }
 
 class _ReviewDialogState extends State<_ReviewDialog> {
-  final _commentController = TextEditingController();
+  late TextEditingController _commentController;
   final _reviewService = ReviewService();
   int _rating = 5;
   bool _isSubmitting = false;
+
+  bool get _isReadOnly => widget.existingReview != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingReview != null) {
+      _rating = widget.existingReview!.rating;
+      _commentController = TextEditingController(
+        text: widget.existingReview!.comment,
+      );
+    } else {
+      _commentController = TextEditingController();
+    }
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
 
   Future<void> _submit() async {
     setState(() => _isSubmitting = true);
@@ -685,7 +746,7 @@ class _ReviewDialogState extends State<_ReviewDialog> {
     );
     if (!mounted) return;
     setState(() => _isSubmitting = false);
-    Navigator.pop(context);
+    Navigator.pop(context, true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(result.message),
@@ -704,7 +765,7 @@ class _ReviewDialogState extends State<_ReviewDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
       title: Center(
         child: Text(
-          'Review',
+          _isReadOnly ? 'Your Review' : 'Review',
           style: TextStyle(fontWeight: FontWeight.bold, color: txtColor),
         ),
       ),
@@ -717,7 +778,9 @@ class _ReviewDialogState extends State<_ReviewDialog> {
               children: List.generate(
                 5,
                 (i) => IconButton(
-                  onPressed: () => setState(() => _rating = i + 1),
+                  onPressed: _isReadOnly
+                      ? null
+                      : () => setState(() => _rating = i + 1),
                   icon: Icon(
                     i < _rating
                         ? Icons.star_rounded
@@ -731,8 +794,9 @@ class _ReviewDialogState extends State<_ReviewDialog> {
             const SizedBox(height: 16),
             TextField(
               controller: _commentController,
+              enabled: !_isReadOnly,
               maxLines: 3,
-              maxLength: 500,
+              maxLength: _isReadOnly ? null : 500,
               style: TextStyle(color: txtColor),
               decoration: InputDecoration(
                 hintText: 'Leave a comment...',
@@ -753,48 +817,63 @@ class _ReviewDialogState extends State<_ReviewDialog> {
         ),
       ),
       actions: [
-        Row(
-          children: [
-            Expanded(
-              child: TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(
-                    color: widget.isDarkMode
-                        ? Colors.grey.shade400
-                        : Colors.grey.shade600,
-                  ),
+        if (_isReadOnly)
+          Center(
+            child: TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Close',
+                style: TextStyle(
+                  color: widget.isDarkMode
+                      ? Colors.grey.shade400
+                      : Colors.grey.shade600,
                 ),
               ),
             ),
-            Expanded(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _Consts.primaryBlue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: widget.isDarkMode
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
+                    ),
                   ),
                 ),
-                onPressed: _isSubmitting ? null : _submit,
-                child: _isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+              ),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _Consts.primaryBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  onPressed: _isSubmitting ? null : _submit,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Submit',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                      )
-                    : const Text(
-                        'Submit',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
       ],
     );
   }

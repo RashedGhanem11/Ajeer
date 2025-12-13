@@ -1,10 +1,14 @@
+import '../config/app_config.dart';
+
+// Enum matching BookingStatus in C#
 enum BookingStatus {
   pending,
   accepted,
-  inProgress,
-  completed,
-  cancelled,
   rejected,
+  cancelled,
+  completed,
+  inProgress,
+  unknown,
 }
 
 class BookingListItem {
@@ -13,6 +17,7 @@ class BookingListItem {
   final String? otherSideImageUrl;
   final String serviceName;
   final BookingStatus status;
+  final bool hasReview;
 
   BookingListItem({
     required this.id,
@@ -20,122 +25,135 @@ class BookingListItem {
     this.otherSideImageUrl,
     required this.serviceName,
     required this.status,
+    required this.hasReview,
   });
 
   factory BookingListItem.fromJson(Map<String, dynamic> json) {
-    dynamic getVal(String key) =>
-        json[key] ?? json[key[0].toUpperCase() + key.substring(1)];
-
     return BookingListItem(
-      id: getVal('id') ?? 0,
-      otherSideName: getVal('otherSideName') ?? 'Unknown Provider',
-      otherSideImageUrl: getVal('otherSideImageUrl'),
-      serviceName: getVal('serviceName') ?? 'Service',
-      status: _parseStatus(getVal('status')),
+      id: json['id'] ?? 0,
+      otherSideName: json['otherSideName'] ?? 'Unknown',
+      otherSideImageUrl: json['otherSideImageUrl'],
+      serviceName: json['serviceName'] ?? 'Service',
+      status: _parseStatus(json['status']),
+      hasReview: json['hasReview'] ?? false,
     );
   }
 
   static BookingStatus _parseStatus(dynamic status) {
-    if (status == null) return BookingStatus.pending;
-
     if (status is int) {
-      return BookingStatus.values.length > status
-          ? BookingStatus.values[status]
-          : BookingStatus.pending;
+      switch (status) {
+        case 0:
+          return BookingStatus.pending;
+        case 1:
+          return BookingStatus.accepted;
+        case 2:
+          return BookingStatus.rejected;
+        case 3:
+          return BookingStatus.cancelled;
+        case 4:
+          return BookingStatus.completed;
+        default:
+          return BookingStatus.unknown;
+      }
+    } else if (status is String) {
+      switch (status.toLowerCase()) {
+        case 'pending':
+          return BookingStatus.pending;
+        case 'active':
+          return BookingStatus.inProgress;
+        case 'completed':
+          return BookingStatus.completed;
+        case 'cancelled':
+          return BookingStatus.cancelled;
+        case 'rejected':
+          return BookingStatus.rejected;
+        default:
+          return BookingStatus.unknown;
+      }
     }
-
-    if (status is String) {
-      final lower = status.toLowerCase();
-      if (lower == 'active') return BookingStatus.accepted;
-
-      return BookingStatus.values.firstWhere(
-        (e) => e.name.toLowerCase() == lower,
-        orElse: () => BookingStatus.pending,
-      );
-    }
-
-    return BookingStatus.pending;
+    return BookingStatus.unknown;
   }
 }
 
-class BookingDetail extends BookingListItem {
+class BookingDetail {
+  final int id;
+  final BookingStatus status;
+  final String serviceName;
+  final String otherSideName;
+  final String? otherSideImageUrl;
   final String otherSidePhone;
   final DateTime scheduledDate;
-  final String areaName;
   final String address;
   final double latitude;
   final double longitude;
+  final String? notes;
   final String formattedPrice;
   final String estimatedTime;
-  final String? notes;
+  final String areaName;
   final List<String> attachmentUrls;
 
   BookingDetail({
-    required super.id,
-    required super.otherSideName,
-    super.otherSideImageUrl,
-    required super.serviceName,
-    required super.status,
+    required this.id,
+    required this.status,
+    required this.serviceName,
+    required this.otherSideName,
+    this.otherSideImageUrl,
     required this.otherSidePhone,
     required this.scheduledDate,
-    required this.areaName,
     required this.address,
     required this.latitude,
     required this.longitude,
+    this.notes,
     required this.formattedPrice,
     required this.estimatedTime,
-    this.notes,
+    required this.areaName,
     required this.attachmentUrls,
   });
 
-  /// ✅ Safe backend DateTime parser (fixes 12:00 AM bug)
-  static DateTime _parseBackendDateTime(dynamic raw) {
-    if (raw == null) return DateTime.now();
-    if (raw is DateTime) return raw;
+  factory BookingDetail.fromJson(Map<String, dynamic> json) {
+    // Helper to combine separate Date and Time strings from backend if needed
+    DateTime parseDateTime() {
+      try {
+        // If backend sends full DateTime in 'scheduledDate'
+        if (json['scheduledDate'] != null &&
+            json['scheduledDate'].contains('T')) {
+          return DateTime.parse(json['scheduledDate']);
+        }
 
-    var s = raw.toString().trim();
+        // If backend sends separate DateOnly and TimeOnly (e.g., "2023-10-20" and "14:30:00")
+        String dateStr =
+            json['scheduledDate'] ?? DateTime.now().toIso8601String();
+        String timeStr = json['scheduledTime'] ?? '00:00:00';
 
-    // Convert "yyyy-MM-dd HH:mm:ss" → ISO "yyyy-MM-ddTHH:mm:ss"
-    if (s.contains(' ') && !s.contains('T')) {
-      s = s.replaceFirst(' ', 'T');
+        // Ensure strictly "yyyy-MM-dd" and "HH:mm:ss" format for parsing
+        // or just rely on standard ISO parsing if the backend provides it.
+        // Simple fallback combination:
+        return DateTime.parse('${dateStr.split('T')[0]}T$timeStr');
+      } catch (e) {
+        return DateTime.now();
+      }
     }
 
-    // Trim fractional seconds to max 6 digits (microseconds)
-    s = s.replaceAllMapped(RegExp(r'\.(\d+)(?=Z|[+-]\d\d:\d\d|$)'), (m) {
-      var frac = m.group(1)!;
-      if (frac.length > 6) frac = frac.substring(0, 6);
-      return '.$frac';
-    });
-
-    return DateTime.tryParse(s) ?? DateTime.now();
-  }
-
-  factory BookingDetail.fromJson(Map<String, dynamic> json) {
-    dynamic getVal(String key) =>
-        json[key] ?? json[key[0].toUpperCase() + key.substring(1)];
-
-    final scheduledDate = _parseBackendDateTime(getVal('scheduledDate'));
-
     return BookingDetail(
-      id: getVal('id') ?? 0,
-      otherSideName: getVal('otherSideName') ?? 'Unknown',
-      otherSideImageUrl: getVal('otherSideImageUrl'),
-      serviceName: getVal('serviceName') ?? 'Service',
-      status: BookingListItem._parseStatus(getVal('status')),
-      otherSidePhone: getVal('otherSidePhone') ?? '',
-      scheduledDate: scheduledDate,
-      areaName: getVal('areaName') ?? '',
-      address: getVal('address') ?? '',
-      latitude: (getVal('latitude') as num?)?.toDouble() ?? 0.0,
-      longitude: (getVal('longitude') as num?)?.toDouble() ?? 0.0,
-      formattedPrice: getVal('formattedPrice')?.toString() ?? '0.00',
-      estimatedTime: getVal('estimatedTime')?.toString() ?? '',
-      notes: getVal('notes'),
+      id: json['id'] ?? 0,
+      status: BookingListItem._parseStatus(json['status']),
+      serviceName: json['serviceName'] ?? '',
+      otherSideName: json['otherSideName'] ?? '',
+      otherSideImageUrl: json['otherSideImageUrl'],
+      otherSidePhone: json['otherSidePhone'] ?? '',
+      scheduledDate: parseDateTime(),
+      address: json['address'] ?? '',
+      latitude: (json['latitude'] ?? 0.0).toDouble(),
+      longitude: (json['longitude'] ?? 0.0).toDouble(),
+      notes: json['notes'],
+      formattedPrice: json['formattedPrice'] ?? '',
+      estimatedTime: json['estimatedTime'] ?? '',
+      areaName: json['areaName'] ?? '',
+      // Map the list of attachment objects to a list of URL strings
       attachmentUrls:
-          (getVal('attachments') as List?)?.map((e) {
-            if (e is Map) return (e['url'] ?? e['Url'] ?? '').toString();
-            return e.toString();
-          }).toList() ??
+          (json['attachments'] as List<dynamic>?)
+              ?.map((a) => a['url'] as String)
+              .toList() ??
           [],
     );
   }
