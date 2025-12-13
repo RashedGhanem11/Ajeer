@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../config/app_config.dart';
 import '../../themes/theme_notifier.dart';
@@ -115,6 +117,30 @@ class _BookingsScreenState extends State<BookingsScreen>
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not load booking details')),
+      );
+    }
+  }
+
+  Future<void> _showBookingLocation(int id, bool isDarkMode) async {
+    _showLoading();
+    final details = await _bookingService.getBookingDetails(id);
+    if (!mounted) return;
+    Navigator.pop(context);
+
+    if (details != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => _BookingMapScreen(
+            latitude: details.latitude,
+            longitude: details.longitude,
+            isDarkMode: isDarkMode,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not load location data')),
       );
     }
   }
@@ -348,6 +374,7 @@ class _BookingsScreenState extends State<BookingsScreen>
         isDarkMode: isDark,
         onCancel: () => _handleCancel(items[i].id),
         onInfoTap: () => _showBookingDetails(items[i].id, isDark),
+        onLocationTap: () => _showBookingLocation(items[i].id, isDark),
         onRefresh: _fetchBookings,
       ),
     );
@@ -362,6 +389,7 @@ class _BookingCard extends StatelessWidget {
   final bool isDarkMode;
   final VoidCallback onCancel;
   final VoidCallback onInfoTap;
+  final VoidCallback onLocationTap;
   final VoidCallback onRefresh;
 
   const _BookingCard({
@@ -370,6 +398,7 @@ class _BookingCard extends StatelessWidget {
     required this.isDarkMode,
     required this.onCancel,
     required this.onInfoTap,
+    required this.onLocationTap,
     required this.onRefresh,
   });
 
@@ -480,7 +509,7 @@ class _BookingCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
             _buildActions(context),
           ],
         ),
@@ -489,24 +518,10 @@ class _BookingCard extends StatelessWidget {
   }
 
   Widget _buildActions(BuildContext context) {
-    final icons = <Widget>[];
-
-    if (booking.status == BookingStatus.completed &&
-        listType == _BookingListType.closed) {
-      icons.add(
-        _iconBtn(
-          booking.hasReview ? Icons.star_rounded : Icons.star_border_rounded,
-          Colors.amber,
-          28,
-          () => _handleReviewTap(context),
-        ),
-      );
-    }
-
-    icons.add(_iconBtn(Icons.info_outline, _Consts.primaryBlue, 24, onInfoTap));
+    final iconButtons = <Widget>[];
 
     if (listType == _BookingListType.active) {
-      icons.add(
+      iconButtons.add(
         _iconBtn(
           Icons.chat_bubble_outline,
           isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
@@ -514,18 +529,41 @@ class _BookingCard extends StatelessWidget {
           () => _showMessageDialog(context),
         ),
       );
+    } else if (booking.status == BookingStatus.completed &&
+        listType == _BookingListType.closed) {
+      iconButtons.add(
+        _iconBtn(
+          booking.hasReview ? Icons.star_rounded : Icons.star_border_rounded,
+          Colors.amber,
+          24,
+          () => _handleReviewTap(context),
+        ),
+      );
     }
 
+    iconButtons.add(
+      _iconBtn(
+        Icons.location_on_outlined,
+        _Consts.primaryBlue,
+        24,
+        onLocationTap,
+      ),
+    );
+
+    iconButtons.add(
+      _iconBtn(Icons.info_outline, _Consts.primaryBlue, 24, onInfoTap),
+    );
+
+    Widget mainAction;
     if (listType != _BookingListType.closed) {
-      icons.add(const SizedBox(width: 6));
-      icons.add(
-        ElevatedButton(
+      mainAction = Center(
+        child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: _Consts.primaryRed,
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            minimumSize: const Size(0, 32),
+            minimumSize: const Size(80, 32),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -538,10 +576,22 @@ class _BookingCard extends StatelessWidget {
         ),
       );
     } else {
-      icons.add(_statusBadge());
+      mainAction = Center(child: _statusBadge());
     }
 
-    return Row(mainAxisSize: MainAxisSize.min, children: icons);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: iconButtons,
+        ),
+        const SizedBox(height: 4),
+        mainAction,
+      ],
+    );
   }
 
   Widget _iconBtn(IconData icon, Color color, double size, VoidCallback onTap) {
@@ -549,7 +599,7 @@ class _BookingCard extends StatelessWidget {
       icon: Icon(icon, color: color, size: size),
       onPressed: onTap,
       constraints: const BoxConstraints(),
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       visualDensity: VisualDensity.compact,
     );
   }
@@ -583,14 +633,16 @@ class _BookingCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      width: 80,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         text,
-        style: TextStyle(color: txt, fontWeight: FontWeight.bold, fontSize: 12),
+        style: TextStyle(color: txt, fontWeight: FontWeight.bold, fontSize: 11),
       ),
     );
   }
@@ -1254,6 +1306,118 @@ class _CustomTabBar extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BookingMapScreen extends StatefulWidget {
+  final double latitude;
+  final double longitude;
+  final bool isDarkMode;
+
+  const _BookingMapScreen({
+    required this.latitude,
+    required this.longitude,
+    required this.isDarkMode,
+  });
+
+  @override
+  State<_BookingMapScreen> createState() => _BookingMapScreenState();
+}
+
+class _BookingMapScreenState extends State<_BookingMapScreen> {
+  late MapController _mapController;
+  double _currentZoom = 15.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+  }
+
+  void _zoomIn() {
+    setState(() {
+      _currentZoom += 1;
+      _mapController.move(_mapController.center, _currentZoom);
+    });
+  }
+
+  void _zoomOut() {
+    setState(() {
+      _currentZoom -= 1;
+      _mapController.move(_mapController.center, _currentZoom);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: widget.isDarkMode ? Colors.black : Colors.white,
+      body: Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              center: LatLng(widget.latitude, widget.longitude),
+              zoom: _currentZoom,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate:
+                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c'],
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: LatLng(widget.latitude, widget.longitude),
+                    width: 50,
+                    height: 50,
+                    child: const Icon(
+                      Icons.location_pin,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 10,
+            child: FloatingActionButton(
+              mini: true,
+              backgroundColor: _Consts.primaryBlue,
+              onPressed: () => Navigator.pop(context),
+              child: const Icon(Icons.arrow_back, color: Colors.white),
+            ),
+          ),
+          Positioned(
+            bottom: 30,
+            right: 10,
+            child: Column(
+              children: [
+                FloatingActionButton(
+                  heroTag: 'zoomIn',
+                  mini: true,
+                  backgroundColor: _Consts.primaryBlue,
+                  onPressed: _zoomIn,
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton(
+                  heroTag: 'zoomOut',
+                  mini: true,
+                  backgroundColor: _Consts.primaryBlue,
+                  onPressed: _zoomOut,
+                  child: const Icon(Icons.remove, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
