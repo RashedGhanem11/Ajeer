@@ -17,4 +17,17 @@ public class ReviewsController(IReviewService _reviewService) : BaseApiControlle
         await _reviewService.AddReviewAsync(userId, dto);
         return Ok(new { message = "Review added successfully." });
     }
+
+    [HttpGet("booking/{bookingId}")]
+    [ProducesResponseType(typeof(ReviewResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)] // no review found
+    public async Task<IActionResult> GetReview(int bookingId)
+    {
+        int userId = GetUserId();
+        var result = await _reviewService.GetReviewByBookingIdAsync(userId, bookingId);
+
+        if (result == null) return NoContent(); //nothing found
+
+        return Ok(result);
+    }
 }

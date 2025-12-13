@@ -17,13 +17,8 @@ public class UserService(AppDbContext _context, IFileService _fileService, IAuth
         if (!string.IsNullOrEmpty(dto.Name))
             user.Name = dto.Name;
 
-        // ✅ FIX IS HERE:
-        // EF Core cannot translate 'Equals(..., OrdinalIgnoreCase)'.
-        // We use ToLower() checks instead, which translates correctly to SQL.
-        if (!string.IsNullOrEmpty(dto.Email) && !dto.Email.Equals(user.Email, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrEmpty(dto.Email) && !(dto.Email.ToLower() == user.Email.ToLower()))
         {
-            // Old (Error): .AnyAsync(u => dto.Email.Equals(u.Email, StringComparison.OrdinalIgnoreCase));
-            // New (Fixed): Checks lowercase versions of both
             bool emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == dto.Email.ToLower());
 
             if (emailExists)
@@ -34,7 +29,6 @@ public class UserService(AppDbContext _context, IFileService _fileService, IAuth
 
         if (!string.IsNullOrEmpty(dto.Phone) && dto.Phone != user.Phone)
         {
-            // Direct string comparison usually works fine for phones, but to be safe/consistent:
             bool phoneExists = await _context.Users.AnyAsync(u => u.Phone == dto.Phone);
 
             if (phoneExists)

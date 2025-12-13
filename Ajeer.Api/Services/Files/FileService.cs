@@ -11,7 +11,10 @@ public class FileService(IWebHostEnvironment _environment) : IFileService
         string uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", folderName);
         if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-        string uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
+        string ext = Path.GetExtension(file.FileName);
+
+        string uniqueFileName = $"{Guid.NewGuid()}{ext}";
+
         string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
         using (var stream = new FileStream(filePath, FileMode.Create))

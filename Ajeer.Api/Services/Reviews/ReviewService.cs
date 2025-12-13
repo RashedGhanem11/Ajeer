@@ -51,4 +51,23 @@ public class ReviewService(AppDbContext _context) : IReviewService
 
         await _context.SaveChangesAsync();
     }
+
+    public async Task<ReviewResponse?> GetReviewByBookingIdAsync(int userId, int bookingId)
+    {
+        var review = await _context.Reviews
+            .AsNoTracking()
+            .Include(r => r.User)
+            .FirstOrDefaultAsync(r => r.BookingId == bookingId);
+
+        if (review == null) return null;
+
+        return new ReviewResponse
+        {
+            Id = review.Id,
+            Rating = review.Rating,
+            Comment = review.Comment,
+            ReviewDate = review.ReviewDate,
+            ReviewerName = review.User.Name
+        };
+    }
 }
