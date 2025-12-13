@@ -1,7 +1,6 @@
 // lib/models/service_models.dart
 
 class ServiceCategory {
-  // ... (existing code for ServiceCategory)
   final int id;
   final String name;
   final String iconUrl;
@@ -21,12 +20,12 @@ class ServiceCategory {
   }
 }
 
-// NEW: Model for the unit types/services
+// Model for the unit types/services
 class ServiceItem {
   final int id;
   final String name;
   final String? formattedPrice; // e.g., "15.00 JOD"
-  final String? estimatedTime; // e.g., "60 mins"
+  final String? estimatedTime; // e.g., "60 mins", "1 hr 30 mins"
 
   ServiceItem({
     required this.id,
@@ -52,11 +51,34 @@ class ServiceItem {
     return double.tryParse(cleaned) ?? 0.0;
   }
 
-  // Helper to extract int minutes from string (e.g., "60 mins" -> 60)
+  // --- FIXED TIME CALCULATION LOGIC ---
+  // This now handles "2 hrs", "1 hr 30 mins", and "45 mins" correctly.
   int get timeInMinutes {
     if (estimatedTime == null) return 0;
-    // Remove all non-digit characters
-    final cleaned = estimatedTime!.replaceAll(RegExp(r'[^0-9]'), '');
-    return int.tryParse(cleaned) ?? 0;
+    String timeString = estimatedTime!.toLowerCase();
+
+    double totalMinutes = 0.0;
+
+    // 1. Look for Hours (matches "1.5 hrs", "2 hours", "1 hr")
+    // Regex finds a number followed immediately or loosely by 'h' or 'hr'
+    final hourMatch = RegExp(
+      r'(\d+(\.\d+)?)\s*(?:h|hr|hour)',
+    ).firstMatch(timeString);
+    if (hourMatch != null) {
+      // Group 1 captures the number part (e.g., "1.5" or "2")
+      double hours = double.tryParse(hourMatch.group(1) ?? '0') ?? 0.0;
+      totalMinutes += hours * 60;
+    }
+
+    // 2. Look for Minutes (matches "30 mins", "45 min")
+    // Regex finds a number followed immediately or loosely by 'm' or 'min'
+    final minuteMatch = RegExp(r'(\d+)\s*(?:m|min)').firstMatch(timeString);
+    if (minuteMatch != null) {
+      // Group 1 captures the integer minutes
+      double minutes = double.tryParse(minuteMatch.group(1) ?? '0') ?? 0.0;
+      totalMinutes += minutes;
+    }
+
+    return totalMinutes.round();
   }
 }

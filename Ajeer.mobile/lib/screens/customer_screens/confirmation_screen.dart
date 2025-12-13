@@ -641,117 +641,164 @@ class _PriceAndDurationDisplay extends StatelessWidget {
     required this.isDarkMode,
   });
 
-  String _formatDuration(int minutes) {
-    if (minutes < 60) {
-      return '$minutes min';
+  String _formatDuration(int totalMinutes) {
+    if (totalMinutes <= 0) {
+      return '0 mins';
     }
-    final int hours = minutes ~/ 60;
-    final int remainingMinutes = minutes % 60;
 
-    if (remainingMinutes == 0) {
-      return '$hours hr';
+    int hours = totalMinutes ~/ 60;
+    int minutes = totalMinutes % 60;
+
+    String timeString = '';
+
+    if (hours > 0) {
+      timeString += '$hours hr${hours > 1 ? 's' : ''}';
     }
-    return '$hours hr $remainingMinutes min';
+
+    if (hours > 0 && minutes > 0) {
+      timeString += ' ';
+    }
+
+    if (minutes > 0 || hours == 0) {
+      timeString += '$minutes min${minutes > 1 ? 's' : ''}';
+    }
+
+    return timeString;
   }
 
   @override
   Widget build(BuildContext context) {
     final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+    // Standardize styling constants for perfect alignment
+    const double labelFontSize = 13.0;
+    const double valueFontSize = 18.0; // Slightly reduced from 20 to fit better
+    const Color labelColor = Color.fromARGB(255, 70, 162, 255);
 
     return Container(
-      padding: const EdgeInsets.all(15.0),
+      padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 15.0),
       decoration: BoxDecoration(
         color: isDarkMode
-            ? _ConfirmationConstants.subtleLighterDark
-            : _ConfirmationConstants.primaryBlue.withOpacity(0.1),
+            ? const Color(
+                0xFF2C2C2C,
+              ) // _ConfirmationConstants.subtleLighterDark
+            : const Color(
+                0xFF1976D2,
+              ).withOpacity(0.1), // _ConfirmationConstants.primaryBlue
         borderRadius: BorderRadius.circular(
-          _ConfirmationConstants.detailItemBorderRadius,
-        ),
+          10.0,
+        ), // _ConfirmationConstants.detailItemBorderRadius
         border: Border.all(
           color: isDarkMode
-              ? _ConfirmationConstants.darkBorder
-              : _ConfirmationConstants.primaryBlue.withOpacity(0.3),
+              ? const Color(0xFF3A3A3A) // _ConfirmationConstants.darkBorder
+              : const Color(0xFF1976D2).withOpacity(0.3),
           width: 1.5,
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.monetization_on_outlined,
-                  color: _ConfirmationConstants.primaryBlue,
-                  size: 30,
-                ),
-                const SizedBox(width: 8.0),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Estimated Cost',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color.fromARGB(255, 70, 162, 255),
-                        ),
-                      ),
-                      Text(
-                        'JOD ${totalPrice.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                    ],
+      child: IntrinsicHeight(
+        // Ensures the divider matches the tallest content
+        child: Row(
+          children: [
+            // --- LEFT SIDE: PRICE ---
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.monetization_on_outlined,
+                    color: Color(
+                      0xFF1976D2,
+                    ), // _ConfirmationConstants.primaryBlue
+                    size: 28,
                   ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            height: 40,
-            width: 1.0,
-            color: _ConfirmationConstants.primaryBlue.withOpacity(0.5),
-            margin: const EdgeInsets.symmetric(horizontal: 5.0),
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.access_time,
-                  color: _ConfirmationConstants.primaryBlue,
-                  size: 30,
-                ),
-                const SizedBox(width: 8.0),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Est. Duration',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color.fromARGB(255, 70, 162, 255),
+                  const SizedBox(width: 10.0),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Estimated Cost',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: labelFontSize,
+                            color: labelColor,
+                          ),
                         ),
-                      ),
-                      Text(
-                        _formatDuration(totalTimeMinutes),
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
+                        const SizedBox(height: 2),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'JOD ${totalPrice.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: valueFontSize,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // --- DIVIDER ---
+            Container(
+              width: 1.5,
+              margin: const EdgeInsets.symmetric(horizontal: 8.0),
+              color: const Color(0xFF1976D2).withOpacity(0.3),
+            ),
+
+            // --- RIGHT SIDE: DURATION ---
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.access_time,
+                    color: Color(0xFF1976D2),
+                    size: 28,
+                  ),
+                  const SizedBox(width: 10.0),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Est. Duration',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: labelFontSize,
+                            color: labelColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        // FittedBox prevents wrapping by scaling down text if it's too long
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            _formatDuration(totalTimeMinutes),
+                            style: TextStyle(
+                              fontSize: valueFontSize,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
