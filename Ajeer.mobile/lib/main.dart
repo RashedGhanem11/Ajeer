@@ -4,15 +4,13 @@ import 'screens/customer_screens/login_screen.dart';
 import 'themes/app_themes.dart';
 import 'themes/theme_notifier.dart';
 import 'notifiers/user_notifier.dart';
-import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/customer_screens/home_screen.dart';
+import 'services/auth_service.dart';
 
-// 1. Make the main function asynchronous
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ Check if user is logged in
   final prefs = await SharedPreferences.getInstance();
   final userJson = prefs.getString('currentUser');
   final bool isLoggedIn = userJson != null;
@@ -22,17 +20,19 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         ChangeNotifierProvider(create: (_) => UserNotifier()),
+
+        // ✅ ADD THIS MISSING LINE:
+        Provider(create: (_) => AuthService()),
       ],
-      // 👇 Pass whether the user is logged in to MyApp
       child: MyApp(isLoggedIn: isLoggedIn),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final bool isLoggedIn; // 👈 Add this line
+  final bool isLoggedIn;
 
-  const MyApp({super.key, required this.isLoggedIn}); // 👈 Update constructor
+  const MyApp({super.key, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +44,6 @@ class MyApp extends StatelessWidget {
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: themeNotifier.themeMode,
-          // 👇 If user is logged in, skip LoginScreen
           home: isLoggedIn
               ? HomeScreen(themeNotifier: themeNotifier)
               : const LoginScreen(),

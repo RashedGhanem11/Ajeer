@@ -17,9 +17,14 @@ public class UserService(AppDbContext _context, IFileService _fileService, IAuth
         if (!string.IsNullOrEmpty(dto.Name))
             user.Name = dto.Name;
 
+        // ✅ FIX IS HERE:
+        // EF Core cannot translate 'Equals(..., OrdinalIgnoreCase)'.
+        // We use ToLower() checks instead, which translates correctly to SQL.
         if (!string.IsNullOrEmpty(dto.Email) && !dto.Email.Equals(user.Email, StringComparison.OrdinalIgnoreCase))
         {
-            bool emailExists = await _context.Users.AnyAsync(u => dto.Email.Equals(u.Email, StringComparison.OrdinalIgnoreCase));
+            // Old (Error): .AnyAsync(u => dto.Email.Equals(u.Email, StringComparison.OrdinalIgnoreCase));
+            // New (Fixed): Checks lowercase versions of both
+            bool emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == dto.Email.ToLower());
 
             if (emailExists)
                 throw new Exception("Email is already taken.");
@@ -29,6 +34,7 @@ public class UserService(AppDbContext _context, IFileService _fileService, IAuth
 
         if (!string.IsNullOrEmpty(dto.Phone) && dto.Phone != user.Phone)
         {
+            // Direct string comparison usually works fine for phones, but to be safe/consistent:
             bool phoneExists = await _context.Users.AnyAsync(u => u.Phone == dto.Phone);
 
             if (phoneExists)
@@ -43,7 +49,11 @@ public class UserService(AppDbContext _context, IFileService _fileService, IAuth
 
             if (newFileName != null)
             {
-                _fileService.DeleteFile("profilePictures", user.ProfilePictureUrl);
+                // Delete old image if it exists
+                if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                {
+                    _fileService.DeleteFile("profilePictures", user.ProfilePictureUrl);
+                }
 
                 user.ProfilePictureUrl = newFileName;
             }

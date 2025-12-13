@@ -17,6 +17,7 @@ import '../customer_screens/home_screen.dart';
 import '../customer_screens/chat_screen.dart';
 import '../customer_screens/login_screen.dart';
 import '../service_provider_screens/services_screen.dart';
+import '../../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -47,16 +48,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
   bool _dataHasChanged = false;
 
-  String _firstName = '';
-  String _lastName = '';
+  // REPLACED separate names with single fullName
+  String _fullName = '';
   String _mobileNumber = '';
   String _email = '';
   String _password = '';
   File? _profileImage;
   File? _originalProfileImage;
 
-  late TextEditingController _firstNameController;
-  late TextEditingController _lastNameController;
+  // REPLACED separate controllers with single fullName controller
+  late TextEditingController _fullNameController;
   late TextEditingController _mobileController;
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
@@ -90,15 +91,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _initializeControllers();
     _loadUserData();
 
-    // ✅ NEW: Force backend fetch for Provider Data when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<UserNotifier>(context, listen: false).loadUserData();
     });
   }
 
   void _initializeControllers() {
-    _firstNameController = TextEditingController();
-    _lastNameController = TextEditingController();
+    _fullNameController = TextEditingController();
     _mobileController = TextEditingController();
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
@@ -108,8 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _addListenersToControllers() {
     void listener() {
       final bool changed =
-          _firstNameController.text != _firstName ||
-          _lastNameController.text != _lastName ||
+          _fullNameController.text != _fullName ||
           _mobileController.text != _mobileNumber ||
           _emailController.text != _email ||
           (_passwordController.text != _password &&
@@ -121,8 +119,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     }
 
-    _firstNameController.addListener(listener);
-    _lastNameController.addListener(listener);
+    _fullNameController.addListener(listener);
     _mobileController.addListener(listener);
     _emailController.addListener(listener);
     _passwordController.addListener(listener);
@@ -136,14 +133,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final user = jsonDecode(userJson);
       if (mounted) {
         setState(() {
-          _firstName = user['firstName'] ?? '';
-          _lastName = user['lastName'] ?? '';
+          // Changed to match the key 'name' from auth_service.dart
+          _fullName = user['name'] ?? '';
           _mobileNumber = user['phone'] ?? '';
           _email = user['email'] ?? '';
           _password = user['password'] ?? '';
 
-          _firstNameController.text = _firstName;
-          _lastNameController.text = _lastName;
+          _fullNameController.text = _fullName;
           _mobileController.text = _mobileNumber;
           _emailController.text = _email;
           _passwordController.text = '********';
@@ -154,8 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
+    _fullNameController.dispose();
     _mobileController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -174,70 +169,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // ... inside _ProfileScreenState class
+
   Future<void> _saveProfile() async {
-    setState(() {
-      _firstName = _firstNameController.text;
-      _lastName = _lastNameController.text;
-      _mobileNumber = _mobileController.text;
-      _email = _emailController.text;
-      if (_passwordController.text != '********') {
-        _password = _passwordController.text;
-      }
-      _originalProfileImage = _profileImage;
-      _dataHasChanged = false;
-      _isEditing = false;
-    });
+    // 1. Show loading indicator (optional but recommended)
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator()),
+    );
 
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('currentUser');
+    try {
+      final authService = Provider.of<AuthService>(
+        context,
+        listen: false,
+      ); // Ensure AuthService is provided or instantiate it
+      // Or: final authService = AuthService();
 
-    if (userJson != null) {
-      final user = jsonDecode(userJson);
-      user['firstName'] = _firstName;
-      user['lastName'] = _lastName;
-      user['phone'] = _mobileNumber;
-      user['email'] = _email;
-      user['password'] = _password;
-
-      final usersJsonList = prefs.getStringList('users') ?? [];
-      final List<Map<String, dynamic>> users = usersJsonList
-          .map((u) => Map<String, dynamic>.from(jsonDecode(u)))
-          .toList();
-
-      for (int i = 0; i < users.length; i++) {
-        if (users[i]['email'] == user['email']) {
-          users[i] = user;
-          break;
-        }
-      }
-
-      await prefs.setStringList(
-        'users',
-        users.map((u) => jsonEncode(u)).toList(),
+      // 2. Call the backend API
+      await authService.updateProfile(
+        name: _fullNameController.text,
+        email: _emailController.text,
+        phone: _mobileController.text,
+        profileImage: _profileImage, // Sends the file if selected
       );
-      await prefs.setString('currentUser', jsonEncode(user));
-    }
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Profile saved successfully!'),
-          backgroundColor: Colors.green[700],
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(20),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+      // 3. Update UI State
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+
+        setState(() {
+          _fullName = _fullNameController.text;
+          _mobileNumber = _mobileController.text;
+          _email = _emailController.text;
+          // _password logic removed here because backend doesn't support it in this call
+          _originalProfileImage = _profileImage;
+          _dataHasChanged = false;
+          _isEditing = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Profile updated successfully!'),
+            backgroundColor: Colors.green[700],
           ),
-        ),
-      );
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Update failed: ${e.toString().replaceAll("Exception:", "")}',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   void _toggleEditMode() {
     setState(() {
       if (_isEditing) {
-        _firstNameController.text = _firstName;
-        _lastNameController.text = _lastName;
+        // Reset to original values if cancelled
+        _fullNameController.text = _fullName;
         _mobileController.text = _mobileNumber;
         _emailController.text = _email;
         _passwordController.text = '********';
@@ -487,8 +484,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileAvatar(double topPosition, bool isDarkMode) {
-    final String initial = _firstName.isNotEmpty
-        ? _firstName[0].toUpperCase()
+    // UPDATED: Use _fullName for initial
+    final String initial = _fullName.isNotEmpty
+        ? _fullName[0].toUpperCase()
         : '?';
     return Positioned(
       top: topPosition,
@@ -614,15 +612,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: EdgeInsets.only(bottom: bottomPadding + 20),
                   child: Column(
                     children: [
+                      // MERGED: Single TextField for Full Name
                       _buildTextField(
-                        _firstNameController,
-                        'First Name',
-                        Icons.person_outline,
-                        isDarkMode,
-                      ),
-                      _buildTextField(
-                        _lastNameController,
-                        'Last Name',
+                        _fullNameController,
+                        'Full Name',
                         Icons.person_outline,
                         isDarkMode,
                       ),
@@ -835,12 +828,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
-              // ✅ NEW: Clear Provider Data logic on Sign Out
               Provider.of<UserNotifier>(context, listen: false).clearData();
 
               final prefs = await SharedPreferences.getInstance();
               await prefs.remove('currentUser');
-              await prefs.remove('authToken'); // Ensure token is removed too
+              await prefs.remove('authToken');
 
               if (context.mounted) {
                 Navigator.pushAndRemoveUntil(
