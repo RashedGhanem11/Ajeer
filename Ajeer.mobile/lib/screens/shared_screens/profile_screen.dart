@@ -17,7 +17,8 @@ import '../customer_screens/home_screen.dart';
 import '../customer_screens/chat_screen.dart';
 import '../customer_screens/login_screen.dart';
 import '../service_provider_screens/services_screen.dart';
-import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
+import '../../models/change_password_request.dart';
 
 class ProfileScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -48,7 +49,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
   bool _dataHasChanged = false;
 
-  // REPLACED separate names with single fullName
   String _fullName = '';
   String _mobileNumber = '';
   String _email = '';
@@ -56,7 +56,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   File? _profileImage;
   File? _originalProfileImage;
 
-  // REPLACED separate controllers with single fullName controller
   late TextEditingController _fullNameController;
   late TextEditingController _mobileController;
   late TextEditingController _emailController;
@@ -133,7 +132,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final user = jsonDecode(userJson);
       if (mounted) {
         setState(() {
-          // Changed to match the key 'name' from auth_service.dart
           _fullName = user['name'] ?? '';
           _mobileNumber = user['phone'] ?? '';
           _email = user['email'] ?? '';
@@ -169,10 +167,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ... inside _ProfileScreenState class
-
   Future<void> _saveProfile() async {
-    // 1. Show loading indicator (optional but recommended)
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -180,29 +175,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     try {
-      final authService = Provider.of<AuthService>(
-        context,
-        listen: false,
-      ); // Ensure AuthService is provided or instantiate it
-      // Or: final authService = AuthService();
+      final userService = Provider.of<UserService>(context, listen: false);
 
-      // 2. Call the backend API
-      await authService.updateProfile(
+      await userService.updateProfile(
         name: _fullNameController.text,
         email: _emailController.text,
         phone: _mobileController.text,
-        profileImage: _profileImage, // Sends the file if selected
+        profileImage: _profileImage,
       );
 
-      // 3. Update UI State
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
 
         setState(() {
           _fullName = _fullNameController.text;
           _mobileNumber = _mobileController.text;
           _email = _emailController.text;
-          // _password logic removed here because backend doesn't support it in this call
           _originalProfileImage = _profileImage;
           _dataHasChanged = false;
           _isEditing = false;
@@ -217,7 +205,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -230,10 +218,170 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _showChangePasswordDialog(BuildContext context) {
+    final currentPassController = TextEditingController();
+    final newPassController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isLoading = false;
+
+    // Check theme for colors
+    final bool isDarkMode = widget.themeNotifier.isDarkMode;
+    final Color dialogBgColor = isDarkMode ? _subtleLighterDark : Colors.white;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+    final Color hintColor = isDarkMode
+        ? Colors.grey.shade400
+        : Colors.grey.shade600;
+    // Darker line for light mode so it's visible
+    final Color lineColor = isDarkMode ? Colors.grey.shade600 : Colors.black87;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: dialogBgColor,
+              title: const Text(
+                'Change Password',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _primaryBlue,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+              actionsAlignment: MainAxisAlignment.center,
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: currentPassController,
+                      obscureText: true,
+                      style: TextStyle(color: textColor), // Input text color
+                      cursorColor: _primaryBlue,
+                      decoration: InputDecoration(
+                        labelText: 'Current Password',
+                        labelStyle: TextStyle(color: hintColor),
+                        // The line when NOT clicked (Idle)
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: lineColor),
+                        ),
+                        // The line when CLICKED (Focused)
+                        focusedBorder: const UnderlineInputBorder(
+                          borderSide: BorderSide(color: _primaryBlue, width: 2),
+                        ),
+                      ),
+                      validator: (v) => v!.isEmpty ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: newPassController,
+                      obscureText: true,
+                      style: TextStyle(color: textColor), // Input text color
+                      cursorColor: _primaryBlue,
+                      decoration: InputDecoration(
+                        labelText: 'New Password',
+                        labelStyle: TextStyle(color: hintColor),
+                        // The line when NOT clicked (Idle)
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: lineColor),
+                        ),
+                        // The line when CLICKED (Focused)
+                        focusedBorder: const UnderlineInputBorder(
+                          borderSide: BorderSide(color: _primaryBlue, width: 2),
+                        ),
+                      ),
+                      validator: (v) => v!.length < 6 ? 'Min 6 chars' : null,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                // Cancel Button adapts to theme (White in Dark Mode, Black in Light)
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(foregroundColor: textColor),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          if (formKey.currentState!.validate()) {
+                            setState(() => isLoading = true);
+                            try {
+                              await Provider.of<UserService>(
+                                context,
+                                listen: false,
+                              ).changePassword(
+                                ChangePasswordRequest(
+                                  currentPassword: currentPassController.text,
+                                  newPassword: newPassController.text,
+                                ),
+                              );
+
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Password changed successfully!',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              setState(() => isLoading = false);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Error: ${e.toString().replaceAll("Exception:", "")}',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 10,
+                    ),
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Update'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _toggleEditMode() {
     setState(() {
       if (_isEditing) {
-        // Reset to original values if cancelled
         _fullNameController.text = _fullName;
         _mobileController.text = _mobileNumber;
         _emailController.text = _email;
@@ -484,7 +632,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileAvatar(double topPosition, bool isDarkMode) {
-    // UPDATED: Use _fullName for initial
     final String initial = _fullName.isNotEmpty
         ? _fullName[0].toUpperCase()
         : '?';
@@ -558,6 +705,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final Color bgColor = isDarkMode ? _subtleDark : Colors.white;
     final Color textColor = isDarkMode ? Colors.white : Colors.black87;
 
+    // --- LOGIC COPIED FROM _buildTextField FOR CONSISTENCY ---
+    final Color fieldTextColor = _isEditing
+        ? (isDarkMode ? Colors.white : Colors.black87)
+        : Colors.grey.shade400;
+    final Color fieldFillColor = _isEditing
+        ? (isDarkMode ? _subtleLighterDark : Colors.white)
+        : (isDarkMode ? _subtleDark : Colors.grey.shade100);
+    final Color fieldBorderColor = _isEditing
+        ? (isDarkMode ? _editableBorderColorDark : Colors.grey.shade400)
+        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
+    // ---------------------------------------------------------
+
     return Positioned(
       top: top,
       left: 0,
@@ -612,7 +771,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: EdgeInsets.only(bottom: bottomPadding + 20),
                   child: Column(
                     children: [
-                      // MERGED: Single TextField for Full Name
                       _buildTextField(
                         _fullNameController,
                         'Full Name',
@@ -633,13 +791,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         isDarkMode,
                         type: TextInputType.emailAddress,
                       ),
-                      _buildTextField(
-                        _passwordController,
-                        'Password',
-                        Icons.lock_outline,
-                        isDarkMode,
-                        isPassword: true,
+
+                      // --- PASSWORD FIELD ---
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 15.0),
+                        child: TextField(
+                          controller: _passwordController,
+                          readOnly: true, // Always read-only (edit via dialog)
+                          obscureText: !_isPasswordVisible,
+                          style: TextStyle(color: fieldTextColor),
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: Icon(
+                              Icons.lock_outline,
+                              // Match the color logic of other fields
+                              color: _isEditing ? _primaryBlue : Colors.grey,
+                            ),
+                            suffixIcon: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // EYE ICON: Always visible
+                                IconButton(
+                                  icon: Icon(
+                                    _isPasswordVisible
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: _primaryBlue,
+                                  ),
+                                  onPressed: () => setState(
+                                    () => _isPasswordVisible =
+                                        !_isPasswordVisible,
+                                  ),
+                                ),
+                                // EDIT PEN: Only visible in Edit Mode
+                                if (_isEditing)
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: _primaryBlue,
+                                    ),
+                                    onPressed: () =>
+                                        _showChangePasswordDialog(context),
+                                  ),
+                              ],
+                            ),
+                            filled: true,
+                            fillColor: fieldFillColor, // Consistent color
+                            // Consistent Borders
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide: BorderSide(
+                                color: fieldBorderColor,
+                                width: 2.0,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide: BorderSide(
+                                color: fieldBorderColor,
+                                width: 2.0,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide: const BorderSide(
+                                color: _primaryBlue,
+                                width: 3.0,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 16.0,
+                              horizontal: 10,
+                            ),
+                          ),
+                        ),
                       ),
+
+                      // ----------------------
                       if (userNotifier.isProviderSetupComplete &&
                           userNotifier.providerData != null)
                         _ProviderInfoSection(

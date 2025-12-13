@@ -7,6 +7,7 @@ import 'notifiers/user_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/customer_screens/home_screen.dart';
 import 'services/auth_service.dart';
+import 'services/user_service.dart'; // ✅ Import the new service
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,8 +22,11 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         ChangeNotifierProvider(create: (_) => UserNotifier()),
 
-        // ✅ ADD THIS MISSING LINE:
+        // Auth Service (Login/Register)
         Provider(create: (_) => AuthService()),
+
+        // ✅ User Service (Profile Update/Change Password)
+        Provider(create: (_) => UserService()),
       ],
       child: MyApp(isLoggedIn: isLoggedIn),
     ),
