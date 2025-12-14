@@ -34,8 +34,7 @@ class BookingService {
     request.fields['ScheduledDate'] = scheduledDate.toIso8601String();
     if (notes != null) request.fields['Notes'] = notes;
 
-    // ✅ FIX: Use request.files.add with fromString to support duplicate keys (List of IDs)
-    // The standard request.fields map overwrites values if the key is the same.
+    // Use request.files.add with fromString to support duplicate keys (List of IDs)
     for (var id in serviceIds) {
       request.files.add(
         http.MultipartFile.fromString('ServiceIds', id.toString()),
@@ -53,8 +52,9 @@ class BookingService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('authToken');
-      if (token != null)
+      if (token != null) {
         request.headers.addAll({'Authorization': 'Bearer $token'});
+      }
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
@@ -72,10 +72,11 @@ class BookingService {
     }
   }
 
-  // --- GET BOOKINGS (Fixed: Added ?role=customer) ---
-  Future<List<BookingListItem>> getBookings() async {
-    // FIX: Added query parameter 'role=customer'
-    final uri = Uri.parse('${AppConfig.apiUrl}/bookings?role=customer');
+  // --- GET BOOKINGS (Updated with Role) ---
+  /// Fetches bookings based on the user role.
+  /// [role] should be either 'customer' or 'serviceprovider'.
+  Future<List<BookingListItem>> getBookings({String role = 'customer'}) async {
+    final uri = Uri.parse('${AppConfig.apiUrl}/bookings?role=$role');
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -129,15 +130,36 @@ class BookingService {
     return null;
   }
 
-  // --- CANCEL BOOKING (Fixed: Changed POST to PUT) ---
+  // --- PROVIDER & CUSTOMER ACTIONS ---
+
+  // Cancel Booking (Customer or Provider)
   Future<bool> cancelBooking(int id) async {
-    final uri = Uri.parse('${AppConfig.apiUrl}/bookings/$id/cancel');
+    return _sendRequest('$id/cancel');
+  }
+
+  // Accept Booking (Provider Only)
+  Future<bool> acceptBooking(int id) async {
+    return _sendRequest('$id/accept');
+  }
+
+  // Reject Booking (Provider Only)
+  Future<bool> rejectBooking(int id) async {
+    return _sendRequest('$id/reject');
+  }
+
+  // Complete Booking (Provider Only)
+  Future<bool> completeBooking(int id) async {
+    return _sendRequest('$id/complete');
+  }
+
+  // --- HELPER METHOD ---
+  Future<bool> _sendRequest(String endpoint) async {
+    final uri = Uri.parse('${AppConfig.apiUrl}/bookings/$endpoint');
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('authToken');
 
-      // FIX: Changed from http.post to http.put to match Controller
       final response = await http.put(
         uri,
         headers: {'Authorization': 'Bearer $token'},
@@ -145,7 +167,7 @@ class BookingService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Exception cancelling booking: $e');
+      print('Exception calling $endpoint: $e');
       return false;
     }
   }

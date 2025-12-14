@@ -20,6 +20,7 @@ import '../customer_screens/login_screen.dart';
 import '../service_provider_screens/services_screen.dart';
 import '../../services/user_service.dart';
 import '../../models/change_password_request.dart';
+import '../service_provider_screens/bookings_screen.dart' as provider_screens;
 
 class ProfileScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -446,23 +447,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    final navItems = _getNavItems(
-      Provider.of<UserNotifier>(context, listen: false),
-    );
+    final userNotifier = Provider.of<UserNotifier>(context, listen: false);
+    final navItems = _getNavItems(userNotifier);
+
     if (index >= navItems.length) return;
     final label = navItems[index]['label'];
+
     Widget? nextScreen;
     switch (label) {
       case 'Chat':
         nextScreen = const ChatScreen();
         break;
       case 'Bookings':
-        nextScreen = const BookingsScreen();
+        // ✅ Check User Mode to decide which Bookings screen to show
+        if (userNotifier.isProvider) {
+          nextScreen = const provider_screens.ProviderBookingsScreen();
+        } else {
+          nextScreen = const BookingsScreen(); // Customer Screen
+        }
         break;
       case 'Home':
+        // Only customers have a "Home" screen
         nextScreen = HomeScreen(themeNotifier: widget.themeNotifier);
         break;
     }
+
     if (nextScreen != null) {
       Navigator.pushReplacement(
         context,
