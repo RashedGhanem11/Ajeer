@@ -6,9 +6,9 @@ import '../../notifiers/user_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import '../../models/chat_models.dart';
 import '../../services/chat_service.dart';
-import '../shared_screens/profile_screen.dart';
-import 'bookings_screen.dart';
-import 'home_screen.dart';
+import 'profile_screen.dart';
+import '../customer_screens/bookings_screen.dart';
+import '../customer_screens/home_screen.dart';
 import '../../config/app_config.dart';
 import '../service_provider_screens/bookings_screen.dart' as provider_screens;
 

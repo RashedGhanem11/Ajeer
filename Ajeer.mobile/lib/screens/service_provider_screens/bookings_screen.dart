@@ -14,7 +14,7 @@ import '../../models/review_models.dart';
 import '../../services/booking_service.dart';
 import '../../services/review_service.dart';
 import '../../services/chat_service.dart';
-import '../customer_screens/chat_screen.dart';
+import '../shared_screens/chat_screen.dart';
 import '../shared_screens/profile_screen.dart';
 
 class ProviderBookingsScreen extends StatefulWidget {

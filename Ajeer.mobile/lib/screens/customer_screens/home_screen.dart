@@ -6,7 +6,7 @@ import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'unit_type_screen.dart';
 import 'bookings_screen.dart';
 import '../shared_screens/profile_screen.dart';
-import 'chat_screen.dart';
+import '../shared_screens/chat_screen.dart';
 import '../../themes/theme_notifier.dart';
 import '../../config/app_config.dart';
 // NEW IMPORTS

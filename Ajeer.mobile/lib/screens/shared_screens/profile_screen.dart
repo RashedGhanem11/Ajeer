@@ -15,7 +15,7 @@ import '../../config/app_config.dart';
 
 import '../customer_screens/bookings_screen.dart';
 import '../customer_screens/home_screen.dart';
-import '../customer_screens/chat_screen.dart';
+import 'chat_screen.dart';
 import '../customer_screens/login_screen.dart';
 import '../service_provider_screens/services_screen.dart';
 import '../../services/user_service.dart';

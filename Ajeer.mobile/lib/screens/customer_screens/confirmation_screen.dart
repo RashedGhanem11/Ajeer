@@ -7,7 +7,7 @@ import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import '../shared_screens/profile_screen.dart';
-import 'chat_screen.dart';
+import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
 import '../../services/booking_service.dart';
 
