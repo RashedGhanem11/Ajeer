@@ -33,13 +33,12 @@ class SettingsMenu extends StatelessWidget {
 
     final bool isDarkMode = themeNotifier.isDarkMode;
 
-    // ✅ 2. Define Dynamic Colors based on Mode
     final Color primaryBlue = isProvider
-        ? const Color(0xFF4d62fa) // Provider Darker Blue
+        ? const Color(0xFF2f6cfa) // Provider Darker Blue
         : const Color(0xFF1976D2); // Customer Darker Blue
 
     final Color lightBlue = isProvider
-        ? const Color(0xFFadb7ff) // Provider Lighter Blue
+        ? const Color(0xFFa2bdfc) // Provider Lighter Blue
         : const Color(0xFF8CCBFF); // Customer Lighter Blue
 
     final Color textColor = isDarkMode ? Colors.white70 : Colors.black87;

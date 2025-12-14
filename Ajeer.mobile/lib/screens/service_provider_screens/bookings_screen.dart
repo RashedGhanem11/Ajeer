@@ -25,8 +25,8 @@ class ProviderBookingsScreen extends StatefulWidget {
 }
 
 class _Consts {
-  static const primaryBlue = Color(0xFF4d62fa);
-  static const lightBlue = Color(0xFFadb7ff);
+  static const primaryBlue = Color(0xFF2f6cfa);
+  static const lightBlue = Color(0xFFa2bdfc);
   static const primaryRed = Color(0xFFD32F2F);
   static const successGreen = Color(0xFF2E7D32);
   static const subtleDark = Color(0xFF2C2C2C);
@@ -707,7 +707,7 @@ class _BookingCard extends StatelessWidget {
             children: [
               _actionButton(
                 'Cancel',
-                Colors.grey,
+                _Consts.primaryRed,
                 () => _showConfirmationDialog(
                   context,
                   'Cancel Booking',

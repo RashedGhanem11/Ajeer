@@ -38,8 +38,8 @@ class CityResponse {
   }
 }
 
-const Color kPrimaryBlue = Color(0xFF3461eb);
-const Color kLightBlue = Color(0xFF74aafc);
+const Color kPrimaryBlue = Color(0xFF2f6cfa);
+const Color kLightBlue = Color(0xFFa2bdfc);
 const Color kDeleteRed = Color(0xFFF44336);
 const Color kSelectedGreen = Colors.green;
 const double kBorderRadius = 50.0;

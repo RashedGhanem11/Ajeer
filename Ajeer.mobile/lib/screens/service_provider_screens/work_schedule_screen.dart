@@ -7,10 +7,10 @@ import '../../models/provider_data.dart';
 import '../../notifiers/user_notifier.dart';
 import '../shared_screens/profile_screen.dart';
 
-const Color kPrimaryBlue = Color(0xFF3461eb);
-const Color kLightBlue = Color(0xFF74aafc);
+const Color kPrimaryBlue = Color(0xFF2f6cfa);
+const Color kLightBlue = Color(0xFFa2bdfc);
 const Color kDeleteRed = Color(0xFFF44336);
-const Color kSelectedGreen = Color(0xFF63d476);
+const Color kSelectedGreen = Color(0xFF3ab542);
 const double kBorderRadius = 50.0;
 const double kWhiteContainerTopRatio = 0.15;
 const double kSaveButtonHeight = 50.0;
@@ -649,7 +649,9 @@ class _ProviderNavigationHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color checkColor = isNextEnabled ? kSelectedGreen : kPrimaryBlue;
+    final Color buttonBackgroundColor = isNextEnabled
+        ? kSelectedGreen
+        : Colors.white.withOpacity(0.2);
 
     return Positioned(
       top: MediaQuery.of(context).padding.top + 5,
@@ -672,10 +674,12 @@ class _ProviderNavigationHeader extends StatelessWidget {
               height: 45.0,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.2),
+                color: buttonBackgroundColor,
+                border: Border.all(color: Colors.white, width: 2.0),
+                // REMOVED: boxShadow property is gone
               ),
-              child: Center(
-                child: Icon(Icons.check_circle, size: 45.0, color: checkColor),
+              child: const Center(
+                child: Icon(Icons.check, size: 28.0, color: Colors.white),
               ),
             ),
           ),
@@ -983,13 +987,15 @@ class _TimeSlotCreator extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: isEnabled ? onAddTimeSlot : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kSelectedGreen,
+                    backgroundColor: kPrimaryBlue,
+                    side: const BorderSide(color: Colors.white, width: 2.0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(kBoxRadius),
                     ),
                     padding: EdgeInsets.zero,
+                    elevation: 0,
                   ),
-                  child: const Icon(Icons.add, color: Colors.white),
+                  child: const Icon(Icons.add, color: Colors.white, size: 26),
                 ),
               ),
             ],

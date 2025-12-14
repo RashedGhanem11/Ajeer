@@ -37,8 +37,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const Color _customerLightBlue = Color(0xFF8CCBFF);
 
   // Provider Colors
-  static const Color _providerPrimaryBlue = Color(0xFF4d62fa);
-  static const Color _providerLightBlue = Color(0xFFadb7ff);
+  static const Color _providerPrimaryBlue = Color(0xFF2f6cfa);
+  static const Color _providerLightBlue = Color(0xFFa2bdfc);
 
   // Other Constants
   static const Color _darkBlue = Color(0xFF0D47A1);

@@ -30,8 +30,8 @@ class CustomBottomNavBar extends StatelessWidget {
     const Color customerLightBlue = Color(0xFF8CCBFF);
 
     // Provider Colors
-    const Color providerDarkBlue = Color(0xFF4d62fa);
-    const Color providerLightBlue = Color(0xFFadb7ff);
+    const Color providerDarkBlue = Color(0xFF2f6cfa);
+    const Color providerLightBlue = Color(0xFFa2bdfc);
 
     // 4. Determine Selected Color
     // Logic: In Dark Mode use Lighter Blue, in Light Mode use Darker Blue

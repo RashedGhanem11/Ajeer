@@ -25,8 +25,8 @@ class ServicesScreen extends StatefulWidget {
 }
 
 class _ServicesScreenState extends State<ServicesScreen> {
-  static const Color _primaryBlue = Color(0xFF3461eb);
-  static const Color _lightBlue = Color(0xFF74aafc);
+  static const Color _primaryBlue = Color(0xFF2f6cfa);
+  static const Color _lightBlue = Color(0xFFa2bdfc);
   static const double _borderRadius = 50.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 8.0;
   static const double _whiteContainerTopRatio = 0.15;
