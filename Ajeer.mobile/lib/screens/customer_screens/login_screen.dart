@@ -5,6 +5,7 @@ import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import 'home_screen.dart';
 import '../../services/auth_service.dart'; // Import your new Auth Service
+import '../shared_screens/profile_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -91,10 +92,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
+      // ✅ CHANGE THIS BLOCK: Navigate to ProfileScreen instead of HomeScreen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+          builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
         ),
       );
     } catch (e) {
