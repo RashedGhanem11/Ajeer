@@ -671,6 +671,7 @@ class _BookingCard extends StatelessWidget {
             otherSideName: booking.otherSideName,
             chatService: ChatService(),
             isDarkMode: isDarkMode,
+            primaryColor: _Consts.primaryBlue,
           ),
         ),
       );

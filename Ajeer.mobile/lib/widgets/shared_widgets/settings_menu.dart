@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // ✅ Added
 import '../../themes/theme_notifier.dart';
+import '../../notifiers/user_notifier.dart'; // ✅ Added
 
 class SettingsMenu extends StatelessWidget {
   final ThemeNotifier themeNotifier;
@@ -25,9 +27,21 @@ class SettingsMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 1. Access UserNotifier to check mode
+    final userNotifier = Provider.of<UserNotifier>(context);
+    final bool isProvider = userNotifier.isProvider;
+
     final bool isDarkMode = themeNotifier.isDarkMode;
-    const Color primaryBlue = Color(0xFF1976D2);
-    const Color lightBlue = Color(0xFF8CCBFF);
+
+    // ✅ 2. Define Dynamic Colors based on Mode
+    final Color primaryBlue = isProvider
+        ? const Color(0xFF3461eb) // Provider Darker Blue
+        : const Color(0xFF1976D2); // Customer Darker Blue
+
+    final Color lightBlue = isProvider
+        ? const Color(0xFF8dbafc) // Provider Lighter Blue
+        : const Color(0xFF8CCBFF); // Customer Lighter Blue
+
     final Color textColor = isDarkMode ? Colors.white70 : Colors.black87;
     final Color containerColor = isDarkMode
         ? Colors.grey.shade800
@@ -44,11 +58,12 @@ class SettingsMenu extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
+                // ✅ 3. Use the dynamic colors here
                 colors: [lightBlue, primaryBlue],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
             ),
             padding: const EdgeInsets.only(top: 80.0, bottom: 40.0),
@@ -59,7 +74,7 @@ class SettingsMenu extends StatelessWidget {
                   Icon(Icons.settings, color: Colors.white, size: 40),
                   SizedBox(height: 8),
                   Text(
-                    'Ajeer Settings',
+                    'Settings',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -94,7 +109,8 @@ class SettingsMenu extends StatelessWidget {
             onChanged: (bool value) {
               themeNotifier.toggleTheme();
             },
-            activeColor: Theme.of(context).primaryColor,
+            // Update active color to match the current mode's primary
+            activeColor: primaryBlue,
           ),
           ListTile(
             contentPadding: const EdgeInsets.symmetric(

@@ -25,8 +25,8 @@ class ProviderBookingsScreen extends StatefulWidget {
 }
 
 class _Consts {
-  static const primaryBlue = Color(0xFF1976D2);
-  static const lightBlue = Color(0xFF8CCBFF);
+  static const primaryBlue = Color(0xFF3461eb);
+  static const lightBlue = Color(0xFF8dbafc);
   static const primaryRed = Color(0xFFD32F2F);
   static const successGreen = Color(0xFF2E7D32);
   static const subtleDark = Color(0xFF2C2C2C);
@@ -232,7 +232,7 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
             right: 0,
             child: Center(
               child: Text(
-                'Ajeer Provider',
+                'Ajeer',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 34,
@@ -277,7 +277,7 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
                   Padding(
                     padding: const EdgeInsets.only(left: 20),
                     child: Text(
-                      'My Jobs',
+                      'Bookings',
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             fontSize: 28,
@@ -499,6 +499,7 @@ class _BookingCard extends StatelessWidget {
                           otherSideName: booking.otherSideName,
                           chatService: ChatService(),
                           isDarkMode: isDarkMode,
+                          primaryColor: _Consts.primaryBlue,
                         ),
                       ),
                     );

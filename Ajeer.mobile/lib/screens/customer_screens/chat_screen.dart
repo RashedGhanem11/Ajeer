@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../themes/theme_notifier.dart';
+import '../../notifiers/user_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import '../../models/chat_models.dart';
 import '../../services/chat_service.dart';
@@ -9,11 +10,9 @@ import '../shared_screens/profile_screen.dart';
 import 'bookings_screen.dart';
 import 'home_screen.dart';
 import '../../config/app_config.dart';
+import '../service_provider_screens/bookings_screen.dart' as provider_screens;
 
 class _ChatConstants {
-  static const Color primaryBlue = Color(0xFF1976D2);
-  static const Color lightBlue = Color(0xFF8CCBFF);
-  static const Color primaryRed = Color(0xFFD32F2F);
   static const Color subtleLighterDark = Color(0xFF2C2C2C);
   static const Color darkBorder = Color(0xFF3A3A3A);
   static const double navBarTotalHeight = 86.0;
@@ -65,39 +64,85 @@ class _ChatScreenState extends State<ChatScreen> {
     }).toList();
   }
 
+  List<Map<String, dynamic>> _getNavItems(UserNotifier userNotifier) {
+    final baseItems = [
+      {
+        'label': 'Profile',
+        'icon': Icons.person_outline,
+        'activeIcon': Icons.person,
+      },
+      {
+        'label': 'Chat',
+        'icon': Icons.chat_bubble_outline,
+        'activeIcon': Icons.chat_bubble,
+      },
+      {
+        'label': 'Bookings',
+        'icon': Icons.book_outlined,
+        'activeIcon': Icons.book,
+      },
+    ];
+
+    if (!userNotifier.isProvider) {
+      baseItems.add({
+        'label': 'Home',
+        'icon': Icons.home_outlined,
+        'activeIcon': Icons.home,
+      });
+    }
+    return baseItems;
+  }
+
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
-    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
-          ),
-        );
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+    final userNotifier = Provider.of<UserNotifier>(context, listen: false);
+    final navItems = _getNavItems(userNotifier);
+
+    if (index >= navItems.length) return;
+    final label = navItems[index]['label'];
+
+    Widget? nextScreen;
+
+    switch (label) {
+      case 'Profile':
+        nextScreen = ProfileScreen(themeNotifier: themeNotifier);
         break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const BookingsScreen()),
-        );
+      case 'Bookings':
+        if (userNotifier.isProvider) {
+          nextScreen = const provider_screens.ProviderBookingsScreen();
+        } else {
+          nextScreen = const BookingsScreen();
+        }
         break;
-      case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
-          ),
-        );
+      case 'Home':
+        nextScreen = HomeScreen(themeNotifier: themeNotifier);
         break;
+    }
+
+    if (nextScreen != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => nextScreen!),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
+    final userNotifier = Provider.of<UserNotifier>(context);
+    final bool isProvider = userNotifier.isProvider;
+    final navItems = _getNavItems(userNotifier);
+
+    final Color primaryColor = isProvider
+        ? const Color(0xFF3461eb)
+        : const Color(0xFF1976D2);
+    final Color lightColor = isProvider
+        ? const Color(0xFF8dbafc)
+        : const Color(0xFF8CCBFF);
+
     final screenHeight = MediaQuery.of(context).size.height;
     final double whiteContainerTop = screenHeight * 0.25;
     final double logoTopPosition =
@@ -115,12 +160,9 @@ class _ChatScreenState extends State<ChatScreen> {
             alignment: Alignment.topCenter,
             child: Container(
               height: whiteContainerTop + 50,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    _ChatConstants.lightBlue,
-                    _ChatConstants.primaryBlue,
-                  ],
+                  colors: [lightColor, primaryColor],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -237,6 +279,8 @@ class _ChatScreenState extends State<ChatScreen> {
                             return _ChatListItem(
                               chat: chat,
                               isDarkMode: isDarkMode,
+                              primaryColor: primaryColor,
+                              lightColor: lightColor,
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -246,6 +290,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                       otherSideName: chat.otherSideName,
                                       chatService: _chatService,
                                       isDarkMode: isDarkMode,
+                                      primaryColor: primaryColor,
                                     ),
                                   ),
                                 ).then((_) => _loadConversations());
@@ -278,28 +323,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        items: const [
-          {
-            'label': 'Profile',
-            'icon': Icons.person_outline,
-            'activeIcon': Icons.person,
-          },
-          {
-            'label': 'Chat',
-            'icon': Icons.chat_bubble_outline,
-            'activeIcon': Icons.chat_bubble,
-          },
-          {
-            'label': 'Bookings',
-            'icon': Icons.book_outlined,
-            'activeIcon': Icons.book,
-          },
-          {
-            'label': 'Home',
-            'icon': Icons.home_outlined,
-            'activeIcon': Icons.home,
-          },
-        ],
+        items: navItems,
         selectedIndex: _selectedIndex,
         onIndexChanged: _onNavItemTapped,
       ),
@@ -340,11 +364,15 @@ class _ChatListItem extends StatelessWidget {
   final ChatConversation chat;
   final bool isDarkMode;
   final VoidCallback onTap;
+  final Color primaryColor;
+  final Color lightColor;
 
   const _ChatListItem({
     required this.chat,
     required this.isDarkMode,
     required this.onTap,
+    required this.primaryColor,
+    required this.lightColor,
   });
 
   @override
@@ -364,8 +392,8 @@ class _ChatListItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         decoration: BoxDecoration(
           color: isUnread && isDarkMode
-              ? Colors.blue.withOpacity(0.1)
-              : (isUnread ? Colors.blue.shade50 : Colors.transparent),
+              ? primaryColor.withOpacity(0.1)
+              : (isUnread ? lightColor.withOpacity(0.2) : Colors.transparent),
           border: Border(
             bottom: BorderSide(
               color: isDarkMode
@@ -379,7 +407,7 @@ class _ChatListItem extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: Colors.blue.shade100,
+              backgroundColor: lightColor.withOpacity(0.3),
               backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
               child: imageUrl == null
                   ? Text(
@@ -387,7 +415,7 @@ class _ChatListItem extends StatelessWidget {
                           ? chat.otherSideName[0].toUpperCase()
                           : '?',
                       style: TextStyle(
-                        color: Colors.blue.shade800,
+                        color: primaryColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 22,
                       ),
@@ -430,9 +458,7 @@ class _ChatListItem extends StatelessWidget {
                   chat.lastMessageFormattedTime,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isUnread
-                        ? _ChatConstants.primaryBlue
-                        : subtitleColor,
+                    color: isUnread ? primaryColor : subtitleColor,
                     fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -441,8 +467,8 @@ class _ChatListItem extends StatelessWidget {
                   Container(
                     width: 10,
                     height: 10,
-                    decoration: const BoxDecoration(
-                      color: _ChatConstants.primaryBlue,
+                    decoration: BoxDecoration(
+                      color: primaryColor,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -460,6 +486,7 @@ class ChatDetailScreen extends StatefulWidget {
   final String otherSideName;
   final ChatService chatService;
   final bool isDarkMode;
+  final Color primaryColor;
 
   const ChatDetailScreen({
     super.key,
@@ -467,6 +494,7 @@ class ChatDetailScreen extends StatefulWidget {
     required this.otherSideName,
     required this.chatService,
     required this.isDarkMode,
+    required this.primaryColor,
   });
 
   @override
@@ -655,6 +683,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           return _MessageBubble(
                             message: message,
                             isDarkMode: widget.isDarkMode,
+                            primaryColor: widget.primaryColor,
                             isSelected: _selectedMessageId == message.id,
                             onTap: () =>
                                 setState(() => _selectedMessageId = null),
@@ -717,7 +746,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           ),
           const SizedBox(width: 4.0),
           IconButton(
-            icon: const Icon(Icons.send, color: _ChatConstants.primaryBlue),
+            icon: Icon(Icons.send, color: widget.primaryColor),
             onPressed: _sendMessage,
           ),
         ],
@@ -734,6 +763,7 @@ class _MessageBubble extends StatelessWidget {
   final VoidCallback onLongPress;
   final VoidCallback onCopy;
   final VoidCallback onDelete;
+  final Color primaryColor;
 
   const _MessageBubble({
     required this.message,
@@ -743,13 +773,14 @@ class _MessageBubble extends StatelessWidget {
     required this.onLongPress,
     required this.onCopy,
     required this.onDelete,
+    required this.primaryColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final bool isMe = message.isMine;
     final Color bubbleColor = isMe
-        ? _ChatConstants.primaryBlue
+        ? primaryColor
         : (isDarkMode ? _ChatConstants.subtleLighterDark : Colors.white);
     final Color textColor = isMe
         ? Colors.white
@@ -789,11 +820,7 @@ class _MessageBubble extends StatelessWidget {
                       onTap: onDelete,
                       child: const Padding(
                         padding: EdgeInsets.all(4.0),
-                        child: Icon(
-                          Icons.delete,
-                          size: 18,
-                          color: _ChatConstants.primaryRed,
-                        ),
+                        child: Icon(Icons.delete, size: 18, color: Colors.red),
                       ),
                     ),
                   ],

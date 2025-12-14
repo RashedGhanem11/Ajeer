@@ -11,7 +11,7 @@ import '../../widgets/shared_widgets/settings_menu.dart';
 import '../../themes/theme_notifier.dart';
 import '../../notifiers/user_notifier.dart';
 import '../../models/provider_data.dart';
-import '../../config/app_config.dart'; // ✅ Added for getFullImageUrl
+import '../../config/app_config.dart';
 
 import '../customer_screens/bookings_screen.dart';
 import '../customer_screens/home_screen.dart';
@@ -31,8 +31,16 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  static const Color _primaryBlue = Color(0xFF1976D2);
-  static const Color _lightBlue = Color(0xFF8CCBFF);
+  // --- COLOR CONFIGURATION ---
+  // Customer Colors
+  static const Color _customerPrimaryBlue = Color(0xFF1976D2);
+  static const Color _customerLightBlue = Color(0xFF8CCBFF);
+
+  // Provider Colors
+  static const Color _providerPrimaryBlue = Color(0xFF3461eb);
+  static const Color _providerLightBlue = Color(0xFF8dbafc);
+
+  // Other Constants
   static const Color _darkBlue = Color(0xFF0D47A1);
   static const Color _subtleDark = Color(0xFF1E1E1E);
   static const Color _subtleLighterDark = Color(0xFF2C2C2C);
@@ -44,10 +52,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const double _navBarTotalHeight = 86.0;
   static const double _whiteContainerHeightRatio = 0.3;
 
+  // --- DYNAMIC COLOR GETTERS ---
+  bool get _isProviderMode {
+    return Provider.of<UserNotifier>(context, listen: false).isProvider;
+  }
+
+  Color get _primaryBlue =>
+      _isProviderMode ? _providerPrimaryBlue : _customerPrimaryBlue;
+
+  Color get _lightBlue =>
+      _isProviderMode ? _providerLightBlue : _customerLightBlue;
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   int _selectedIndex = 0;
-  bool _isPasswordVisible = false;
   bool _isEditing = false;
   bool _dataHasChanged = false;
 
@@ -55,7 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _mobileNumber = '';
   String _email = '';
   String _password = '';
-  String? _profileImageUrl; // ✅ Added to hold backend URL
+  String? _profileImageUrl;
 
   File? _profileImage;
   File? _originalProfileImage;
@@ -92,13 +110,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _initializeControllers();
-    _loadUserData(); // Loads local name/email from shared prefs
+    _loadUserData();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notifier = Provider.of<UserNotifier>(context, listen: false);
-
-      // ✅ FIX: Only fetch from backend if we DON'T have provider data yet.
-      // This prevents overwriting the fresh data you just created.
       if (!notifier.isProviderSetupComplete) {
         notifier.loadUserData();
       }
@@ -146,8 +161,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _mobileNumber = user['phone'] ?? '';
           _email = user['email'] ?? '';
           _password = user['password'] ?? '';
-
-          // ✅ Retrieve the URL saved by UserService
           _profileImageUrl = user['profilePictureUrl'];
 
           _fullNameController.text = _fullName;
@@ -159,7 +172,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ... [dispose and _pickImage are unchanged] ...
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -191,7 +203,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final userService = Provider.of<UserService>(context, listen: false);
 
-      // We get back the UPDATED user object from the service
       final updatedUser = await userService.updateProfile(
         name: _fullNameController.text,
         email: _emailController.text,
@@ -207,13 +218,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _mobileNumber = _mobileController.text;
           _email = _emailController.text;
 
-          // ✅ Update the URL if the backend returned a new one
           if (updatedUser?.profilePictureUrl != null) {
             _profileImageUrl = updatedUser!.profilePictureUrl;
           }
 
           _originalProfileImage = _profileImage;
-          _profileImage = null; // Clear local file to prioritize URL
+          _profileImage = null;
           _dataHasChanged = false;
           _isEditing = false;
         });
@@ -240,16 +250,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ... [_showChangePasswordDialog unchanged] ...
   void _showChangePasswordDialog(BuildContext context) {
-    // [Paste your existing _showChangePasswordDialog code here]
-    // (Omitted for brevity as it is unchanged from previous steps)
     final currentPassController = TextEditingController();
     final newPassController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
 
-    // Check theme for colors
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
     final Color dialogBgColor = isDarkMode ? _subtleLighterDark : Colors.white;
     final Color textColor = isDarkMode ? Colors.white : Colors.black87;
@@ -258,6 +264,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         : Colors.grey.shade600;
     final Color lineColor = isDarkMode ? Colors.grey.shade600 : Colors.black87;
 
+    final Color activePrimary = _primaryBlue;
+
     showDialog(
       context: context,
       builder: (ctx) {
@@ -265,11 +273,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           builder: (context, setState) {
             return AlertDialog(
               backgroundColor: dialogBgColor,
-              title: const Text(
+              title: Text(
                 'Change Password',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: _primaryBlue,
+                  color: activePrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 22,
                 ),
@@ -284,15 +292,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       controller: currentPassController,
                       obscureText: true,
                       style: TextStyle(color: textColor),
-                      cursorColor: _primaryBlue,
+                      cursorColor: activePrimary,
                       decoration: InputDecoration(
                         labelText: 'Current Password',
                         labelStyle: TextStyle(color: hintColor),
                         enabledBorder: UnderlineInputBorder(
                           borderSide: BorderSide(color: lineColor),
                         ),
-                        focusedBorder: const UnderlineInputBorder(
-                          borderSide: BorderSide(color: _primaryBlue, width: 2),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: activePrimary,
+                            width: 2,
+                          ),
                         ),
                       ),
                       validator: (v) => v!.isEmpty ? 'Required' : null,
@@ -302,15 +313,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       controller: newPassController,
                       obscureText: true,
                       style: TextStyle(color: textColor),
-                      cursorColor: _primaryBlue,
+                      cursorColor: activePrimary,
                       decoration: InputDecoration(
                         labelText: 'New Password',
                         labelStyle: TextStyle(color: hintColor),
                         enabledBorder: UnderlineInputBorder(
                           borderSide: BorderSide(color: lineColor),
                         ),
-                        focusedBorder: const UnderlineInputBorder(
-                          borderSide: BorderSide(color: _primaryBlue, width: 2),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: activePrimary,
+                            width: 2,
+                          ),
                         ),
                       ),
                       validator: (v) => v!.length < 6 ? 'Min 6 chars' : null,
@@ -369,7 +383,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryBlue,
+                    backgroundColor: activePrimary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -401,7 +415,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _toggleEditMode() {
     setState(() {
       if (_isEditing) {
-        // Reset Logic
         _fullNameController.text = _fullName;
         _mobileController.text = _mobileNumber;
         _emailController.text = _email;
@@ -415,9 +428,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  // ... [_getNavItems, _onNavItemTapped, build, _buildDrawer... unchanged] ...
   List<Map<String, dynamic>> _getNavItems(UserNotifier userNotifier) {
-    // [Same as before]
     final baseItems = [
       {
         'label': 'Profile',
@@ -459,15 +470,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         nextScreen = const ChatScreen();
         break;
       case 'Bookings':
-        // ✅ Check User Mode to decide which Bookings screen to show
         if (userNotifier.isProvider) {
           nextScreen = const provider_screens.ProviderBookingsScreen();
         } else {
-          nextScreen = const BookingsScreen(); // Customer Screen
+          nextScreen = const BookingsScreen();
         }
         break;
       case 'Home':
-        // Only customers have a "Home" screen
         nextScreen = HomeScreen(themeNotifier: widget.themeNotifier);
         break;
     }
@@ -519,10 +528,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             isDarkMode,
             userNotifier,
           ),
-          _buildProfileAvatar(
-            avatarTopPosition,
-            isDarkMode,
-          ), // ✅ Logic Updated Here
+          _buildProfileAvatar(avatarTopPosition, isDarkMode),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -534,9 +540,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // [Helper widgets _buildDrawer, _buildBackgroundGradient, _buildAjeerTitle, _buildSwitchModeButton are unchanged]
   Widget _buildDrawer() {
-    // (Same as your provided code)
     return SettingsMenu(
       themeNotifier: widget.themeNotifier,
       onInfoTap: () => _showInfoDialog(context),
@@ -569,7 +573,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       alignment: Alignment.topCenter,
       child: Container(
         height: containerTop + 50,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [_lightBlue, _primaryBlue],
             begin: Alignment.topCenter,
@@ -610,7 +614,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool isDarkMode,
     UserNotifier userNotifier,
   ) {
-    // (Same as your provided code)
     final double buttonTop = MediaQuery.of(context).padding.top + 70;
     final bool isSetupComplete = userNotifier.isProviderSetupComplete;
 
@@ -664,25 +667,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ✅ UPDATED AVATAR LOGIC
   Widget _buildProfileAvatar(double topPosition, bool isDarkMode) {
     final String initial = _fullName.isNotEmpty
         ? _fullName[0].toUpperCase()
         : '?';
 
-    // 1. Determine which image to show
     ImageProvider? backgroundImage;
-
     if (_profileImage != null) {
-      // Priority 1: Newly selected local file
       backgroundImage = FileImage(_profileImage!);
     } else if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
-      // Priority 2: URL from Backend (converted to full URL)
       backgroundImage = NetworkImage(
         AppConfig.getFullImageUrl(_profileImageUrl),
       );
     }
-    // Priority 3: If neither exists, backgroundImage stays null and we show Initials
 
     return Positioned(
       top: topPosition,
@@ -706,10 +703,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   radius: _profileAvatarHeight / 2,
                   backgroundColor: isDarkMode ? _darkBlue : _lightBlue,
 
-                  // Use the determined provider
                   backgroundImage: backgroundImage,
-
-                  // Only show Text if no image is available
                   child: backgroundImage == null
                       ? Text(
                           initial,
@@ -733,11 +727,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: _primaryBlue, width: 2),
                     ),
-                    child: const Icon(
-                      Icons.edit,
-                      color: _primaryBlue,
-                      size: 20,
-                    ),
+                    child: Icon(Icons.edit, color: _primaryBlue, size: 20),
                   ),
                 ),
             ],
@@ -747,14 +737,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ... [_buildMainContent, _buildActionButtons, etc... unchanged]
   Widget _buildMainContent(
     double top,
     double bottomPadding,
     bool isDarkMode,
     UserNotifier userNotifier,
   ) {
-    // (Same as your provided code, with the improved Password Field)
     final Color bgColor = isDarkMode ? _subtleDark : Colors.white;
     final Color textColor = isDarkMode ? Colors.white : Colors.black87;
     final Color fieldTextColor = _isEditing
@@ -848,7 +836,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: TextField(
                           controller: _passwordController,
                           readOnly: true,
-                          obscureText: !_isPasswordVisible,
+                          obscureText: true, // Always hidden
                           style: TextStyle(color: fieldTextColor),
                           decoration: InputDecoration(
                             labelText: 'Password',
@@ -856,32 +844,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Icons.lock_outline,
                               color: _isEditing ? _primaryBlue : Colors.grey,
                             ),
-                            suffixIcon: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(
-                                    _isPasswordVisible
-                                        ? Icons.visibility
-                                        : Icons.visibility_off,
-                                    color: _primaryBlue,
-                                  ),
-                                  onPressed: () => setState(
-                                    () => _isPasswordVisible =
-                                        !_isPasswordVisible,
-                                  ),
-                                ),
-                                if (_isEditing)
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.edit,
-                                      color: _primaryBlue,
-                                    ),
+                            // Only allow Editing, no viewing
+                            suffixIcon: _isEditing
+                                ? IconButton(
+                                    icon: Icon(Icons.edit, color: _primaryBlue),
                                     onPressed: () =>
                                         _showChangePasswordDialog(context),
-                                  ),
-                              ],
-                            ),
+                                  )
+                                : null,
                             filled: true,
                             fillColor: fieldFillColor,
                             border: OutlineInputBorder(
@@ -900,7 +870,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(15),
-                              borderSide: const BorderSide(
+                              borderSide: BorderSide(
                                 color: _primaryBlue,
                                 width: 3.0,
                               ),
@@ -921,6 +891,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           isEditing: _isEditing,
                           editableBorderColorDark: _editableBorderColorDark,
                           subtleLighterDark: _subtleLighterDark,
+                          primaryColor: _primaryBlue,
                         ),
                     ],
                   ),
@@ -933,7 +904,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // [Helper widgets _buildActionButtons, _buildCircleButton, _buildTextField, _showInfoDialog, _showSignOutDialog, _ProviderInfoSection, _infoBox are unchanged]
   Widget _buildActionButtons(BuildContext context, UserNotifier userNotifier) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -1011,7 +981,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: TextField(
         controller: controller,
         readOnly: !_isEditing,
-        obscureText: isPassword && !_isPasswordVisible,
+        obscureText: isPassword, // Just use boolean passed in
         keyboardType: type,
         style: TextStyle(color: textColor),
         decoration: InputDecoration(
@@ -1032,7 +1002,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: _primaryBlue, width: 3.0),
+            borderSide: BorderSide(color: _primaryBlue, width: 3.0),
           ),
           contentPadding: const EdgeInsets.symmetric(
             vertical: 16.0,
@@ -1047,11 +1017,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.info_outline, color: _primaryBlue),
-            SizedBox(width: 10),
-            Text('Ajeer Info'),
+            const SizedBox(width: 10),
+            const Text('Ajeer Info'),
           ],
         ),
         content: const Text(
@@ -1119,6 +1089,7 @@ class _ProviderInfoSection extends StatelessWidget {
   final bool isEditing;
   final Color editableBorderColorDark;
   final Color subtleLighterDark;
+  final Color primaryColor;
 
   const _ProviderInfoSection({
     required this.providerData,
@@ -1127,6 +1098,7 @@ class _ProviderInfoSection extends StatelessWidget {
     required this.isEditing,
     required this.editableBorderColorDark,
     required this.subtleLighterDark,
+    required this.primaryColor,
   });
 
   @override
@@ -1157,7 +1129,7 @@ class _ProviderInfoSection extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.edit, color: Colors.white, size: 16),
                     style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFF1976D2),
+                      backgroundColor: primaryColor,
                       fixedSize: const Size(30, 30),
                     ),
                     onPressed: () {
@@ -1248,9 +1220,7 @@ class _ProviderInfoSection extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: isEditing && isEnabled
-                    ? const Color(0xFF1976D2)
-                    : Colors.grey,
+                color: isEditing && isEnabled ? primaryColor : Colors.grey,
               ),
               const SizedBox(width: 10),
               Text(

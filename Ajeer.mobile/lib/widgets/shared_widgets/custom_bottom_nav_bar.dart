@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../notifiers/user_notifier.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final List<Map<String, dynamic>> items;
@@ -14,20 +16,42 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 1. Check User Mode
+    final userNotifier = Provider.of<UserNotifier>(context);
+    final bool isProvider = userNotifier.isProvider;
+
+    // 2. Check Theme Mode
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    // A very subtle dark grey, slightly lighter than the previous shade (0xFF1F1F1F)
-    const Color subtleLighterDarkGrey = const Color(0xFF40403f);
+    // 3. Define Color Palette
+    // Customer Colors
+    const Color customerDarkBlue = Color(0xFF1976D2);
+    const Color customerLightBlue = Color(0xFF8CCBFF);
+
+    // Provider Colors
+    const Color providerDarkBlue = Color(0xFF3461eb);
+    const Color providerLightBlue = Color(0xFF8dbafc);
+
+    // 4. Determine Selected Color
+    // Logic: In Dark Mode use Lighter Blue, in Light Mode use Darker Blue
+    Color selectedColor;
+    if (isProvider) {
+      selectedColor = isDarkMode ? providerLightBlue : providerDarkBlue;
+    } else {
+      selectedColor = isDarkMode ? customerLightBlue : customerDarkBlue;
+    }
+
+    // A very subtle dark grey background for dark mode
+    const Color subtleLighterDarkGrey = Color(0xFF40403f);
 
     final Color backgroundColor = isDarkMode
         ? subtleLighterDarkGrey
         : Colors.white;
+
     final Color defaultIconTextColor = isDarkMode
         ? Colors.grey[400]!
         : Colors.grey;
-    final Color selectedColor = isDarkMode
-        ? Theme.of(context).primaryColor
-        : Colors.blue;
+
     final Color shadowColor = isDarkMode
         ? Colors.black.withOpacity(0.5)
         : Colors.black.withOpacity(0.25);
@@ -41,13 +65,13 @@ class CustomBottomNavBar extends StatelessWidget {
 
     return MediaQuery.removePadding(
       context: context,
-      removeBottom: true, // Prevent SafeArea from pushing bar upward
+      removeBottom: true,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           horizontalPadding,
           0,
           horizontalPadding,
-          outerBottomMargin, // Keeps your original position
+          outerBottomMargin,
         ),
         child: Container(
           height: kBottomNavigationBarHeight + verticalPadding * 2,
@@ -77,6 +101,7 @@ class CustomBottomNavBar extends StatelessWidget {
                 final bool isSelected = index == selectedIndex;
                 final bool hasNotification =
                     (item['notificationCount'] ?? 0) > 0;
+
                 final Color itemColor = isSelected
                     ? selectedColor
                     : defaultIconTextColor;

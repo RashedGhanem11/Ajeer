@@ -7,10 +7,10 @@ import '../../models/provider_data.dart';
 import '../../notifiers/user_notifier.dart';
 import '../shared_screens/profile_screen.dart';
 
-const Color kLightBlue = Color(0xFF8CCBFF);
-const Color kPrimaryBlue = Color(0xFF1976D2);
+const Color kPrimaryBlue = Color(0xFF3461eb);
+const Color kLightBlue = Color(0xFF74aafc);
 const Color kDeleteRed = Color(0xFFF44336);
-const Color kSelectedGreen = Colors.green;
+const Color kSelectedGreen = Color(0xFF63d476);
 const double kBorderRadius = 50.0;
 const double kWhiteContainerTopRatio = 0.15;
 const double kSaveButtonHeight = 50.0;
