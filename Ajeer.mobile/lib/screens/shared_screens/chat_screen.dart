@@ -137,10 +137,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final navItems = _getNavItems(userNotifier);
 
     final Color primaryColor = isProvider
-        ? const Color(0xFF3461eb)
+        ? const Color(0xFF4d62fa)
         : const Color(0xFF1976D2);
     final Color lightColor = isProvider
-        ? const Color(0xFF8dbafc)
+        ? const Color(0xFFadb7ff)
         : const Color(0xFF8CCBFF);
 
     final screenHeight = MediaQuery.of(context).size.height;
