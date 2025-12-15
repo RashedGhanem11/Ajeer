@@ -101,7 +101,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   ];
 
   late AnimationController _overlayController;
-  late Animation<double> _overlayScaleAnimation;
   bool _showOverlay = false;
   IconData? _overlayIcon;
   Color? _overlayIconColor;
@@ -114,10 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     _overlayController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 370),
-    );
-    _overlayScaleAnimation = Tween<double>(begin: 0.0, end: 1.8).animate(
-      CurvedAnimation(parent: _overlayController, curve: Curves.easeOutBack),
+      duration: const Duration(milliseconds: 800),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -462,7 +458,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         _showOverlay = true;
       });
 
-      await _overlayController.forward();
+      await _overlayController.forward(from: 0.0);
       await Future.delayed(const Duration(milliseconds: 150));
       userNotifier.toggleUserMode();
 
@@ -591,26 +587,34 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildOverlayAnimation() {
+    final bool isDarkMode = widget.themeNotifier.isDarkMode;
     return Positioned.fill(
       child: Container(
         color: Colors.black.withOpacity(0.3),
         child: Center(
           child: ScaleTransition(
-            scale: _overlayScaleAnimation,
+            scale: CurvedAnimation(
+              parent: _overlayController,
+              curve: Curves.elasticOut,
+            ),
             child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
                 shape: BoxShape.circle,
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
                     color: Colors.black26,
-                    blurRadius: 10,
-                    spreadRadius: 2,
+                    blurRadius: 20,
+                    spreadRadius: 5,
                   ),
                 ],
+                border: Border.all(color: Colors.blueAccent, width: 3),
               ),
-              child: Icon(_overlayIcon, size: 30, color: _overlayIconColor),
+              child: Center(
+                child: Icon(_overlayIcon, size: 50, color: _overlayIconColor),
+              ),
             ),
           ),
         ),

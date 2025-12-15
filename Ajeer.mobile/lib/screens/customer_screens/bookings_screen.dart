@@ -1089,12 +1089,16 @@ class _DetailDialog extends StatelessWidget {
   Widget _buildAttachment(BuildContext context, String fullUrl) {
     final isVid = _isVideo(fullUrl);
     return InkWell(
-      onTap: () => showDialog(
-        context: context,
-        builder: (_) => isVid
-            ? _VideoPlayerDialog(videoUrl: fullUrl)
-            : _imageDialog(context, fullUrl),
-      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => isVid
+                ? _FullScreenNetworkVideoPlayer(videoUrl: fullUrl)
+                : _FullScreenNetworkImageViewer(imageUrl: fullUrl),
+          ),
+        );
+      },
       borderRadius: BorderRadius.circular(8),
       child: Container(
         width: 60,
@@ -1119,118 +1123,6 @@ class _DetailDialog extends StatelessWidget {
       ),
     );
   }
-
-  Widget _imageDialog(BuildContext context, String url) => Dialog(
-    backgroundColor: Colors.transparent,
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 4,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.network(url, fit: BoxFit.contain),
-          ),
-        ),
-        Positioned(
-          top: 10,
-          right: 10,
-          child: CircleAvatar(
-            backgroundColor: Colors.black54,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _VideoPlayerDialog extends StatefulWidget {
-  final String videoUrl;
-  const _VideoPlayerDialog({required this.videoUrl});
-  @override
-  State<_VideoPlayerDialog> createState() => _VideoPlayerDialogState();
-}
-
-class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
-  late VideoPlayerController _c;
-  bool _init = false, _err = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _c = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
-      ..initialize()
-          .then((_) {
-            if (mounted) {
-              setState(() => _init = true);
-              _c.play();
-            }
-          })
-          .catchError((_) {
-            if (mounted) setState(() => _err = true);
-          });
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => Dialog(
-    backgroundColor: Colors.transparent,
-    insetPadding: const EdgeInsets.all(10),
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        if (_init)
-          AspectRatio(
-            aspectRatio: _c.value.aspectRatio,
-            child: Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                VideoPlayer(_c),
-                _Controls(c: _c),
-              ],
-            ),
-          )
-        else if (_err)
-          Container(
-            width: 300,
-            height: 200,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              color: Colors.black,
-            ),
-            child: const Center(
-              child: Text(
-                'Video failed to load',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          )
-        else
-          const CircularProgressIndicator(color: Colors.white),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: CircleAvatar(
-            backgroundColor: Colors.black54,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
 }
 
 class _Controls extends StatelessWidget {
@@ -1461,6 +1353,110 @@ class _BookingMapScreenState extends State<_BookingMapScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FullScreenNetworkImageViewer extends StatelessWidget {
+  final String imageUrl;
+
+  const _FullScreenNetworkImageViewer({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          panEnabled: true,
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: Image.network(imageUrl),
+        ),
+      ),
+    );
+  }
+}
+
+class _FullScreenNetworkVideoPlayer extends StatefulWidget {
+  final String videoUrl;
+
+  const _FullScreenNetworkVideoPlayer({required this.videoUrl});
+
+  @override
+  State<_FullScreenNetworkVideoPlayer> createState() =>
+      _FullScreenNetworkVideoPlayerState();
+}
+
+class _FullScreenNetworkVideoPlayerState
+    extends State<_FullScreenNetworkVideoPlayer> {
+  late VideoPlayerController _controller;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+      ..initialize().then((_) {
+        setState(() {
+          _initialized = true;
+          _controller.play();
+        });
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Center(
+        child: _initialized
+            ? AspectRatio(
+                aspectRatio: _controller.value.aspectRatio,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    VideoPlayer(_controller),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _controller.value.isPlaying
+                              ? _controller.pause()
+                              : _controller.play();
+                        });
+                      },
+                      child: Container(
+                        color: Colors.transparent,
+                        child: Center(
+                          child: _controller.value.isPlaying
+                              ? const SizedBox.shrink()
+                              : const Icon(
+                                  Icons.play_circle_fill,
+                                  color: Colors.white,
+                                  size: 60,
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : const CircularProgressIndicator(color: Colors.white),
       ),
     );
   }

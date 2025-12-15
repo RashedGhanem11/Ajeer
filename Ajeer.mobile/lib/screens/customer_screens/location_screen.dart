@@ -1305,9 +1305,7 @@ class _BounceableAreaItemState extends State<_BounceableAreaItem>
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
-          color: widget.isSelected
-              ? const Color(0xFF1976D2).withOpacity(0.1)
-              : Colors.transparent,
+          color: Colors.transparent,
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
             visualDensity: const VisualDensity(vertical: -4),
