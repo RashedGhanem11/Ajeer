@@ -9,8 +9,6 @@ import 'work_schedule_screen.dart';
 import '../../models/provider_data.dart';
 import '../../config/app_config.dart';
 
-// You can use the separate file for models if you prefer,
-// but defining them here ensures this file is self-contained as requested.
 class AreaResponse {
   final int id;
   final String name;
@@ -54,10 +52,7 @@ const double kListContainerHeight = 310.0;
 class LocationScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
   final Map<String, Set<String>> selectedServices;
-
-  // ✅ NEW: Receive Service IDs from previous screen
   final List<int> serviceIds;
-
   final bool isEdit;
   final ProviderData? initialData;
 
@@ -65,7 +60,7 @@ class LocationScreen extends StatefulWidget {
     super.key,
     required this.themeNotifier,
     required this.selectedServices,
-    required this.serviceIds, // ✅ Add this
+    required this.serviceIds,
     this.isEdit = false,
     this.initialData,
   });
@@ -75,11 +70,9 @@ class LocationScreen extends StatefulWidget {
 }
 
 class _LocationScreenState extends State<LocationScreen> {
-  // --- Backend State ---
   List<CityResponse> _apiData = [];
   bool _isLoading = true;
 
-  // --- UI State ---
   String? _selectedCity;
   Set<String> _currentAreaSelection = {};
   List<LocationSelection> _finalLocations = [];
@@ -91,7 +84,6 @@ class _LocationScreenState extends State<LocationScreen> {
     _fetchServiceAreas();
   }
 
-  // --- API Fetching Logic ---
   Future<void> _fetchServiceAreas() async {
     final url = Uri.parse('${AppConfig.apiUrl}/service-areas');
 
@@ -115,17 +107,13 @@ class _LocationScreenState extends State<LocationScreen> {
           setState(() {
             _apiData = data.map((json) => CityResponse.fromJson(json)).toList();
             _isLoading = false;
-
-            // Initialize edit state only after data is loaded
             _initializeEditState();
           });
         }
       } else {
-        debugPrint('❌ Error fetching areas: ${response.statusCode}');
         if (mounted) setState(() => _isLoading = false);
       }
     } catch (e) {
-      debugPrint('❌ Exception fetching areas: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -135,7 +123,6 @@ class _LocationScreenState extends State<LocationScreen> {
       _finalLocations = List<LocationSelection>.from(
         widget.initialData!.selectedLocations,
       );
-      // Try to select the first available city that hasn't been added yet
       _selectedCity = _availableCities.isNotEmpty
           ? _availableCities.first
           : null;
@@ -146,12 +133,8 @@ class _LocationScreenState extends State<LocationScreen> {
     }
   }
 
-  // --- Computed Properties ---
-
-  // Get list of city names from API
   List<String> get _allApiCityNames => _apiData.map((c) => c.cityName).toList();
 
-  // Filter cities that are already in the "finalLocations" list
   List<String> get _availableCities => _allApiCityNames
       .where((city) => !_finalLocations.any((loc) => loc.city == city))
       .toList();
@@ -160,19 +143,15 @@ class _LocationScreenState extends State<LocationScreen> {
 
   bool get _isNextEnabled => _finalLocations.isNotEmpty;
 
-  // ✅ CRITICAL FIX: Extract IDs for selected areas
   List<int> _getSelectedAreaIds() {
     List<int> ids = [];
 
-    // Loop through all our finalized locations
     for (var loc in _finalLocations) {
-      // Find the city object in API data
       final cityData = _apiData.firstWhere(
         (c) => c.cityName == loc.city,
         orElse: () => CityResponse(cityName: '', areas: []),
       );
 
-      // Loop through selected area names for this city
       for (var areaName in loc.areas) {
         final areaData = cityData.areas.firstWhere(
           (a) => a.name == areaName,
@@ -188,7 +167,6 @@ class _LocationScreenState extends State<LocationScreen> {
 
   void _onNextTap() {
     if (_isNextEnabled) {
-      // ✅ Calculate Area IDs before navigating
       final areaIds = _getSelectedAreaIds();
 
       Navigator.push(
@@ -198,11 +176,8 @@ class _LocationScreenState extends State<LocationScreen> {
             themeNotifier: widget.themeNotifier,
             selectedServices: widget.selectedServices,
             selectedLocations: _finalLocations,
-
-            // ✅ PASS BOTH LISTS OF IDs
             serviceIds: widget.serviceIds,
             areaIds: areaIds,
-
             isEdit: widget.isEdit,
             initialData: widget.initialData,
           ),
@@ -382,8 +357,6 @@ class _LocationScreenState extends State<LocationScreen> {
                 ),
               ),
               const SizedBox(height: 7.0),
-
-              // Loading State Handler
               if (_isLoading)
                 const Padding(
                   padding: EdgeInsets.all(40.0),
@@ -396,7 +369,6 @@ class _LocationScreenState extends State<LocationScreen> {
                   currentAreaSelection: _currentAreaSelection,
                   finalLocations: _finalLocations,
                   areaSearchQuery: _areaSearchQuery,
-                  // Pass the full API data down to helper widgets
                   apiData: _apiData,
                   onCitySelected: _onCitySelected,
                   onAreaTapped: _onAreaTapped,
@@ -418,7 +390,7 @@ class _LocationScreenState extends State<LocationScreen> {
   }
 }
 
-class _ProviderNavigationHeader extends StatelessWidget {
+class _ProviderNavigationHeader extends StatefulWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
   final bool isNextEnabled;
@@ -429,22 +401,50 @@ class _ProviderNavigationHeader extends StatelessWidget {
     this.isNextEnabled = false,
   });
 
-  Widget _buildAjeerTitle() {
-    return const Text(
-      'Ajeer',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 34,
-        fontWeight: FontWeight.w900,
-        shadows: [
-          Shadow(
-            blurRadius: 2.0,
-            color: Colors.black26,
-            offset: Offset(1.0, 1.0),
-          ),
-        ],
-      ),
+  @override
+  State<_ProviderNavigationHeader> createState() =>
+      _ProviderNavigationHeaderState();
+}
+
+class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
     );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.25,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    if (widget.isNextEnabled) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_ProviderNavigationHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isNextEnabled != oldWidget.isNextEnabled) {
+      if (widget.isNextEnabled) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.stop();
+        _controller.reset();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -459,16 +459,49 @@ class _ProviderNavigationHeader extends StatelessWidget {
           IconButton(
             iconSize: 28.0,
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: onBackTap,
+            onPressed: widget.onBackTap,
           ),
-          _buildAjeerTitle(),
-          IconButton(
-            iconSize: 28.0,
-            icon: Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white.withOpacity(isNextEnabled ? 1.0 : 0.5),
+          const Text(
+            'Ajeer',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(
+                  blurRadius: 2.0,
+                  color: Colors.black26,
+                  offset: Offset(1.0, 1.0),
+                ),
+              ],
             ),
-            onPressed: isNextEnabled ? onNextTap : null,
+          ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              if (widget.isNextEnabled)
+                ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.4),
+                    ),
+                  ),
+                ),
+              IconButton(
+                iconSize: 28.0,
+                icon: Icon(
+                  Icons.arrow_forward_ios,
+                  color: widget.isNextEnabled
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.5),
+                ),
+                onPressed: widget.isNextEnabled ? widget.onNextTap : null,
+              ),
+            ],
           ),
         ],
       ),
@@ -482,7 +515,7 @@ class _LocationSelectionContent extends StatelessWidget {
   final Set<String> currentAreaSelection;
   final List<LocationSelection> finalLocations;
   final String areaSearchQuery;
-  final List<CityResponse> apiData; // Added API Data
+  final List<CityResponse> apiData;
   final ValueChanged<String> onCitySelected;
   final ValueChanged<String> onAreaTapped;
   final ValueChanged<String> onAreaSearchChanged;
@@ -654,7 +687,7 @@ class _LocationSelectionContent extends StatelessWidget {
             currentAreaSelection: currentAreaSelection,
             finalLocations: finalLocations,
             areaSearchQuery: areaSearchQuery,
-            apiData: apiData, // Pass API Data
+            apiData: apiData,
             onCitySelected: onCitySelected,
             onAreaTapped: onAreaTapped,
             onAreaSearchChanged: onAreaSearchChanged,
@@ -670,8 +703,6 @@ class _LocationSelectionContent extends StatelessWidget {
   }
 }
 
-// ... _CityAreaSelector, _LocationBox, _CityList, _AreaList, _AreaSearchBar
-// (Just ensure these standard widgets from your original file are included here at the bottom)
 class _CityAreaSelector extends StatelessWidget {
   final List<String> availableCities;
   final String? selectedCity;
@@ -732,7 +763,7 @@ class _CityAreaSelector extends StatelessWidget {
                     selectedCity: selectedCity,
                     currentAreaSelection: currentAreaSelection,
                     areaSearchQuery: areaSearchQuery,
-                    apiData: apiData, // Pass API Data
+                    apiData: apiData,
                     onAreaTapped: onAreaTapped,
                     onAreaSearchChanged: onAreaSearchChanged,
                     isDarkMode: isDarkMode,
@@ -929,7 +960,6 @@ class _AreaList extends StatelessWidget {
     return text.replaceAll(RegExp(r'[\s-]'), '').toLowerCase();
   }
 
-  // Helper to extract area names from API data based on selected city
   List<String> _getAreasForCity(String cityName) {
     try {
       final cityObj = apiData.firstWhere(
@@ -957,13 +987,10 @@ class _AreaList extends StatelessWidget {
       );
     }
 
-    // Since we filtered cities in the city list, we don't strictly need to filter here,
-    // but safety first.
     final bool isCityAlreadyAdded = finalLocations.any(
       (loc) => loc.city == selectedCity,
     );
 
-    // Get areas dynamically from API data
     final List<String> availableAreas = isCityAlreadyAdded
         ? []
         : _getAreasForCity(selectedCity!);
@@ -1010,51 +1037,105 @@ class _AreaList extends StatelessWidget {
                     final area = filteredAreas[index];
                     final bool isSelected = currentAreaSelection.contains(area);
 
-                    final Color itemBgColor = isSelected
-                        ? kPrimaryBlue.withOpacity(0.1)
-                        : Colors.transparent;
-                    final Color itemTextColor = isDarkMode
-                        ? (isSelected ? kPrimaryBlue : Colors.white70)
-                        : (isSelected ? kPrimaryBlue : Colors.black87);
-
-                    return ListTile(
+                    return _AreaListItem(
+                      areaName: area,
+                      isSelected: isSelected,
+                      isDarkMode: isDarkMode,
                       onTap: () => onAreaTapped(area),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 8.0,
-                        vertical: 0,
-                      ),
-                      visualDensity: const VisualDensity(vertical: -4),
-                      dense: true,
-                      minVerticalPadding: 0,
-                      title: Text(
-                        area,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: itemTextColor,
-                        ),
-                      ),
-                      trailing: isSelected
-                          ? const Icon(
-                              Icons.check_circle,
-                              color: kSelectedGreen,
-                              size: 20,
-                            )
-                          : Icon(
-                              Icons.radio_button_unchecked,
-                              color: isDarkMode
-                                  ? Colors.grey.shade600
-                                  : Colors.grey.shade400,
-                              size: 20,
-                            ),
-                      tileColor: itemBgColor,
                     );
                   },
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _AreaListItem extends StatefulWidget {
+  final String areaName;
+  final bool isSelected;
+  final bool isDarkMode;
+  final VoidCallback onTap;
+
+  const _AreaListItem({
+    required this.areaName,
+    required this.isSelected,
+    required this.isDarkMode,
+    required this.onTap,
+  });
+
+  @override
+  State<_AreaListItem> createState() => _AreaListItemState();
+}
+
+class _AreaListItemState extends State<_AreaListItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _controller.forward().then((_) => _controller.reverse());
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color itemBgColor = widget.isSelected
+        ? kPrimaryBlue.withOpacity(0.1)
+        : Colors.transparent;
+    final Color itemTextColor = widget.isDarkMode
+        ? (widget.isSelected ? kPrimaryBlue : Colors.white70)
+        : (widget.isSelected ? kPrimaryBlue : Colors.black87);
+
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: ListTile(
+        onTap: _handleTap,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 8.0,
+          vertical: 0,
+        ),
+        visualDensity: const VisualDensity(vertical: -4),
+        dense: true,
+        minVerticalPadding: 0,
+        title: Text(
+          widget.areaName,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal,
+            color: itemTextColor,
+          ),
+        ),
+        trailing: widget.isSelected
+            ? const Icon(Icons.check_circle, color: kSelectedGreen, size: 20)
+            : Icon(
+                Icons.radio_button_unchecked,
+                color: widget.isDarkMode
+                    ? Colors.grey.shade600
+                    : Colors.grey.shade400,
+                size: 20,
+              ),
+        tileColor: itemBgColor,
+      ),
     );
   }
 }

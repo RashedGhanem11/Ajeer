@@ -24,17 +24,12 @@ class CustomBottomNavBar extends StatelessWidget {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     // 3. Define Color Palette
-    // Customer Colors
-
     const Color customerDarkBlue = Color(0xFF1976D2);
     const Color customerLightBlue = Color(0xFF8CCBFF);
-
-    // Provider Colors
     const Color providerDarkBlue = Color(0xFF2f6cfa);
     const Color providerLightBlue = Color(0xFFa2bdfc);
 
     // 4. Determine Selected Color
-    // Logic: In Dark Mode use Lighter Blue, in Light Mode use Darker Blue
     Color selectedColor;
     if (isProvider) {
       selectedColor = isDarkMode ? providerLightBlue : providerDarkBlue;
@@ -42,17 +37,13 @@ class CustomBottomNavBar extends StatelessWidget {
       selectedColor = isDarkMode ? customerLightBlue : customerDarkBlue;
     }
 
-    // A very subtle dark grey background for dark mode
     const Color subtleLighterDarkGrey = Color(0xFF40403f);
-
     final Color backgroundColor = isDarkMode
         ? subtleLighterDarkGrey
         : Colors.white;
-
     final Color defaultIconTextColor = isDarkMode
         ? Colors.grey[400]!
         : Colors.grey;
-
     final Color shadowColor = isDarkMode
         ? Colors.black.withOpacity(0.5)
         : Colors.black.withOpacity(0.25);
@@ -107,9 +98,8 @@ class CustomBottomNavBar extends StatelessWidget {
                     ? selectedColor
                     : defaultIconTextColor;
 
-                return GestureDetector(
+                return _BounceableNavItem(
                   onTap: () => onIndexChanged(index),
-                  behavior: HitTestBehavior.translucent,
                   child: Container(
                     width: 70,
                     padding: const EdgeInsets.symmetric(vertical: 5.0),
@@ -156,6 +146,61 @@ class CustomBottomNavBar extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _BounceableNavItem extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _BounceableNavItem({required this.child, required this.onTap});
+
+  @override
+  State<_BounceableNavItem> createState() => _BounceableNavItemState();
+}
+
+class _BounceableNavItemState extends State<_BounceableNavItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // I reduced the duration slightly (70ms) to make the nav feel snappy
+    // while still showing the bounce.
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 85),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.65, // Slightly more pronounced shrink (0.90) for better visibility
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    // 1. Shrink
+    await _controller.forward();
+    // 2. Expand (Bounce back)
+    await _controller.reverse();
+    // 3. ONLY THEN navigate
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleTap,
+      behavior: HitTestBehavior.translucent,
+      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
     );
   }
 }

@@ -121,20 +121,16 @@ class _ServicesScreenState extends State<ServicesScreen> {
     }
   }
 
-  // ✅ CRITICAL FIX: Extract IDs from selected names
   List<int> _getSelectedServiceIds() {
     List<int> ids = [];
 
-    // Iterate through all categories to match names with IDs
     for (var category in _categories) {
       final selectedNames = _selectedUnitTypes[category.name];
 
-      // If this category has selections
       if (selectedNames != null && selectedNames.isNotEmpty) {
         final items = _categoryItems[category.id];
         if (items != null) {
           for (var item in items) {
-            // If the item name is in the selection set, capture the ID
             if (selectedNames.contains(item.name)) {
               ids.add(item.id);
             }
@@ -147,7 +143,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
   void _onNextTap() {
     if (_isNextEnabled) {
-      // ✅ Capture IDs before navigating
       final ids = _getSelectedServiceIds();
 
       Navigator.push(
@@ -156,7 +151,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
           builder: (context) => LocationScreen(
             themeNotifier: widget.themeNotifier,
             selectedServices: _selectedUnitTypes,
-            serviceIds: ids, // ✅ PASSING IDs
+            serviceIds: ids,
             isEdit: widget.isEdit,
             initialData: widget.initialData,
           ),
@@ -356,7 +351,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 }
 
-class _ProviderNavigationHeader extends StatelessWidget {
+class _ProviderNavigationHeader extends StatefulWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
   final bool isNextEnabled;
@@ -366,6 +361,52 @@ class _ProviderNavigationHeader extends StatelessWidget {
     required this.onNextTap,
     this.isNextEnabled = false,
   });
+
+  @override
+  State<_ProviderNavigationHeader> createState() =>
+      _ProviderNavigationHeaderState();
+}
+
+class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.25,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    if (widget.isNextEnabled) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_ProviderNavigationHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isNextEnabled != oldWidget.isNextEnabled) {
+      if (widget.isNextEnabled) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.stop();
+        _controller.reset();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -379,7 +420,7 @@ class _ProviderNavigationHeader extends StatelessWidget {
           IconButton(
             iconSize: 28.0,
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: onBackTap,
+            onPressed: widget.onBackTap,
           ),
           const Text(
             'Ajeer',
@@ -396,13 +437,32 @@ class _ProviderNavigationHeader extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            iconSize: 28.0,
-            icon: Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white.withOpacity(isNextEnabled ? 1.0 : 0.5),
-            ),
-            onPressed: isNextEnabled ? onNextTap : null,
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              if (widget.isNextEnabled)
+                ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.4),
+                    ),
+                  ),
+                ),
+              IconButton(
+                iconSize: 28.0,
+                icon: Icon(
+                  Icons.arrow_forward_ios,
+                  color: widget.isNextEnabled
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.5),
+                ),
+                onPressed: widget.isNextEnabled ? widget.onNextTap : null,
+              ),
+            ],
           ),
         ],
       ),
@@ -793,7 +853,7 @@ class _UnitTypeSelectionDialogState extends State<_UnitTypeSelectionDialog> {
   }
 }
 
-class _UnitTypeListItem extends StatelessWidget {
+class _UnitTypeListItem extends StatefulWidget {
   final String name;
   final String timeString;
   final String priceString;
@@ -810,82 +870,120 @@ class _UnitTypeListItem extends StatelessWidget {
     required this.isDarkMode,
   });
 
+  @override
+  State<_UnitTypeListItem> createState() => _UnitTypeListItemState();
+}
+
+class _UnitTypeListItemState extends State<_UnitTypeListItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _subtleLighterDarkGrey = Color(0xFF242424);
 
   @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _controller.forward().then((_) => _controller.reverse());
+    widget.onTap();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final Color fillColor = isDarkMode
+    final Color fillColor = widget.isDarkMode
         ? _subtleLighterDarkGrey
         : Colors.grey[100]!;
-    final Color unselectedBorderColor = isDarkMode
+    final Color unselectedBorderColor = widget.isDarkMode
         ? Colors.grey[600]!
         : Colors.grey[400]!;
-    final Color unselectedTitleColor = isDarkMode
+    final Color unselectedTitleColor = widget.isDarkMode
         ? Colors.white70
         : Colors.grey[700]!;
-    final Color timeTextColor = isDarkMode
+    final Color timeTextColor = widget.isDarkMode
         ? Colors.grey[400]!
         : Colors.grey[600]!;
 
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4.0),
-        padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 8.0),
-        decoration: BoxDecoration(
-          color: fillColor,
-          borderRadius: BorderRadius.circular(10.0),
-          border: Border.all(
-            color: isSelected ? _primaryBlue : unselectedBorderColor,
-            width: 1.5,
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4.0),
+          padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            color: fillColor,
+            borderRadius: BorderRadius.circular(10.0),
+            border: Border.all(
+              color: widget.isSelected ? _primaryBlue : unselectedBorderColor,
+              width: 1.5,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.name,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: widget.isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w600,
+                        color: widget.isSelected
+                            ? _primaryBlue
+                            : unselectedTitleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2.0),
+                    Text(
+                      'Est. Time: ${widget.timeString}',
+                      style: TextStyle(fontSize: 13, color: timeTextColor),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    name,
-                    style: TextStyle(
+                    widget.priceString,
+                    style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.w600,
-                      color: isSelected ? _primaryBlue : unselectedTitleColor,
+                      fontWeight: FontWeight.bold,
+                      color: _primaryBlue,
                     ),
                   ),
-                  const SizedBox(height: 2.0),
-                  Text(
-                    'Est. Time: $timeString',
-                    style: TextStyle(fontSize: 13, color: timeTextColor),
+                  Icon(
+                    widget.isSelected
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: widget.isSelected ? Colors.green : Colors.grey[400],
+                    size: 20,
                   ),
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  priceString,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: _primaryBlue,
-                  ),
-                ),
-                Icon(
-                  isSelected
-                      ? Icons.check_circle
-                      : Icons.radio_button_unchecked,
-                  color: isSelected ? Colors.green : Colors.grey[400],
-                  size: 20,
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

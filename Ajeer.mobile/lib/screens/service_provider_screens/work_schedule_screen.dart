@@ -192,10 +192,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton(
-                      // Inside _showConfirmationDialog...
-                      // Inside the ElevatedButton onPressed:
                       onPressed: () async {
-                        // 1. Show Loading
                         showDialog(
                           context: context,
                           barrierDismissible: false,
@@ -203,7 +200,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                               const Center(child: CircularProgressIndicator()),
                         );
 
-                        // 2. Prepare Data
                         final providerData = ProviderData(
                           selectedServices: widget.selectedServices,
                           selectedLocations: widget.selectedLocations,
@@ -218,7 +214,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                         );
 
                         try {
-                          // 3. Attempt Registration/Update
                           if (widget.isEdit) {
                             await userNotifier.updateProviderData(providerData);
                           } else {
@@ -227,13 +222,10 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                             );
                           }
 
-                          // 4. Success Navigation
                           if (mounted) {
-                            // Close loading dialog AND confirmation dialog
                             Navigator.of(context).pop();
                             Navigator.of(context).pop();
 
-                            // Go to Profile Screen
                             Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
                                 builder: (context) => ProfileScreen(
@@ -244,29 +236,21 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                             );
                           }
                         } catch (e) {
-                          // 🔴 ERROR HANDLING FIXED
                           if (mounted) {
-                            Navigator.of(context).pop(); // Close loading dialog
+                            Navigator.of(context).pop();
 
-                            // Get the raw error string
                             String errorMsg = e
                                 .toString()
                                 .replaceAll("Exception:", "")
                                 .trim();
 
-                            // If it looks like a JSON object (starts with {), try to parse it.
-                            // Otherwise, just show the raw text (which unmasks 500/400 errors).
                             if (errorMsg.startsWith('{')) {
                               errorMsg = extractErrorMessage(e);
                             }
 
-                            print(
-                              "REAL ERROR: $errorMsg",
-                            ); // Print to VS Code Console
-
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(errorMsg), // Show the REAL error
+                                content: Text(errorMsg),
                                 backgroundColor: kDeleteRed,
                                 duration: const Duration(seconds: 5),
                               ),
@@ -308,7 +292,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
   Future<void> _pickTime(BuildContext context, bool isStart) async {
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
 
-    // Define specific dark mode colors locally to match the other screen exactly
     const Color subtleDark = Color(0xFF1E1E1E);
     const Color subtleLighterDark = Color(0xFF2C2C2C);
 
@@ -316,14 +299,12 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
       context: context,
       initialTime: isStart ? _startTime : _endTime,
       builder: (context, child) {
-        // 1. Define colors to match the DatePicker style
         final ColorScheme colorScheme = isDarkMode
             ? const ColorScheme.dark(
-                primary: kPrimaryBlue, // Dial hand, Active AM/PM text/border
+                primary: kPrimaryBlue,
                 onPrimary: Colors.white,
-                surface: subtleDark, // Dialog Background
+                surface: subtleDark,
                 onSurface: Colors.white,
-                // This controls the fill color of the selected AM/PM toggle
                 secondaryContainer: kPrimaryBlue,
                 onSecondaryContainer: Colors.white,
               )
@@ -338,14 +319,12 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: colorScheme,
-            // 2. Button Styles (OK/Cancel)
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
                 foregroundColor: kPrimaryBlue,
                 textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-            // 3. Specific Time Picker Overrides
             timePickerTheme: TimePickerThemeData(
               backgroundColor: isDarkMode ? subtleDark : Colors.white,
               dialBackgroundColor: isDarkMode
@@ -354,8 +333,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
               dialHandColor: kPrimaryBlue,
               dialTextColor: isDarkMode ? Colors.white : Colors.black87,
               entryModeIconColor: kPrimaryBlue,
-
-              // AM/PM Box Styles
               dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
                   return Colors.white;
@@ -364,13 +341,11 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
               }),
               dayPeriodColor: WidgetStateColor.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return kPrimaryBlue; // Blue fill when selected
+                  return kPrimaryBlue;
                 }
                 return Colors.transparent;
               }),
               dayPeriodBorderSide: const BorderSide(color: kPrimaryBlue),
-
-              // Input decoration (for keyboard mode)
               hourMinuteTextColor: isDarkMode ? Colors.white : Colors.black87,
               hourMinuteColor: isDarkMode
                   ? subtleLighterDark
@@ -618,7 +593,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
   }
 }
 
-class _ProviderNavigationHeader extends StatelessWidget {
+class _ProviderNavigationHeader extends StatefulWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
   final bool isNextEnabled;
@@ -628,6 +603,52 @@ class _ProviderNavigationHeader extends StatelessWidget {
     required this.onNextTap,
     this.isNextEnabled = false,
   });
+
+  @override
+  State<_ProviderNavigationHeader> createState() =>
+      _ProviderNavigationHeaderState();
+}
+
+class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.15,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    if (widget.isNextEnabled) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_ProviderNavigationHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isNextEnabled != oldWidget.isNextEnabled) {
+      if (widget.isNextEnabled) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.stop();
+        _controller.reset();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   Widget _buildAjeerTitle() {
     return const Text(
@@ -649,7 +670,7 @@ class _ProviderNavigationHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color buttonBackgroundColor = isNextEnabled
+    final Color buttonBackgroundColor = widget.isNextEnabled
         ? kSelectedGreen
         : Colors.white.withOpacity(0.2);
 
@@ -663,23 +684,27 @@ class _ProviderNavigationHeader extends StatelessWidget {
           IconButton(
             iconSize: 28.0,
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: onBackTap,
+            onPressed: widget.onBackTap,
           ),
           _buildAjeerTitle(),
-          InkWell(
-            onTap: isNextEnabled ? onNextTap : null,
-            customBorder: const CircleBorder(),
-            child: Container(
-              width: 45.0,
-              height: 45.0,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: buttonBackgroundColor,
-                border: Border.all(color: Colors.white, width: 2.0),
-                // REMOVED: boxShadow property is gone
-              ),
-              child: const Center(
-                child: Icon(Icons.check, size: 28.0, color: Colors.white),
+          ScaleTransition(
+            scale: widget.isNextEnabled
+                ? _scaleAnimation
+                : const AlwaysStoppedAnimation(1.0),
+            child: InkWell(
+              onTap: widget.isNextEnabled ? widget.onNextTap : null,
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: 45.0,
+                height: 45.0,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: buttonBackgroundColor,
+                  border: Border.all(color: Colors.white, width: 2.0),
+                ),
+                child: const Center(
+                  child: Icon(Icons.check, size: 28.0, color: Colors.white),
+                ),
               ),
             ),
           ),
@@ -813,41 +838,101 @@ class _DaySelector extends StatelessWidget {
                   ? kContentHorizontalPadding
                   : 5.0,
             ),
-            child: InkWell(
+            child: _DayItem(
+              day: day,
+              isSelected: isSelected,
+              isDarkMode: isDarkMode,
               onTap: () => onDaySelected(day),
-              borderRadius: BorderRadius.circular(kBoxRadius),
-              child: Container(
-                width: 65,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? kPrimaryBlue
-                      : (isDarkMode ? Colors.grey.shade800 : Colors.white),
-                  borderRadius: BorderRadius.circular(kBoxRadius),
-                  border: Border.all(
-                    color: isSelected
-                        ? kPrimaryBlue
-                        : (isDarkMode
-                              ? Colors.grey.shade700
-                              : Colors.grey.shade300),
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    day.substring(0, 3),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: isSelected
-                          ? Colors.white
-                          : (isDarkMode ? Colors.white : Colors.black87),
-                    ),
-                  ),
-                ),
-              ),
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _DayItem extends StatefulWidget {
+  final String day;
+  final bool isSelected;
+  final bool isDarkMode;
+  final VoidCallback onTap;
+
+  const _DayItem({
+    required this.day,
+    required this.isSelected,
+    required this.isDarkMode,
+    required this.onTap,
+  });
+
+  @override
+  State<_DayItem> createState() => _DayItemState();
+}
+
+class _DayItemState extends State<_DayItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _controller.forward().then((_) => _controller.reverse());
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: InkWell(
+        onTap: _handleTap,
+        borderRadius: BorderRadius.circular(kBoxRadius),
+        child: Container(
+          width: 65,
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? kPrimaryBlue
+                : (widget.isDarkMode ? Colors.grey.shade800 : Colors.white),
+            borderRadius: BorderRadius.circular(kBoxRadius),
+            border: Border.all(
+              color: widget.isSelected
+                  ? kPrimaryBlue
+                  : (widget.isDarkMode
+                        ? Colors.grey.shade700
+                        : Colors.grey.shade300),
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              widget.day.substring(0, 3),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: widget.isSelected
+                    ? Colors.white
+                    : (widget.isDarkMode ? Colors.white : Colors.black87),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1244,8 +1329,6 @@ String extractErrorMessage(dynamic error) {
         return decoded['title'];
       }
     }
-  } catch (e) {
-    // ignore
-  }
+  } catch (e) {}
   return "An unexpected error occurred.";
 }
