@@ -383,7 +383,7 @@ class _BookingsScreenState extends State<BookingsScreen>
 
 enum _BookingListType { active, pending, closed }
 
-class _BookingCard extends StatelessWidget {
+class _BookingCard extends StatefulWidget {
   final BookingListItem booking;
   final _BookingListType listType;
   final bool isDarkMode;
@@ -402,15 +402,50 @@ class _BookingCard extends StatelessWidget {
     required this.onRefresh,
   });
 
+  @override
+  State<_BookingCard> createState() => _BookingCardState();
+}
+
+class _BookingCardState extends State<_BookingCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _jumpController;
+  late Animation<Offset> _jumpAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _jumpController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _jumpAnimation =
+        Tween<Offset>(begin: Offset.zero, end: const Offset(0, -0.2)).animate(
+          CurvedAnimation(parent: _jumpController, curve: Curves.easeInOut),
+        );
+
+    if (widget.listType == _BookingListType.closed &&
+        widget.booking.hasReview) {
+      _jumpController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _jumpController.dispose();
+    super.dispose();
+  }
+
   Future<void> _handleReviewTap(BuildContext context) async {
-    if (!booking.hasReview) {
+    if (!widget.booking.hasReview) {
       final result = await showDialog(
         context: context,
-        builder: (_) =>
-            _ReviewDialog(bookingId: booking.id, isDarkMode: isDarkMode),
+        builder: (_) => _ReviewDialog(
+          bookingId: widget.booking.id,
+          isDarkMode: widget.isDarkMode,
+        ),
       );
       if (result == true) {
-        onRefresh();
+        widget.onRefresh();
       }
     } else {
       showDialog(
@@ -420,7 +455,7 @@ class _BookingCard extends StatelessWidget {
       );
 
       final service = ReviewService();
-      final review = await service.getReview(booking.id);
+      final review = await service.getReview(widget.booking.id);
 
       if (context.mounted) Navigator.pop(context);
 
@@ -428,8 +463,8 @@ class _BookingCard extends StatelessWidget {
         showDialog(
           context: context,
           builder: (_) => _ReviewDialog(
-            bookingId: booking.id,
-            isDarkMode: isDarkMode,
+            bookingId: widget.booking.id,
+            isDarkMode: widget.isDarkMode,
             existingReview: review,
           ),
         );
@@ -439,21 +474,23 @@ class _BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final letter = booking.otherSideName.isNotEmpty
-        ? booking.otherSideName[0].toUpperCase()
+    final letter = widget.booking.otherSideName.isNotEmpty
+        ? widget.booking.otherSideName[0].toUpperCase()
         : '?';
     final avatarColor =
         Colors.primaries[letter.hashCode % Colors.primaries.length];
-    final fullImageUrl = AppConfig.getFullImageUrl(booking.otherSideImageUrl);
+    final fullImageUrl = AppConfig.getFullImageUrl(
+      widget.booking.otherSideImageUrl,
+    );
 
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
-      color: isDarkMode ? _Consts.subtleDark : Colors.white,
+      color: widget.isDarkMode ? _Consts.subtleDark : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
         side: BorderSide(
-          color: isDarkMode ? _Consts.darkBorder : Colors.grey.shade300,
+          color: widget.isDarkMode ? _Consts.darkBorder : Colors.grey.shade300,
           width: 2.0,
         ),
       ),
@@ -463,7 +500,7 @@ class _BookingCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: isDarkMode
+              backgroundColor: widget.isDarkMode
                   ? avatarColor.shade900
                   : avatarColor.shade100,
               backgroundImage: fullImageUrl.isNotEmpty
@@ -473,7 +510,7 @@ class _BookingCard extends StatelessWidget {
                   ? Text(
                       letter,
                       style: TextStyle(
-                        color: isDarkMode
+                        color: widget.isDarkMode
                             ? avatarColor.shade100
                             : avatarColor.shade700,
                         fontWeight: FontWeight.bold,
@@ -488,19 +525,19 @@ class _BookingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    booking.otherSideName,
+                    widget.booking.otherSideName,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: isDarkMode ? Colors.white : Colors.black87,
+                      color: widget.isDarkMode ? Colors.white : Colors.black87,
                     ),
                   ),
                   Text(
-                    booking.serviceName,
+                    widget.booking.serviceName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isDarkMode
+                      color: widget.isDarkMode
                           ? Colors.grey.shade400
                           : Colors.grey.shade700,
                       fontSize: 13,
@@ -520,25 +557,29 @@ class _BookingCard extends StatelessWidget {
   Widget _buildActions(BuildContext context) {
     final iconButtons = <Widget>[];
 
-    if (listType == _BookingListType.active) {
+    if (widget.listType == _BookingListType.active) {
       iconButtons.add(
         _iconBtn(
           Icons.chat_bubble_outline,
-          isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+          widget.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
           22,
           () => _showMessageDialog(context),
         ),
       );
-    } else if (booking.status == BookingStatus.completed &&
-        listType == _BookingListType.closed) {
-      iconButtons.add(
-        _iconBtn(
-          booking.hasReview ? Icons.star_rounded : Icons.star_border_rounded,
-          Colors.amber,
-          24,
-          () => _handleReviewTap(context),
-        ),
+    } else if (widget.booking.status == BookingStatus.completed &&
+        widget.listType == _BookingListType.closed) {
+      final isFilled = widget.booking.hasReview;
+      Widget starBtn = _iconBtn(
+        isFilled ? Icons.star_rounded : Icons.star_border_rounded,
+        Colors.amber,
+        24,
+        () => _handleReviewTap(context),
       );
+
+      if (isFilled) {
+        starBtn = SlideTransition(position: _jumpAnimation, child: starBtn);
+      }
+      iconButtons.add(starBtn);
     }
 
     iconButtons.add(
@@ -546,16 +587,16 @@ class _BookingCard extends StatelessWidget {
         Icons.location_on_outlined,
         _Consts.primaryBlue,
         24,
-        onLocationTap,
+        widget.onLocationTap,
       ),
     );
 
     iconButtons.add(
-      _iconBtn(Icons.info_outline, _Consts.primaryBlue, 24, onInfoTap),
+      _iconBtn(Icons.info_outline, _Consts.primaryBlue, 24, widget.onInfoTap),
     );
 
     Widget mainAction;
-    if (listType != _BookingListType.closed) {
+    if (widget.listType != _BookingListType.closed) {
       mainAction = Center(
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -607,10 +648,11 @@ class _BookingCard extends StatelessWidget {
   Widget _statusBadge() {
     Color bg, txt;
     String text;
-    Color getBg(MaterialColor c) => isDarkMode ? c.shade900 : c.shade100;
-    Color getTxt(MaterialColor c) => isDarkMode ? c.shade100 : c.shade800;
+    Color getBg(MaterialColor c) => widget.isDarkMode ? c.shade900 : c.shade100;
+    Color getTxt(MaterialColor c) =>
+        widget.isDarkMode ? c.shade100 : c.shade800;
 
-    switch (booking.status) {
+    switch (widget.booking.status) {
       case BookingStatus.completed:
         bg = getBg(Colors.green);
         txt = getTxt(Colors.green);
@@ -627,8 +669,8 @@ class _BookingCard extends StatelessWidget {
         text = "Rejected";
         break;
       default:
-        bg = isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
-        txt = isDarkMode ? Colors.grey.shade300 : Colors.grey.shade800;
+        bg = widget.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
+        txt = widget.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade800;
         text = "Closed";
     }
 
@@ -653,13 +695,13 @@ class _BookingCard extends StatelessWidget {
     'Are you sure you want to cancel this booking?',
     _Consts.primaryRed,
     'Confirm',
-    onCancel,
+    widget.onCancel,
   );
 
   void _showMessageDialog(BuildContext context) => _genericDialog(
     context,
     'Message Provider',
-    'Would you like to message ${booking.otherSideName}?',
+    'Would you like to message ${widget.booking.otherSideName}?',
     _Consts.primaryBlue,
     'Message',
     () {
@@ -667,10 +709,10 @@ class _BookingCard extends StatelessWidget {
         context,
         MaterialPageRoute(
           builder: (_) => ChatDetailScreen(
-            bookingId: booking.id,
-            otherSideName: booking.otherSideName,
+            bookingId: widget.booking.id,
+            otherSideName: widget.booking.otherSideName,
             chatService: ChatService(),
-            isDarkMode: isDarkMode,
+            isDarkMode: widget.isDarkMode,
             primaryColor: _Consts.primaryBlue,
           ),
         ),
@@ -689,7 +731,7 @@ class _BookingCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDarkMode ? _Consts.subtleDark : Colors.white,
+        backgroundColor: widget.isDarkMode ? _Consts.subtleDark : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         title: Text(
           title,
@@ -700,7 +742,7 @@ class _BookingCard extends StatelessWidget {
           content,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: isDarkMode ? Colors.grey.shade300 : Colors.black87,
+            color: widget.isDarkMode ? Colors.grey.shade300 : Colors.black87,
           ),
         ),
         actions: [
@@ -712,7 +754,7 @@ class _BookingCard extends StatelessWidget {
                   child: Text(
                     'Back',
                     style: TextStyle(
-                      color: isDarkMode
+                      color: widget.isDarkMode
                           ? Colors.grey.shade400
                           : Colors.grey.shade600,
                     ),
