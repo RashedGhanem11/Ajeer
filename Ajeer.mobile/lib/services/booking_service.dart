@@ -13,7 +13,6 @@ class BookingResult {
 }
 
 class BookingService {
-  // --- CREATE BOOKING (Unchanged) ---
   Future<BookingResult> createBooking({
     required List<int> serviceIds,
     required int serviceAreaId,
@@ -34,7 +33,6 @@ class BookingService {
     request.fields['ScheduledDate'] = scheduledDate.toIso8601String();
     if (notes != null) request.fields['Notes'] = notes;
 
-    // Use request.files.add with fromString to support duplicate keys (List of IDs)
     for (var id in serviceIds) {
       request.files.add(
         http.MultipartFile.fromString('ServiceIds', id.toString()),
@@ -65,16 +63,21 @@ class BookingService {
           message: 'Booking confirmed successfully!',
         );
       } else {
-        return BookingResult(success: false, message: response.body);
+        String errorMessage = response.body;
+        try {
+          final Map<String, dynamic> decoded = jsonDecode(response.body);
+          if (decoded.containsKey('message')) {
+            errorMessage = decoded['message'];
+          }
+        } catch (_) {}
+
+        return BookingResult(success: false, message: errorMessage);
       }
     } catch (e) {
       return BookingResult(success: false, message: 'Connection error.');
     }
   }
 
-  // --- GET BOOKINGS (Updated with Role) ---
-  /// Fetches bookings based on the user role.
-  /// [role] should be either 'customer' or 'serviceprovider'.
   Future<List<BookingListItem>> getBookings({String role = 'customer'}) async {
     final uri = Uri.parse('${AppConfig.apiUrl}/bookings?role=$role');
 
@@ -94,18 +97,13 @@ class BookingService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => BookingListItem.fromJson(json)).toList();
       } else {
-        print(
-          'Error fetching bookings: ${response.statusCode} - ${response.body}',
-        );
         return [];
       }
     } catch (e) {
-      print('Exception fetching bookings: $e');
       return [];
     }
   }
 
-  // --- GET DETAILS (Unchanged) ---
   Future<BookingDetail?> getBookingDetails(int id) async {
     final uri = Uri.parse('${AppConfig.apiUrl}/bookings/$id');
 
@@ -125,34 +123,27 @@ class BookingService {
         return BookingDetail.fromJson(jsonDecode(response.body));
       }
     } catch (e) {
-      print('Exception fetching details: $e');
+      // Handle exception
     }
     return null;
   }
 
-  // --- PROVIDER & CUSTOMER ACTIONS ---
-
-  // Cancel Booking (Customer or Provider)
   Future<bool> cancelBooking(int id) async {
     return _sendRequest('$id/cancel');
   }
 
-  // Accept Booking (Provider Only)
   Future<bool> acceptBooking(int id) async {
     return _sendRequest('$id/accept');
   }
 
-  // Reject Booking (Provider Only)
   Future<bool> rejectBooking(int id) async {
     return _sendRequest('$id/reject');
   }
 
-  // Complete Booking (Provider Only)
   Future<bool> completeBooking(int id) async {
     return _sendRequest('$id/complete');
   }
 
-  // --- HELPER METHOD ---
   Future<bool> _sendRequest(String endpoint) async {
     final uri = Uri.parse('${AppConfig.apiUrl}/bookings/$endpoint');
 
@@ -167,7 +158,6 @@ class BookingService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Exception calling $endpoint: $e');
       return false;
     }
   }

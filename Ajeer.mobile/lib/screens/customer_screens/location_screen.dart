@@ -19,9 +19,7 @@ import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
 
 class LocationScreen extends StatefulWidget {
-  // --- ADDED: Receive Service IDs from previous screen ---
   final List<int> serviceIds;
-
   final String serviceName;
   final String unitType;
   final DateTime selectedDate;
@@ -32,7 +30,7 @@ class LocationScreen extends StatefulWidget {
 
   const LocationScreen({
     super.key,
-    required this.serviceIds, // Add this
+    required this.serviceIds,
     required this.serviceName,
     required this.unitType,
     required this.selectedDate,
@@ -54,16 +52,10 @@ class _LocationScreenState extends State<LocationScreen> {
   bool _isEditingLocation = false;
   MapController _mapController = MapController();
   LatLng? _mapCenterDuringEdit;
-
-  // --- CUSTOMER LOCATION STATE ---
   String? _selectedCity;
   String? _selectedArea;
-
-  // DYNAMIC DATA VARIABLES
   List<String> _customerCities = [];
   Map<String, List<String>> _customerCityAreas = {};
-
-  // Keep the full object list so we can lookup IDs later
   List<CityResponse> _apiData = [];
   bool _isLoadingAreas = true;
 
@@ -110,17 +102,10 @@ class _LocationScreenState extends State<LocationScreen> {
     final url = Uri.parse('${AppConfig.apiUrl}/service-areas');
 
     try {
-      // NOTE: If your backend allows anonymous fetching of areas, you can remove the token check.
-      // Otherwise ensure user is logged in.
       final prefs = await SharedPreferences.getInstance();
       final String? token = prefs.getString('authToken');
 
-      // If fetching fails without token, comment this block out temporarily for testing
-      if (token == null) {
-        debugPrint('⛔ No auth token found.');
-        // setState(() => _isLoadingAreas = false);
-        // return;
-      }
+      if (token == null) {}
 
       final response = await http
           .get(
@@ -137,7 +122,6 @@ class _LocationScreenState extends State<LocationScreen> {
 
         setState(() {
           _apiData = data.map((json) => CityResponse.fromJson(json)).toList();
-
           _customerCities = _apiData.map((city) => city.cityName).toList();
           _customerCityAreas = {
             for (var city in _apiData)
@@ -151,11 +135,9 @@ class _LocationScreenState extends State<LocationScreen> {
           _isLoadingAreas = false;
         });
       } else {
-        debugPrint('❌ Error fetching areas: ${response.statusCode}');
         setState(() => _isLoadingAreas = false);
       }
     } catch (e) {
-      debugPrint('❌ Exception fetching areas: $e');
       setState(() => _isLoadingAreas = false);
     }
   }
@@ -202,8 +184,6 @@ class _LocationScreenState extends State<LocationScreen> {
           area = place.subAdministrativeArea?.trim();
         }
 
-        // Simulating Google lookup or using geocoding package result
-        // Replace API key logic if strictly needed
         String finalCity = city ?? '';
         String finalArea = area ?? '';
         String finalGovernorate = place.administrativeArea ?? '';
@@ -237,7 +217,7 @@ class _LocationScreenState extends State<LocationScreen> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Failed to resolve address: $e');
+      debugPrint('Failed to resolve address: $e');
     }
   }
 
@@ -298,14 +278,12 @@ class _LocationScreenState extends State<LocationScreen> {
       return;
     }
 
-    // --- LOOKUP SERVICE AREA ID ---
     int? selectedAreaId;
     try {
       final cityObj = _apiData.firstWhere((c) => c.cityName == _selectedCity);
       final areaObj = cityObj.areas.firstWhere((a) => a.name == _selectedArea);
       selectedAreaId = areaObj.id;
     } catch (e) {
-      debugPrint("Error finding area ID: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error validating area selection.')),
       );
@@ -319,13 +297,10 @@ class _LocationScreenState extends State<LocationScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => MediaScreen(
-          // --- PASS NEW DATA ---
-          serviceIds: widget.serviceIds, // Pass through from constructor
-          serviceAreaId: selectedAreaId!, // Found from API list
+          serviceIds: widget.serviceIds,
+          serviceAreaId: selectedAreaId!,
           latitude: _customerLocation!.latitude,
           longitude: _customerLocation!.longitude,
-
-          // ---------------------
           serviceName: widget.serviceName,
           unitType: widget.unitType,
           selectedDate: widget.selectedDate,
@@ -382,14 +357,6 @@ class _LocationScreenState extends State<LocationScreen> {
       _mapController.move(updatedLocation, 15.0);
       await _resolveAddressFromCoordinates(updatedLocation);
     }
-  }
-
-  Future<Map<String, String?>> getAreaFromCoordinates(
-    LatLng location,
-    String apiKey,
-  ) async {
-    // Basic placeholder implementation
-    return {'city': null, 'area': null, 'governorate': null};
   }
 
   @override
@@ -565,7 +532,6 @@ class _LocationScreenState extends State<LocationScreen> {
                   ),
                 ),
               ),
-
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   _horizontalPadding,
@@ -580,10 +546,7 @@ class _LocationScreenState extends State<LocationScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 22.0),
-
-              // --- DYNAMIC LOCATION SELECTOR ---
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15.0),
                 child: _isLoadingAreas
@@ -766,12 +729,27 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
   late MapController _mapController;
   bool _isEditing = false;
   late LatLng _editingCenter;
+  double _currentZoom = 16.0;
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
     _editingCenter = widget.customerLocation;
+  }
+
+  void _zoomIn() {
+    setState(() {
+      _currentZoom++;
+      _mapController.move(_editingCenter, _currentZoom);
+    });
+  }
+
+  void _zoomOut() {
+    setState(() {
+      _currentZoom--;
+      _mapController.move(_editingCenter, _currentZoom);
+    });
   }
 
   @override
@@ -789,14 +767,19 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
               mapController: _mapController,
               options: MapOptions(
                 center: _editingCenter,
-                zoom: 16.0,
-                onPositionChanged: _isEditing
-                    ? (pos, _) {
-                        setState(() {
-                          _editingCenter = pos.center!;
-                        });
-                      }
-                    : null,
+                zoom: _currentZoom,
+                onPositionChanged: (pos, hasGesture) {
+                  if (_isEditing) {
+                    setState(() {
+                      _editingCenter = pos.center!;
+                      _currentZoom = pos.zoom!;
+                    });
+                  } else if (hasGesture) {
+                    setState(() {
+                      _currentZoom = pos.zoom!;
+                    });
+                  }
+                },
               ),
               children: [
                 TileLayer(
@@ -829,6 +812,29 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
                 child: Icon(Icons.location_pin, size: 50, color: Colors.red),
               ),
             ),
+          Positioned(
+            bottom: 30,
+            right: 20,
+            child: Column(
+              children: [
+                FloatingActionButton(
+                  heroTag: 'zoomIn',
+                  mini: true,
+                  backgroundColor: widget.primaryColor,
+                  onPressed: _zoomIn,
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
+                const SizedBox(height: 10),
+                FloatingActionButton(
+                  heroTag: 'zoomOut',
+                  mini: true,
+                  backgroundColor: widget.primaryColor,
+                  onPressed: _zoomOut,
+                  child: const Icon(Icons.remove, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
             right: 10,
@@ -882,7 +888,7 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
   }
 }
 
-class _NavigationHeader extends StatelessWidget {
+class _NavigationHeader extends StatefulWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
   final bool isNextEnabled;
@@ -892,6 +898,51 @@ class _NavigationHeader extends StatelessWidget {
     required this.onNextTap,
     required this.isNextEnabled,
   });
+
+  @override
+  State<_NavigationHeader> createState() => _NavigationHeaderState();
+}
+
+class _NavigationHeaderState extends State<_NavigationHeader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.25,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    if (widget.isNextEnabled) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_NavigationHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isNextEnabled != oldWidget.isNextEnabled) {
+      if (widget.isNextEnabled) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.stop();
+        _controller.reset();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -905,7 +956,7 @@ class _NavigationHeader extends StatelessWidget {
           IconButton(
             iconSize: 28.0,
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: onBackTap,
+            onPressed: widget.onBackTap,
           ),
           const Text(
             'Ajeer',
@@ -922,13 +973,32 @@ class _NavigationHeader extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            iconSize: 28.0,
-            icon: Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white.withOpacity(isNextEnabled ? 1.0 : 0.5),
-            ),
-            onPressed: isNextEnabled ? onNextTap : null,
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              if (widget.isNextEnabled)
+                ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.4),
+                    ),
+                  ),
+                ),
+              IconButton(
+                iconSize: 28.0,
+                icon: Icon(
+                  Icons.arrow_forward_ios,
+                  color: widget.isNextEnabled
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.5),
+                ),
+                onPressed: widget.isNextEnabled ? widget.onNextTap : null,
+              ),
+            ],
           ),
         ],
       ),
@@ -1167,37 +1237,103 @@ class _CustomerAreaList extends StatelessWidget {
         final area = availableAreas[index];
         final bool isSelected = area == selectedArea;
 
-        final Color itemTextColor = isDarkMode
-            ? (isSelected ? const Color(0xFF1976D2) : Colors.white70)
-            : (isSelected ? const Color(0xFF1976D2) : Colors.black87);
-
-        return ListTile(
+        return _BounceableAreaItem(
+          area: area,
+          isSelected: isSelected,
+          isDarkMode: isDarkMode,
           onTap: () => onAreaTapped(area),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
-          visualDensity: const VisualDensity(vertical: -4),
-          dense: true,
-          title: Text(
-            area,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: itemTextColor,
-            ),
-          ),
-          trailing: isSelected
-              ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
-              : Icon(
-                  Icons.radio_button_unchecked,
-                  color: isDarkMode
-                      ? Colors.grey.shade600
-                      : Colors.grey.shade400,
-                  size: 20,
-                ),
-          tileColor: isSelected
-              ? const Color(0xFF1976D2).withOpacity(0.1)
-              : null,
         );
       },
+    );
+  }
+}
+
+class _BounceableAreaItem extends StatefulWidget {
+  final String area;
+  final bool isSelected;
+  final bool isDarkMode;
+  final VoidCallback onTap;
+
+  const _BounceableAreaItem({
+    required this.area,
+    required this.isSelected,
+    required this.isDarkMode,
+    required this.onTap,
+  });
+
+  @override
+  State<_BounceableAreaItem> createState() => _BounceableAreaItemState();
+}
+
+class _BounceableAreaItemState extends State<_BounceableAreaItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _controller.forward().then((_) => _controller.reverse());
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color itemTextColor = widget.isDarkMode
+        ? (widget.isSelected ? const Color(0xFF1976D2) : Colors.white70)
+        : (widget.isSelected ? const Color(0xFF1976D2) : Colors.black87);
+
+    return GestureDetector(
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          color: widget.isSelected
+              ? const Color(0xFF1976D2).withOpacity(0.1)
+              : Colors.transparent,
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
+            visualDensity: const VisualDensity(vertical: -4),
+            dense: true,
+            title: Text(
+              widget.area,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: widget.isSelected
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+                color: itemTextColor,
+              ),
+            ),
+            trailing: widget.isSelected
+                ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+                : Icon(
+                    Icons.radio_button_unchecked,
+                    color: widget.isDarkMode
+                        ? Colors.grey.shade600
+                        : Colors.grey.shade400,
+                    size: 20,
+                  ),
+          ),
+        ),
+      ),
     );
   }
 }

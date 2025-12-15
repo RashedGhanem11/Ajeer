@@ -13,13 +13,10 @@ import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
 
 class MediaScreen extends StatefulWidget {
-  // --- ADDED: Required Data for Booking DTO ---
   final List<int> serviceIds;
   final int serviceAreaId;
   final double latitude;
   final double longitude;
-
-  // --- Existing Data ---
   final String serviceName;
   final String unitType;
   final DateTime selectedDate;
@@ -32,10 +29,10 @@ class MediaScreen extends StatefulWidget {
 
   const MediaScreen({
     super.key,
-    required this.serviceIds, // Add this
-    required this.serviceAreaId, // Add this
-    required this.latitude, // Add this
-    required this.longitude, // Add this
+    required this.serviceIds,
+    required this.serviceAreaId,
+    required this.latitude,
+    required this.longitude,
     required this.serviceName,
     required this.unitType,
     required this.selectedDate,
@@ -52,7 +49,6 @@ class MediaScreen extends StatefulWidget {
 }
 
 class _MediaScreenState extends State<MediaScreen> {
-  // --- COLORS & CONSTANTS ---
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _secondaryLightBlue = Color(0xFFc2e3ff);
@@ -65,7 +61,6 @@ class _MediaScreenState extends State<MediaScreen> {
   static const double _borderRadiusLarge = 20.0;
   static const double _containerHeight = 150.0;
 
-  // --- STATE VARIABLES ---
   int _selectedIndex = 3;
   String _selectedMediaType = 'Photo';
   String _userDescription = '';
@@ -173,10 +168,7 @@ class _MediaScreenState extends State<MediaScreen> {
     Navigator.pop(context);
   }
 
-  // --- UPDATED NEXT LOGIC ---
   void _onNextTap() {
-    // We navigate to ConfirmationScreen and pass all data forward.
-    // The upload logic is now handled in ConfirmationScreen.
     _navigateToConfirmation();
   }
 
@@ -185,23 +177,17 @@ class _MediaScreenState extends State<MediaScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => ConfirmationScreen(
-          // --- FIX: Pass the missing arguments here ---
           serviceIds: widget.serviceIds,
           serviceAreaId: widget.serviceAreaId,
           latitude: widget.latitude,
           longitude: widget.longitude,
-
-          // ---------------------------------------------
           serviceName: widget.serviceName,
           unitType: widget.unitType,
           selectedDate: widget.selectedDate,
           selectedTime: widget.selectedTime,
           selectionMode: widget.selectionMode,
           userDescription: _userDescription,
-
-          // Combine all files to pass to confirmation
           pickedMediaFiles: [..._photoFiles, ..._videoFiles, ..._audioFiles],
-
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
           resolvedCityArea: widget.resolvedCityArea,
@@ -233,7 +219,6 @@ class _MediaScreenState extends State<MediaScreen> {
       final XFile? videoFile = await _picker.pickVideo(source: source);
       if (videoFile != null) pickedFiles.add(videoFile);
     } else if (_selectedMediaType == 'Audio') {
-      // Audio simulation remains the same
       if (source == ImageSource.gallery) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -267,12 +252,13 @@ class _MediaScreenState extends State<MediaScreen> {
 
   void _removeMediaFile(int index) {
     setState(() {
-      if (_selectedMediaType == 'Photo')
+      if (_selectedMediaType == 'Photo') {
         _photoFiles.removeAt(index);
-      else if (_selectedMediaType == 'Video')
+      } else if (_selectedMediaType == 'Video') {
         _videoFiles.removeAt(index);
-      else
+      } else {
         _audioFiles.removeAt(index);
+      }
     });
   }
 
@@ -386,7 +372,6 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-  // --- WIDGET BUILDERS ---
   Widget _buildBackgroundGradient(double containerTop) {
     return Align(
       alignment: Alignment.topCenter,
@@ -787,7 +772,7 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 }
 
-class _TabButton extends StatelessWidget {
+class _TabButton extends StatefulWidget {
   final String type;
   final IconData icon;
   final VoidCallback onTap;
@@ -803,53 +788,124 @@ class _TabButton extends StatelessWidget {
   });
 
   @override
+  State<_TabButton> createState() => _TabButtonState();
+}
+
+class _TabButtonState extends State<_TabButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.8,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _controller.forward().then((_) => _controller.reverse());
+    widget.onTap();
+  }
+
+  @override
   Widget build(BuildContext context) {
     const Color primaryBlue = Color(0xFF1976D2);
-    final Color borderColor = isDarkMode
+    final Color borderColor = widget.isDarkMode
         ? Colors.grey.shade700
         : Colors.grey.shade300;
+
     return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12.0),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? primaryBlue
-                  : (isDarkMode ? const Color(0xFF2C2C2C) : Colors.transparent),
-              borderRadius: BorderRadius.circular(15.0),
-              border: Border.all(
-                color: isSelected ? primaryBlue : borderColor,
-                width: 2.0,
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12.0),
+              decoration: BoxDecoration(
+                color: widget.isSelected
+                    ? primaryBlue
+                    : (widget.isDarkMode
+                          ? const Color(0xFF2C2C2C)
+                          : Colors.transparent),
+                borderRadius: BorderRadius.circular(15.0),
+                border: Border.all(
+                  color: widget.isSelected ? primaryBlue : borderColor,
+                  width: 2.0,
+                ),
+              ),
+              child: Icon(
+                widget.icon,
+                size: 30.0,
+                color: widget.isSelected ? Colors.white : primaryBlue,
               ),
             ),
-            child: Icon(
-              icon,
-              size: 30.0,
-              color: isSelected ? Colors.white : primaryBlue,
+            const SizedBox(height: 8.0),
+            Text(
+              widget.type,
+              style: TextStyle(
+                color: widget.isSelected
+                    ? primaryBlue
+                    : (widget.isDarkMode
+                          ? Colors.grey.shade500
+                          : Colors.grey.shade600),
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-          const SizedBox(height: 8.0),
-          Text(
-            type,
-            style: TextStyle(
-              color: isSelected
-                  ? primaryBlue
-                  : (isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _NavigationHeader extends StatelessWidget {
+class _NavigationHeader extends StatefulWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
+
   const _NavigationHeader({required this.onBackTap, required this.onNextTap});
+
+  @override
+  State<_NavigationHeader> createState() => _NavigationHeaderState();
+}
+
+class _NavigationHeaderState extends State<_NavigationHeader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.25,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -863,7 +919,7 @@ class _NavigationHeader extends StatelessWidget {
           IconButton(
             iconSize: 28.0,
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: onBackTap,
+            onPressed: widget.onBackTap,
           ),
           const Text(
             'Ajeer',
@@ -880,10 +936,26 @@ class _NavigationHeader extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            iconSize: 28.0,
-            icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-            onPressed: onNextTap,
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.4),
+                  ),
+                ),
+              ),
+              IconButton(
+                iconSize: 28.0,
+                icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+                onPressed: widget.onNextTap,
+              ),
+            ],
           ),
         ],
       ),

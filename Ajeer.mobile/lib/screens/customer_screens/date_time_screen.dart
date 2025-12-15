@@ -11,9 +11,7 @@ import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
 
 class DateTimeScreen extends StatefulWidget {
-  // --- ADDED: Pass-through data for DTO ---
   final List<int> serviceIds;
-
   final String serviceName;
   final String unitType;
   final int totalTimeMinutes;
@@ -21,7 +19,7 @@ class DateTimeScreen extends StatefulWidget {
 
   const DateTimeScreen({
     super.key,
-    required this.serviceIds, // Add this required parameter
+    required this.serviceIds,
     required this.serviceName,
     required this.unitType,
     required this.totalTimeMinutes,
@@ -73,12 +71,8 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Calculate the time 30 minutes from now
     final DateTime now = DateTime.now();
     final DateTime futureTime = now.add(const Duration(minutes: 30));
-
-    // Set the selected time
     _selectedTime = TimeOfDay.fromDateTime(futureTime);
     _days = List.generate(30, (i) => DateTime.now().add(Duration(days: i)));
   }
@@ -190,14 +184,12 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       context: context,
       initialTime: _selectedTime,
       builder: (context, child) {
-        // 1. Define colors to match the DatePicker style
         final ColorScheme colorScheme = isDarkMode
             ? const ColorScheme.dark(
-                primary: _primaryBlue, // Dial hand, Active AM/PM text/border
+                primary: _primaryBlue,
                 onPrimary: Colors.white,
-                surface: _subtleDark, // Dialog Background
+                surface: _subtleDark,
                 onSurface: Colors.white,
-                // This controls the fill color of the selected AM/PM toggle
                 secondaryContainer: _primaryBlue,
                 onSecondaryContainer: Colors.white,
               )
@@ -212,14 +204,12 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: colorScheme,
-            // 2. Button Styles (OK/Cancel)
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
                 foregroundColor: _primaryBlue,
                 textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-            // 3. Specific Time Picker Overrides
             timePickerTheme: TimePickerThemeData(
               backgroundColor: isDarkMode ? _subtleDark : Colors.white,
               dialBackgroundColor: isDarkMode
@@ -228,8 +218,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
               dialHandColor: _primaryBlue,
               dialTextColor: isDarkMode ? Colors.white : Colors.black87,
               entryModeIconColor: _primaryBlue,
-
-              // AM/PM Box Styles
               dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
                   return Colors.white;
@@ -238,13 +226,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
               }),
               dayPeriodColor: WidgetStateColor.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return _primaryBlue; // Blue fill when selected
+                  return _primaryBlue;
                 }
                 return Colors.transparent;
               }),
               dayPeriodBorderSide: const BorderSide(color: _primaryBlue),
-
-              // Input decoration (for keyboard mode)
               hourMinuteTextColor: isDarkMode ? Colors.white : Colors.black87,
               hourMinuteColor: isDarkMode
                   ? _subtleLighterDark
@@ -268,9 +254,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => LocationScreen(
-          // --- FIX: Pass the IDs to LocationScreen ---
           serviceIds: widget.serviceIds,
-          // ------------------------------------------
           serviceName: widget.serviceName,
           unitType: widget.unitType,
           selectedDate: _selectedDate,
@@ -328,7 +312,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: _CustomBottomNavBar(
+      bottomNavigationBar: CustomBottomNavBar(
         items: _navItems,
         selectedIndex: _selectedIndex,
         onIndexChanged: _onNavItemTapped,
@@ -587,10 +571,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
 
   Widget _buildDaySlider(bool isDarkMode) {
     return Container(
-      height: 95,
+      height: 100,
       margin: const EdgeInsets.symmetric(vertical: 20),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
         itemCount: _days.length,
         itemBuilder: (context, index) {
           final date = _days[index];
@@ -599,91 +584,13 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
               date.month == _selectedDate.month &&
               date.year == _selectedDate.year;
 
-          return _buildDayItem(date, isSelected, isDarkMode);
+          return _BounceableDayItem(
+            date: date,
+            isSelected: isSelected,
+            isDarkMode: isDarkMode,
+            onTap: () => _onDateSelected(date),
+          );
         },
-      ),
-    );
-  }
-
-  Widget _buildDayItem(DateTime date, bool isSelected, bool isDarkMode) {
-    return GestureDetector(
-      onTap: () => _onDateSelected(date),
-      child: Container(
-        width: 65,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-                  colors: [_lightBlue, _primaryBlue],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                )
-              : null,
-          color: isSelected
-              ? null
-              : isDarkMode
-              ? _subtleDark
-              : Colors.grey[100],
-          borderRadius: BorderRadius.circular(15),
-          border: isSelected
-              ? null
-              : Border.all(
-                  color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
-                  width: 1.5,
-                ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: _primaryBlue.withOpacity(0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : [],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              DateFormat.MMM().format(date).toUpperCase(),
-              style: TextStyle(
-                color: isSelected
-                    ? Colors.white.withOpacity(0.9)
-                    : isDarkMode
-                    ? Colors.grey
-                    : Colors.grey[600],
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              date.day.toString(),
-              style: TextStyle(
-                color: isSelected
-                    ? Colors.white
-                    : isDarkMode
-                    ? Colors.white
-                    : Colors.black87,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              DateFormat.E().format(date).toUpperCase(),
-              style: TextStyle(
-                color: isSelected
-                    ? Colors.white.withOpacity(0.9)
-                    : isDarkMode
-                    ? Colors.grey
-                    : Colors.grey[600],
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -781,28 +688,184 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 }
 
-class _NavigationHeader extends StatelessWidget {
+class _BounceableDayItem extends StatefulWidget {
+  final DateTime date;
+  final bool isSelected;
+  final bool isDarkMode;
+  final VoidCallback onTap;
+
+  const _BounceableDayItem({
+    required this.date,
+    required this.isSelected,
+    required this.isDarkMode,
+    required this.onTap,
+  });
+
+  @override
+  State<_BounceableDayItem> createState() => _BounceableDayItemState();
+}
+
+class _BounceableDayItemState extends State<_BounceableDayItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.15,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _controller.forward().then((_) {
+      _controller.reverse();
+    });
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const Color lightBlue = Color(0xFF8CCBFF);
+    const Color primaryBlue = Color(0xFF1976D2);
+    const Color subtleDark = Color(0xFF1E1E1E);
+
+    return GestureDetector(
+      onTap: _handleTap,
+      child: Center(
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            width: 65,
+            height: 95, // Fixed height ensures proper centering
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              gradient: widget.isSelected
+                  ? const LinearGradient(
+                      colors: [lightBlue, primaryBlue],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    )
+                  : null,
+              color: widget.isSelected
+                  ? null
+                  : widget.isDarkMode
+                  ? subtleDark
+                  : Colors.grey[100],
+              borderRadius: BorderRadius.circular(15),
+              border: widget.isSelected
+                  ? null
+                  : Border.all(
+                      color: widget.isDarkMode
+                          ? Colors.grey[700]!
+                          : Colors.grey[300]!,
+                      width: 1.5,
+                    ),
+              boxShadow: widget.isSelected
+                  ? [
+                      BoxShadow(
+                        color: primaryBlue.withOpacity(0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  DateFormat.MMM().format(widget.date).toUpperCase(),
+                  style: TextStyle(
+                    color: widget.isSelected
+                        ? Colors.white.withOpacity(0.9)
+                        : widget.isDarkMode
+                        ? Colors.grey
+                        : Colors.grey[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.date.day.toString(),
+                  style: TextStyle(
+                    color: widget.isSelected
+                        ? Colors.white
+                        : widget.isDarkMode
+                        ? Colors.white
+                        : Colors.black87,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  DateFormat.E().format(widget.date).toUpperCase(),
+                  style: TextStyle(
+                    color: widget.isSelected
+                        ? Colors.white.withOpacity(0.9)
+                        : widget.isDarkMode
+                        ? Colors.grey
+                        : Colors.grey[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavigationHeader extends StatefulWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
 
   const _NavigationHeader({required this.onBackTap, required this.onNextTap});
 
-  Widget _buildAjeerTitle() {
-    return const Text(
-      'Ajeer',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 34,
-        fontWeight: FontWeight.w900,
-        shadows: [
-          Shadow(
-            blurRadius: 2.0,
-            color: Colors.black26,
-            offset: Offset(1.0, 1.0),
-          ),
-        ],
-      ),
-    );
+  @override
+  State<_NavigationHeader> createState() => _NavigationHeaderState();
+}
+
+class _NavigationHeaderState extends State<_NavigationHeader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.25,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -817,24 +880,46 @@ class _NavigationHeader extends StatelessWidget {
           IconButton(
             iconSize: 28.0,
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: onBackTap,
+            onPressed: widget.onBackTap,
           ),
-          _buildAjeerTitle(),
-          IconButton(
-            iconSize: 28.0,
-            icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-            onPressed: onNextTap,
+          const Text(
+            'Ajeer',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(
+                  blurRadius: 2.0,
+                  color: Colors.black26,
+                  offset: Offset(1.0, 1.0),
+                ),
+              ],
+            ),
+          ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.4),
+                  ),
+                ),
+              ),
+              IconButton(
+                iconSize: 28.0,
+                icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+                onPressed: widget.onNextTap,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
-}
-
-class _CustomBottomNavBar extends CustomBottomNavBar {
-  const _CustomBottomNavBar({
-    required super.items,
-    required super.selectedIndex,
-    required super.onIndexChanged,
-  });
 }

@@ -9,7 +9,6 @@ import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
 import '../../themes/theme_notifier.dart';
 import '../../config/app_config.dart';
-
 import '../../models/service_models.dart';
 import '../../services/unit_type_service.dart';
 
@@ -25,9 +24,7 @@ class UnitTypeScreen extends StatefulWidget {
 class _UnitTypeScreenState extends State<UnitTypeScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 3;
-
   final Set<int> _selectedIds = {};
-
   List<ServiceItem> _availableServices = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -151,9 +148,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
         context,
         MaterialPageRoute(
           builder: (context) => DateTimeScreen(
-            // --- FIX: Pass the list of IDs here ---
             serviceIds: _selectedIds.toList(),
-            // --------------------------------------
             serviceName: widget.category.name,
             unitType: selectedNames.join(', '),
             totalTimeMinutes: totalMinutes,
@@ -202,15 +197,12 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
             whiteContainerTop,
             MediaQuery.of(context).padding.top,
           ),
-
           _buildWhiteContainer(
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
             isDarkMode: isDarkMode,
           ),
-
           _buildHomeImage(logoTopPosition, isDarkMode),
-
           _UnitTypeNavigationHeader(
             onBackTap: () => Navigator.pop(context),
             onNextTap: _onNextTap,
@@ -374,7 +366,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
   }
 }
 
-class _UnitTypeNavigationHeader extends StatelessWidget {
+class _UnitTypeNavigationHeader extends StatefulWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
   final bool isNextEnabled;
@@ -384,6 +376,52 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
     required this.onNextTap,
     this.isNextEnabled = false,
   });
+
+  @override
+  State<_UnitTypeNavigationHeader> createState() =>
+      _UnitTypeNavigationHeaderState();
+}
+
+class _UnitTypeNavigationHeaderState extends State<_UnitTypeNavigationHeader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.25,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    if (widget.isNextEnabled) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_UnitTypeNavigationHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isNextEnabled != oldWidget.isNextEnabled) {
+      if (widget.isNextEnabled) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.stop();
+        _controller.reset();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -397,7 +435,7 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
           IconButton(
             iconSize: 28.0,
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: onBackTap,
+            onPressed: widget.onBackTap,
           ),
           const Text(
             'Ajeer',
@@ -414,13 +452,32 @@ class _UnitTypeNavigationHeader extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            iconSize: 28.0,
-            icon: Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white.withOpacity(isNextEnabled ? 1.0 : 0.5),
-            ),
-            onPressed: isNextEnabled ? onNextTap : null,
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              if (widget.isNextEnabled)
+                ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.4),
+                    ),
+                  ),
+                ),
+              IconButton(
+                iconSize: 28.0,
+                icon: Icon(
+                  Icons.arrow_forward_ios,
+                  color: widget.isNextEnabled
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.5),
+                ),
+                onPressed: widget.isNextEnabled ? widget.onNextTap : null,
+              ),
+            ],
           ),
         ],
       ),
@@ -470,7 +527,7 @@ class _UnitTypeListView extends StatelessWidget {
   }
 }
 
-class _SelectableUnitItem extends StatelessWidget {
+class _SelectableUnitItem extends StatefulWidget {
   final String name;
   final String estimatedTime;
   final String priceDisplay;
@@ -487,6 +544,39 @@ class _SelectableUnitItem extends StatelessWidget {
     required this.isDarkMode,
   });
 
+  @override
+  State<_SelectableUnitItem> createState() => _SelectableUnitItemState();
+}
+
+class _SelectableUnitItemState extends State<_SelectableUnitItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _controller.forward().then((_) => _controller.reverse());
+    widget.onTap();
+  }
+
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const double _borderRadius = 15.0;
   static const double _borderWidth = 2.0;
@@ -494,93 +584,102 @@ class _SelectableUnitItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color fillColor = isDarkMode
+    final Color fillColor = widget.isDarkMode
         ? _subtleLighterDarkGrey
         : Colors.grey[100]!;
-    final Color unselectedBorderColor = isDarkMode
+    final Color unselectedBorderColor = widget.isDarkMode
         ? Colors.grey[600]!
         : Colors.grey[400]!;
-    final Color unselectedTitleColor = isDarkMode
+    final Color unselectedTitleColor = widget.isDarkMode
         ? Colors.white70
         : Colors.grey[700]!;
-    final Color timeTextColor = isDarkMode
+    final Color timeTextColor = widget.isDarkMode
         ? Colors.grey[400]!
         : Colors.grey[600]!;
 
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6.0),
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-        decoration: BoxDecoration(
-          color: fillColor,
-          borderRadius: BorderRadius.circular(_borderRadius),
-          border: Border.all(
-            color: isSelected ? _primaryBlue : unselectedBorderColor,
-            width: _borderWidth,
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 6.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+          decoration: BoxDecoration(
+            color: fillColor,
+            borderRadius: BorderRadius.circular(_borderRadius),
+            border: Border.all(
+              color: widget.isSelected ? _primaryBlue : unselectedBorderColor,
+              width: _borderWidth,
+            ),
+            boxShadow: widget.isSelected
+                ? [
+                    BoxShadow(
+                      color: _primaryBlue.withOpacity(
+                        widget.isDarkMode ? 0.4 : 0.2,
+                      ),
+                      blurRadius: 5,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(
+                        widget.isDarkMode ? 0.1 : 0.02,
+                      ),
+                      blurRadius: 5,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: _primaryBlue.withOpacity(isDarkMode ? 0.4 : 0.2),
-                    blurRadius: 5,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDarkMode ? 0.1 : 0.02),
-                    blurRadius: 5,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.name,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: widget.isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w600,
+                        color: widget.isSelected
+                            ? _primaryBlue
+                            : unselectedTitleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4.0),
+                    Text(
+                      widget.estimatedTime,
+                      style: TextStyle(fontSize: 14, color: timeTextColor),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    name,
-                    style: TextStyle(
+                    widget.priceDisplay,
+                    style: const TextStyle(
                       fontSize: 18,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.w600,
-                      color: isSelected ? _primaryBlue : unselectedTitleColor,
+                      fontWeight: FontWeight.bold,
+                      color: _primaryBlue,
                     ),
                   ),
-                  const SizedBox(height: 4.0),
-                  Text(
-                    estimatedTime,
-                    style: TextStyle(fontSize: 14, color: timeTextColor),
+                  Icon(
+                    widget.isSelected
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: widget.isSelected ? Colors.green : Colors.grey[400],
                   ),
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  priceDisplay,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: _primaryBlue,
-                  ),
-                ),
-                Icon(
-                  isSelected
-                      ? Icons.check_circle
-                      : Icons.radio_button_unchecked,
-                  color: isSelected ? Colors.green : Colors.grey[400],
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,5 +1,3 @@
-// lib/screens/login/home_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
@@ -9,13 +7,8 @@ import '../shared_screens/profile_screen.dart';
 import '../shared_screens/chat_screen.dart';
 import '../../themes/theme_notifier.dart';
 import '../../config/app_config.dart';
-// NEW IMPORTS
 import '../../models/service_models.dart';
 import '../../services/service_category_service.dart';
-
-// NOTE: Since your UnitTypeScreen takes a 'service' object, we are now passing
-// the ServiceCategory object. If UnitTypeScreen was tightly coupled to the old
-// mock 'Service' class, you will need to update it as well.
 
 class HomeScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -25,13 +18,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 3;
   String _searchQuery = '';
-
-  // UPDATED STATE: Store real categories and loading status
   List<ServiceCategory> _categories = [];
   bool _isFetching = true;
+  late AnimationController _animationController;
+  ServiceCategory? _selectedCategoryForAnimation;
 
   final List<Map<String, dynamic>> navItems = const [
     {
@@ -56,10 +50,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchCategories(); // Start fetching data immediately
+    _fetchCategories();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
   }
 
-  // NEW LOGIC: API call
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchCategories() async {
     try {
       final service = ServiceCategoryService();
@@ -85,6 +88,30 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
+  }
+
+  void _onCategorySelected(ServiceCategory category) async {
+    setState(() {
+      _selectedCategoryForAnimation = category;
+    });
+
+    await _animationController.forward(from: 0.0);
+
+    if (!mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UnitTypeScreen(category: category),
+      ),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _selectedCategoryForAnimation = null;
+    });
+    _animationController.reset();
   }
 
   void _onSearchChanged(String query) {
@@ -147,7 +174,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     final screenHeight = MediaQuery.of(context).size.height;
-
     const double logoHeight = 105.0;
     const double overlapAdjustment = 10.0;
     final double whiteContainerTop = screenHeight * 0.30;
@@ -161,30 +187,82 @@ class _HomeScreenState extends State<HomeScreen> {
         outerBottomMargin +
         MediaQuery.of(context).padding.bottom;
 
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
-          _buildBackgroundGradient(whiteContainerTop, isDarkMode),
-          _buildWhiteContainer(
-            containerTop: whiteContainerTop,
-            bottomNavClearance: bottomNavClearance,
-            isDarkMode: isDarkMode,
+    return Stack(
+      children: [
+        Scaffold(
+          extendBody: true,
+          body: Stack(
+            children: [
+              _buildBackgroundGradient(whiteContainerTop, isDarkMode),
+              _buildWhiteContainer(
+                containerTop: whiteContainerTop,
+                bottomNavClearance: bottomNavClearance,
+                isDarkMode: isDarkMode,
+              ),
+              SearchHeader(onChanged: _onSearchChanged),
+              _buildHomeImage(logoTopPosition, logoHeight, isDarkMode),
+              if (_isFetching)
+                Container(
+                  color: isDarkMode ? Colors.black54 : Colors.white70,
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+            ],
           ),
-          SearchHeader(onChanged: _onSearchChanged),
-          _buildHomeImage(logoTopPosition, logoHeight, isDarkMode),
-          // Show spinner over everything if loading
-          if (_isFetching)
-            Container(
-              color: isDarkMode ? Colors.black54 : Colors.white70,
-              child: const Center(child: CircularProgressIndicator()),
+          bottomNavigationBar: CustomBottomNavBar(
+            items: navItems,
+            selectedIndex: _selectedIndex,
+            onIndexChanged: _onNavItemTapped,
+          ),
+        ),
+        if (_selectedCategoryForAnimation != null)
+          _buildAnimationOverlay(isDarkMode),
+      ],
+    );
+  }
+
+  Widget _buildAnimationOverlay(bool isDarkMode) {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.3),
+        child: Center(
+          child: ScaleTransition(
+            scale: CurvedAnimation(
+              parent: _animationController,
+              curve: Curves.elasticOut,
             ),
-        ],
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        items: navItems,
-        selectedIndex: _selectedIndex,
-        onIndexChanged: _onNavItemTapped,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
+                border: Border.all(color: Colors.blueAccent, width: 3),
+              ),
+              padding: const EdgeInsets.all(20.0),
+              child: FadeInImage.assetNetwork(
+                placeholder: 'assets/image/placeholder.png',
+                image: AppConfig.getFullImageUrl(
+                  _selectedCategoryForAnimation!.iconUrl,
+                ),
+                fit: BoxFit.contain,
+                imageErrorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.broken_image,
+                    size: 50,
+                    color: Colors.red,
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -270,13 +348,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            // UPDATED: Pass the fetched categories to the GridView
             Expanded(
               child: ServiceGridView(
                 services: _categories,
                 searchQuery: _searchQuery,
                 bottomPadding: bottomNavClearance,
                 isDarkMode: isDarkMode,
+                onCategorySelected: _onCategorySelected,
               ),
             ),
           ],
@@ -320,12 +398,9 @@ class SearchHeader extends StatelessWidget {
               ),
             ),
           ),
-          // Search bar is now centered and has a limited width
           Center(
             child: SizedBox(
-              width:
-                  MediaQuery.of(context).size.width *
-                  0.85, // Adjust width as needed
+              width: MediaQuery.of(context).size.width * 0.85,
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(30.0),
@@ -375,12 +450,12 @@ class SearchHeader extends StatelessWidget {
   }
 }
 
-// UPDATED: ServiceGridView now accepts List<ServiceCategory>
 class ServiceGridView extends StatelessWidget {
   final List<ServiceCategory> services;
   final String searchQuery;
   final double bottomPadding;
   final bool isDarkMode;
+  final Function(ServiceCategory) onCategorySelected;
 
   const ServiceGridView({
     super.key,
@@ -388,6 +463,7 @@ class ServiceGridView extends StatelessWidget {
     required this.searchQuery,
     required this.bottomPadding,
     required this.isDarkMode,
+    required this.onCategorySelected,
   });
 
   @override
@@ -415,24 +491,17 @@ class ServiceGridView extends StatelessWidget {
         ),
         itemCount: filteredServices.length,
         itemBuilder: (context, index) {
-          final service =
-              filteredServices[index]; // This is the ServiceCategory object
+          final service = filteredServices[index];
           final serviceName = service.name;
           final serviceIconUrl = service.iconUrl;
 
           return ServiceGridItem(
-            iconUrl: serviceIconUrl, // Pass the URL string
+            iconUrl: serviceIconUrl,
             name: serviceName,
             isHighlighted: shouldHighlight(serviceName),
             isDarkMode: isDarkMode,
             onTap: () {
-              // Navigate to UnitTypeScreen, passing the correct 'service' object
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UnitTypeScreen(category: service),
-                ),
-              );
+              onCategorySelected(service);
             },
           );
         },
@@ -441,17 +510,12 @@ class ServiceGridView extends StatelessWidget {
   }
 }
 
-// UPDATED: ServiceGridItem now expects String iconUrl
-// UPDATED: ServiceGridItem with matching highlight style from services_screen.dart
 class ServiceGridItem extends StatelessWidget {
   final String iconUrl;
   final String name;
   final bool isHighlighted;
   final VoidCallback onTap;
   final bool isDarkMode;
-
-  // Use 10.0.2.2 for Android, 127.0.0.1 for iOS Simulator
-  final String BASE_API_URL = AppConfig.baseUrl;
 
   const ServiceGridItem({
     super.key,
@@ -464,10 +528,8 @@ class ServiceGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Define Colors to match services_screen.dart
     final Color highlightGreen = Colors.green.shade600;
 
-    // Determine active color based on state
     Color activeColor;
     if (isHighlighted) {
       activeColor = highlightGreen;
@@ -475,8 +537,6 @@ class ServiceGridItem extends StatelessWidget {
       activeColor = isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400;
     }
 
-    // 2. Define Background and Border styles
-    // If highlighted, use the specific opacity values from services_screen
     final Color itemBackgroundColor = isHighlighted
         ? activeColor.withOpacity(0.1)
         : (isDarkMode ? Colors.grey.shade900 : Colors.grey.shade100);
@@ -485,9 +545,8 @@ class ServiceGridItem extends StatelessWidget {
         ? activeColor.withOpacity(0.5)
         : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
 
-    // 3. Size Constants
     const double iconContainerSize = 80.0;
-    const double iconSize = 40.0; // Kept your original 50.0
+    const double iconSize = 40.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -500,7 +559,6 @@ class ServiceGridItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: itemBackgroundColor,
               shape: BoxShape.circle,
-              // MATCHED: Width is 2, just like services_screen
               border: Border.all(color: itemBorderColor, width: 2),
             ),
             child: Center(
@@ -528,10 +586,9 @@ class ServiceGridItem extends StatelessWidget {
               name,
               style: TextStyle(
                 fontSize: 13,
-                // MATCHED: Bold text when highlighted
                 fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w500,
                 color: isHighlighted
-                    ? activeColor // Use green text when highlighted
+                    ? activeColor
                     : (isDarkMode ? Colors.white70 : Colors.black87),
               ),
               textAlign: TextAlign.center,
