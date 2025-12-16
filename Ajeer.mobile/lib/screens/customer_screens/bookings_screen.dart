@@ -629,16 +629,25 @@ class _BookingCardState extends State<_BookingCard>
         ),
       );
     } else {
-      mainAction = Center(child: _statusBadge());
+      mainAction =
+          _statusBadge(); // Removed Center() wrapper for right alignment
     }
+
+    // Determine alignment based on tab.
+    // Use CrossAxisAlignment.end only for the closed tab.
+    final isClosed = widget.listType == _BookingListType.closed;
+    final align = isClosed ? CrossAxisAlignment.end : CrossAxisAlignment.center;
+    final rowAlign = isClosed
+        ? MainAxisAlignment.end
+        : MainAxisAlignment.center;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: align,
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: rowAlign,
           children: iconButtons,
         ),
         const SizedBox(height: 4),

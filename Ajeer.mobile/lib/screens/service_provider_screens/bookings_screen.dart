@@ -838,6 +838,7 @@ class _BookingCardState extends State<_BookingCard>
       );
     } else {
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Row(children: icons),
           const SizedBox(height: 4),
