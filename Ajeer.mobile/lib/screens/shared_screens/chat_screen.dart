@@ -22,6 +22,23 @@ class _ChatConstants {
   static const Color chatBackgroundColorDark = Color(0xFF1A1A1A);
 }
 
+const List<Color> _vibrantColors = [
+  Color(0xFFE57373),
+  Color(0xFFF06292),
+  Color(0xFFBA68C8),
+  Color(0xFF64B5F6),
+  Color(0xFF4DB6AC),
+  Color(0xFF81C784),
+  Color(0xFFFFD54F),
+  Color(0xFFFF8A65),
+];
+
+Color _getAvatarColor(String name) {
+  if (name.isEmpty) return Colors.grey;
+  final int index = name.hashCode.abs() % _vibrantColors.length;
+  return _vibrantColors[index];
+}
+
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
@@ -386,6 +403,11 @@ class _ChatListItem extends StatelessWidget {
         : Colors.grey.shade700;
     final bool isUnread = chat.unreadCount > 0;
 
+    // Use consistent, theme-independent color
+    final Color avatarColor = imageUrl == null
+        ? _getAvatarColor(chat.otherSideName)
+        : lightColor.withOpacity(0.3);
+
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -407,15 +429,15 @@ class _ChatListItem extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: lightColor.withOpacity(0.3),
+              backgroundColor: avatarColor,
               backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
               child: imageUrl == null
                   ? Text(
                       chat.otherSideName.isNotEmpty
                           ? chat.otherSideName[0].toUpperCase()
                           : '?',
-                      style: TextStyle(
-                        color: primaryColor,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 22,
                       ),

@@ -47,6 +47,18 @@ class _ProfileScreenState extends State<ProfileScreen>
   static const double _navBarTotalHeight = 86.0;
   static const double _whiteContainerHeightRatio = 0.3;
 
+  // Vibrant colors list for avatars
+  static const List<Color> _vibrantColors = [
+    Color(0xFFE57373), // Red
+    Color(0xFFF06292), // Pink
+    Color(0xFFBA68C8), // Purple
+    Color(0xFF64B5F6), // Blue
+    Color(0xFF4DB6AC), // Teal
+    Color(0xFF81C784), // Green
+    Color(0xFFFFD54F), // Yellow (Amber-ish for visibility)
+    Color(0xFFFF8A65),
+  ];
+
   bool get _isProviderMode {
     return Provider.of<UserNotifier>(context, listen: false).isProvider;
   }
@@ -184,6 +196,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     _passwordController.dispose();
     _overlayController.dispose();
     super.dispose();
+  }
+
+  Color _getAvatarColor(String name) {
+    if (name.isEmpty) return Colors.grey;
+    final int index = name.hashCode.abs() % _vibrantColors.length;
+    return _vibrantColors[index];
   }
 
   Future<void> _pickImage() async {
@@ -758,6 +776,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       );
     }
 
+    final Color avatarColor = backgroundImage == null
+        ? _getAvatarColor(_fullName)
+        : Colors.grey;
+
     return Positioned(
       top: topPosition,
       left: 0,
@@ -778,15 +800,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
                 child: CircleAvatar(
                   radius: _profileAvatarHeight / 2,
-                  backgroundColor: isDarkMode ? _darkBlue : _lightBlue,
+                  backgroundColor: avatarColor,
                   backgroundImage: backgroundImage,
                   child: backgroundImage == null
                       ? Text(
                           initial,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 40,
                             fontWeight: FontWeight.bold,
-                            color: isDarkMode ? _lightBlue : _primaryBlue,
+                            color: Colors.white,
                           ),
                         )
                       : null,

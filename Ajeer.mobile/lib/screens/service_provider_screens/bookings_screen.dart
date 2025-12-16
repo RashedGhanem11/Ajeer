@@ -36,6 +36,23 @@ class _Consts {
   static const navBarHeight = 86.0;
 }
 
+const List<Color> _vibrantColors = [
+  Color(0xFFE57373),
+  Color(0xFFF06292),
+  Color(0xFFBA68C8),
+  Color(0xFF64B5F6),
+  Color(0xFF4DB6AC),
+  Color(0xFF81C784),
+  Color(0xFFFFD54F),
+  Color(0xFFFF8A65),
+];
+
+Color _getAvatarColor(String name) {
+  if (name.isEmpty) return Colors.grey;
+  final int index = name.hashCode.abs() % _vibrantColors.length;
+  return _vibrantColors[index];
+}
+
 class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 2;
@@ -638,8 +655,7 @@ class _BookingCardState extends State<_BookingCard>
     final letter = widget.booking.otherSideName.isNotEmpty
         ? widget.booking.otherSideName[0].toUpperCase()
         : '?';
-    final avatarColor =
-        Colors.primaries[letter.hashCode % Colors.primaries.length];
+    final avatarColor = _getAvatarColor(widget.booking.otherSideName);
     final fullImageUrl = AppConfig.getFullImageUrl(
       widget.booking.otherSideImageUrl,
     );
@@ -661,19 +677,15 @@ class _BookingCardState extends State<_BookingCard>
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: widget.isDarkMode
-                  ? avatarColor.shade900
-                  : avatarColor.shade100,
+              backgroundColor: avatarColor,
               backgroundImage: fullImageUrl.isNotEmpty
                   ? NetworkImage(fullImageUrl)
                   : null,
               child: fullImageUrl.isEmpty
                   ? Text(
                       letter,
-                      style: TextStyle(
-                        color: widget.isDarkMode
-                            ? avatarColor.shade100
-                            : avatarColor.shade700,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
                       ),
