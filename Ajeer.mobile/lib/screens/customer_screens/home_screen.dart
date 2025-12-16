@@ -234,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen>
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                color: isDarkMode ? const Color(0xFF40403f) : Colors.white,
                 shape: BoxShape.circle,
                 boxShadow: const [
                   BoxShadow(
@@ -243,7 +243,6 @@ class _HomeScreenState extends State<HomeScreen>
                     spreadRadius: 5,
                   ),
                 ],
-                border: Border.all(color: Colors.blueAccent, width: 3),
               ),
               padding: const EdgeInsets.all(20.0),
               child: FadeInImage.assetNetwork(

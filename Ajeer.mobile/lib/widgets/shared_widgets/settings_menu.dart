@@ -79,7 +79,7 @@ class _SettingsMenuState extends State<SettingsMenu>
                 child: Container(
                   padding: const EdgeInsets.all(30),
                   decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.grey[900] : Colors.white,
+                    color: isDarkMode ? const Color(0xFF40403f) : Colors.white,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -219,7 +219,7 @@ class _SettingsMenuState extends State<SettingsMenu>
               vertical: 8.0,
             ),
             child: Container(
-              height: 210,
+              height: 270,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: containerColor,

@@ -610,7 +610,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                     spreadRadius: 5,
                   ),
                 ],
-                border: Border.all(color: Colors.blueAccent, width: 3),
               ),
               child: Center(
                 child: Icon(_overlayIcon, size: 50, color: _overlayIconColor),
@@ -780,7 +779,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: CircleAvatar(
                   radius: _profileAvatarHeight / 2,
                   backgroundColor: isDarkMode ? _darkBlue : _lightBlue,
-
                   backgroundImage: backgroundImage,
                   child: backgroundImage == null
                       ? Text(
@@ -884,7 +882,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               Expanded(
                 child: SingleChildScrollView(
-                  clipBehavior: Clip.none,
+                  clipBehavior: Clip.hardEdge,
                   padding: EdgeInsets.only(bottom: bottomPadding + 20),
                   child: Column(
                     children: [
@@ -909,7 +907,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                         isDarkMode,
                         type: TextInputType.emailAddress,
                       ),
-
                       _Bounceable(
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: 15.0),
@@ -1106,22 +1103,27 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _showInfoDialog(BuildContext context) {
+    final bool isDarkMode = widget.themeNotifier.isDarkMode;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.info_outline, color: _primaryBlue),
-            const SizedBox(width: 10),
-            const Text('Ajeer Info'),
-          ],
+        backgroundColor: isDarkMode ? _subtleLighterDark : Colors.white,
+        title: Text(
+          'Ajeer Info',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
         ),
-        content: const Text(
+        content: Text(
           'Ajeer connects customers with professional service providers for a seamless experience.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: textColor),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: textColor),
             child: const Text('Close'),
           ),
         ],
@@ -1130,22 +1132,28 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _showSignOutDialog(BuildContext context) {
+    final bool isDarkMode = widget.themeNotifier.isDarkMode;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+        backgroundColor: isDarkMode ? _subtleLighterDark : Colors.white,
         title: const Text(
           'Sign Out',
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to sign out?',
           textAlign: TextAlign.center,
+          style: TextStyle(color: textColor),
         ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: textColor),
             child: const Text('No'),
           ),
           ElevatedButton(
