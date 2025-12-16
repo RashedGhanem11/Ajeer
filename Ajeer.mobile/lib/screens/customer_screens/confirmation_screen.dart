@@ -78,8 +78,8 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
   String _currentMediaView = 'Photo';
   bool _isConfirmButtonPressed = false;
   bool _isLoading = false;
-  late AnimationController _bounceController;
-  late Animation<double> _scaleAnimation;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -136,18 +136,20 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
       _currentMediaView = 'Photo';
     }
 
-    _bounceController = AnimationController(
+    _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 1000),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
-      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    _pulseController.repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _bounceController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -189,9 +191,6 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
 
   Future<void> _onConfirmTap() async {
     if (_isLoading) return;
-
-    await _bounceController.forward();
-    await _bounceController.reverse();
 
     setState(() {
       _isConfirmButtonPressed = true;
@@ -401,21 +400,9 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
       top: iconTopPosition,
       right: 25.0,
       child: GestureDetector(
-        onTapDown: (_) {
-          setState(() => _isConfirmButtonPressed = true);
-          _bounceController.forward();
-        },
-        onTapUp: (_) {
-          setState(() => _isConfirmButtonPressed = false);
-          _bounceController.reverse();
-        },
-        onTapCancel: () {
-          setState(() => _isConfirmButtonPressed = false);
-          _bounceController.reverse();
-        },
         onTap: _onConfirmTap,
         child: ScaleTransition(
-          scale: _scaleAnimation,
+          scale: _pulseAnimation,
           child: Container(
             width: 100.0,
             height: 100.0,

@@ -619,7 +619,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                color: isDarkMode ? const Color(0xFF40403f) : Colors.white,
                 shape: BoxShape.circle,
                 boxShadow: const [
                   BoxShadow(
