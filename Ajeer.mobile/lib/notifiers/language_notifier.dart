@@ -78,14 +78,11 @@ class LanguageNotifier extends ChangeNotifier {
   String translateAddress(String input) {
     if (!isArabic) return input;
 
-    // Replace specific English address terms with Arabic
-    // Note: Geocoding usually returns "Street", "St", etc.
     String translated = input
         .replaceAll(RegExp(r'\bStreet\b', caseSensitive: false), 'شارع')
         .replaceAll(RegExp(r'\bSt\b', caseSensitive: false), 'شارع')
         .replaceAll(RegExp(r'\bDistrict\b', caseSensitive: false), 'حي');
 
-    // Finally convert any numbers
     return convertNumbers(translated);
   }
 
@@ -230,6 +227,44 @@ class LanguageNotifier extends ChangeNotifier {
       'Al-Jubeiha': 'Al-Jubeiha',
       'Al-Bayader': 'Al-Bayader',
       "Tla' Al-Ali": "Tla' Al-Ali",
+
+      // Bookings Screen
+      'active': 'Active',
+      'pending': 'Pending',
+      'closed': 'Closed',
+      'noBookings': 'No bookings here.',
+      'cancel': 'Cancel',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled',
+      'rejected': 'Rejected',
+      'cancelBooking': 'Cancel Booking',
+      'cancelBookingMsg': 'Are you sure you want to cancel this booking?',
+      'confirm': 'Confirm',
+      'back': 'Back',
+      'messageProvider': 'Message Provider',
+      'messageProviderMsg': 'Would you like to message',
+      'message': 'Message',
+      'review': 'Review',
+      'yourReview': 'Your Review',
+      'leaveComment': 'Leave a comment...',
+      'submit': 'Submit',
+      'details': 'Details',
+      'serviceLabel': 'Service(s)',
+      'providerLabel': 'Provider',
+      'phoneLabel': 'Phone',
+      'areaLabel': 'Area',
+      'addressLabel': 'Address',
+      'dateLabel': 'Date',
+      'timeLabel': 'Time',
+      'priceLabel': 'Price',
+      'notesLabel': 'Notes',
+      'attachmentsLabel': 'Attachments',
+      'bookingCancelled': 'Booking cancelled successfully',
+      'cancelFailed': 'Failed to cancel booking',
+      'loadDetailsFailed': 'Could not load booking details',
+      'loadLocationFailed': 'Could not load location data',
+      'am': 'AM',
+      'pm': 'PM',
     },
     'ar': {
       'settings': 'الإعدادات',
@@ -352,6 +387,44 @@ class LanguageNotifier extends ChangeNotifier {
       'Al-Jubeiha': 'الجبيهة',
       'Al-Bayader': 'البيادر',
       "Tla' Al-Ali": 'تلاع العلي',
+
+      // Bookings Screen
+      'active': 'نشط',
+      'pending': 'معلق',
+      'closed': 'مغلق',
+      'noBookings': 'لا توجد حجوزات.',
+      'cancel': 'إلغاء',
+      'completed': 'مكتمل',
+      'cancelled': 'ملغي',
+      'rejected': 'مرفوض',
+      'cancelBooking': 'إلغاء الحجز',
+      'cancelBookingMsg': 'هل أنت متأكد أنك تريد إلغاء هذا الحجز؟',
+      'confirm': 'تأكيد',
+      'back': 'رجوع',
+      'messageProvider': 'مراسلة المزود',
+      'messageProviderMsg': 'هل تود مراسلة',
+      'message': 'مراسلة',
+      'review': 'تقييم',
+      'yourReview': 'تقييمك',
+      'leaveComment': 'أترك تعليقاً...',
+      'submit': 'إرسال',
+      'details': 'التفاصيل',
+      'serviceLabel': 'الخدمة/الخدمات',
+      'providerLabel': 'المزود',
+      'phoneLabel': 'الهاتف',
+      'areaLabel': 'المنطقة',
+      'addressLabel': 'العنوان',
+      'dateLabel': 'التاريخ',
+      'timeLabel': 'الوقت',
+      'priceLabel': 'السعر',
+      'notesLabel': 'ملاحظات',
+      'attachmentsLabel': 'المرفقات',
+      'bookingCancelled': 'تم إلغاء الحجز بنجاح',
+      'cancelFailed': 'فشل إلغاء الحجز',
+      'loadDetailsFailed': 'تعذر تحميل تفاصيل الحجز',
+      'loadLocationFailed': 'تعذر تحميل بيانات الموقع',
+      'am': 'صباحاً',
+      'pm': 'مساءً',
     },
   };
 
