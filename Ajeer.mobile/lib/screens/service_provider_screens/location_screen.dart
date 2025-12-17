@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../themes/theme_notifier.dart';
+import '../../notifiers/language_notifier.dart';
 import 'work_schedule_screen.dart';
 import '../../models/provider_data.dart';
 import '../../config/app_config.dart';
@@ -77,6 +79,14 @@ class _LocationScreenState extends State<LocationScreen> {
   Set<String> _currentAreaSelection = {};
   List<LocationSelection> _finalLocations = [];
   String _areaSearchQuery = '';
+
+  late LanguageNotifier _languageNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context);
+  }
 
   @override
   void initState() {
@@ -331,7 +341,7 @@ class _LocationScreenState extends State<LocationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pick location(s)',
+                      _languageNotifier.translate('pickLocationPlural'),
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             fontSize: 28,
@@ -343,7 +353,7 @@ class _LocationScreenState extends State<LocationScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: Text(
-                        'Select the cities and areas where you will be providing your services.',
+                        _languageNotifier.translate('locationSelectionDesc'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
@@ -381,6 +391,7 @@ class _LocationScreenState extends State<LocationScreen> {
                   onEdit: _onEditLocation,
                   onDelete: _onDeleteLocation,
                   isDarkMode: isDarkMode,
+                  languageNotifier: _languageNotifier,
                 ),
             ],
           ),
@@ -449,6 +460,8 @@ class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
 
   @override
   Widget build(BuildContext context) {
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
+
     return Positioned(
       top: MediaQuery.of(context).padding.top + 5,
       left: 10,
@@ -461,9 +474,9 @@ class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: widget.onBackTap,
           ),
-          const Text(
-            'Ajeer',
-            style: TextStyle(
+          Text(
+            languageNotifier.translate('appName'),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 34,
               fontWeight: FontWeight.w900,
@@ -523,6 +536,7 @@ class _LocationSelectionContent extends StatelessWidget {
   final ValueChanged<LocationSelection> onEdit;
   final ValueChanged<String> onDelete;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _LocationSelectionContent({
     required this.availableCities,
@@ -538,6 +552,7 @@ class _LocationSelectionContent extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   List<Widget> _buildSelectedLocationsList() {
@@ -547,7 +562,7 @@ class _LocationSelectionContent extends StatelessWidget {
       Padding(
         padding: const EdgeInsets.only(left: 10.0, bottom: 0.0),
         child: Text(
-          'Selected Locations (${finalLocations.length})',
+          '${languageNotifier.translate('selectedLocations')} (${languageNotifier.convertNumbers(finalLocations.length.toString())})',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
@@ -563,7 +578,9 @@ class _LocationSelectionContent extends StatelessWidget {
         itemCount: finalLocations.length,
         itemBuilder: (context, index) {
           final loc = finalLocations[index];
-          final areas = loc.areas.toList().join(', ');
+          final areas = languageNotifier.translateStringList(
+            loc.areas.toList(),
+          );
           final Color itemBgColor = isDarkMode
               ? Colors.black
               : Colors.grey.shade100;
@@ -606,7 +623,7 @@ class _LocationSelectionContent extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        loc.city,
+                        languageNotifier.translate(loc.city),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -693,6 +710,7 @@ class _LocationSelectionContent extends StatelessWidget {
             onAreaSearchChanged: onAreaSearchChanged,
             onSave: onSave,
             isDarkMode: isDarkMode,
+            languageNotifier: languageNotifier,
           ),
           if (finalLocations.isNotEmpty) const SizedBox(height: 10.0),
           if (finalLocations.isNotEmpty) ..._buildSelectedLocationsList(),
@@ -715,6 +733,7 @@ class _CityAreaSelector extends StatelessWidget {
   final ValueChanged<String> onAreaSearchChanged;
   final VoidCallback onSave;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _CityAreaSelector({
     required this.availableCities,
@@ -728,6 +747,7 @@ class _CityAreaSelector extends StatelessWidget {
     required this.onAreaSearchChanged,
     required this.onSave,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -744,20 +764,21 @@ class _CityAreaSelector extends StatelessWidget {
             children: [
               Expanded(
                 child: _LocationBox(
-                  title: 'City Picker',
+                  title: languageNotifier.translate('cityPicker'),
                   isDarkMode: isDarkMode,
                   child: _CityList(
                     cities: availableCities,
                     selectedCity: selectedCity,
                     onCitySelected: onCitySelected,
                     isDarkMode: isDarkMode,
+                    languageNotifier: languageNotifier,
                   ),
                 ),
               ),
               const SizedBox(width: 5),
               Expanded(
                 child: _LocationBox(
-                  title: 'Area Picker',
+                  title: languageNotifier.translate('areaPicker'),
                   isDarkMode: isDarkMode,
                   child: _AreaList(
                     selectedCity: selectedCity,
@@ -768,6 +789,7 @@ class _CityAreaSelector extends StatelessWidget {
                     onAreaSearchChanged: onAreaSearchChanged,
                     isDarkMode: isDarkMode,
                     finalLocations: finalLocations,
+                    languageNotifier: languageNotifier,
                   ),
                 ),
               ),
@@ -792,7 +814,9 @@ class _CityAreaSelector extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: Text(
-                    isSaveEnabled ? 'Add Location' : 'Select Areas to Add',
+                    isSaveEnabled
+                        ? languageNotifier.translate('addLocation')
+                        : languageNotifier.translate('selectAreasToAdd'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -869,12 +893,14 @@ class _CityList extends StatelessWidget {
   final String? selectedCity;
   final ValueChanged<String> onCitySelected;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _CityList({
     required this.cities,
     required this.selectedCity,
     required this.onCitySelected,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -884,7 +910,7 @@ class _CityList extends StatelessWidget {
     if (cities.isEmpty) {
       return Center(
         child: Text(
-          'No cities available\nor all added.',
+          languageNotifier.translate('noCitiesAvailable'),
           textAlign: TextAlign.center,
           style: TextStyle(
             color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
@@ -915,7 +941,7 @@ class _CityList extends StatelessWidget {
           dense: true,
           minVerticalPadding: 0,
           title: Text(
-            city,
+            languageNotifier.translate(city),
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
@@ -944,6 +970,7 @@ class _AreaList extends StatelessWidget {
   final ValueChanged<String> onAreaSearchChanged;
   final bool isDarkMode;
   final List<LocationSelection> finalLocations;
+  final LanguageNotifier languageNotifier;
 
   const _AreaList({
     required this.selectedCity,
@@ -954,6 +981,7 @@ class _AreaList extends StatelessWidget {
     required this.onAreaSearchChanged,
     required this.isDarkMode,
     required this.finalLocations,
+    required this.languageNotifier,
   });
 
   String _normalizeString(String text) {
@@ -977,7 +1005,7 @@ class _AreaList extends StatelessWidget {
     if (selectedCity == null) {
       return Center(
         child: Text(
-          'No city available for selection.',
+          languageNotifier.translate('noCitySelection'),
           textAlign: TextAlign.center,
           style: TextStyle(
             color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
@@ -998,8 +1026,10 @@ class _AreaList extends StatelessWidget {
     String normalizedQuery = _normalizeString(areaSearchQuery);
 
     final List<String> filteredAreas = availableAreas.where((area) {
+      // Filter based on translated name to allow searching in Arabic
+      final translatedArea = languageNotifier.translate(area);
       if (normalizedQuery.isEmpty) return true;
-      return _normalizeString(area).contains(normalizedQuery);
+      return _normalizeString(translatedArea).contains(normalizedQuery);
     }).toList();
 
     return Column(
@@ -1009,6 +1039,7 @@ class _AreaList extends StatelessWidget {
           child: _AreaSearchBar(
             onSearchChanged: onAreaSearchChanged,
             isDarkMode: isDarkMode,
+            languageNotifier: languageNotifier,
           ),
         ),
         Expanded(
@@ -1018,8 +1049,8 @@ class _AreaList extends StatelessWidget {
                     padding: const EdgeInsets.all(10.0),
                     child: Text(
                       normalizedQuery.isNotEmpty
-                          ? 'No areas found for "$areaSearchQuery".'
-                          : 'No areas available.',
+                          ? '${languageNotifier.translate('noAreasFound')} "$areaSearchQuery".'
+                          : languageNotifier.translate('noAreas'),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: isDarkMode
@@ -1038,7 +1069,7 @@ class _AreaList extends StatelessWidget {
                     final bool isSelected = currentAreaSelection.contains(area);
 
                     return _AreaListItem(
-                      areaName: area,
+                      areaName: languageNotifier.translate(area),
                       isSelected: isSelected,
                       isDarkMode: isDarkMode,
                       onTap: () => onAreaTapped(area),
@@ -1143,10 +1174,12 @@ class _AreaListItemState extends State<_AreaListItem>
 class _AreaSearchBar extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _AreaSearchBar({
     required this.onSearchChanged,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -1171,7 +1204,7 @@ class _AreaSearchBar extends StatelessWidget {
         onChanged: onSearchChanged,
         style: TextStyle(color: searchTextColor, fontSize: 14.0),
         decoration: InputDecoration(
-          hintText: 'Search',
+          hintText: languageNotifier.translate('search'),
           hintStyle: TextStyle(color: searchHintColor, fontSize: 14.0),
           prefixIcon: Icon(Icons.search, color: iconColor, size: 20),
           contentPadding: const EdgeInsets.symmetric(

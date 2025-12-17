@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../models/service_models.dart';
 import '../../services/service_category_service.dart';
 import '../shared_screens/profile_screen.dart';
@@ -7,6 +8,7 @@ import '../../themes/theme_notifier.dart';
 import '../../config/app_config.dart';
 import 'location_screen.dart';
 import '../../../models/provider_data.dart';
+import '../../notifiers/language_notifier.dart';
 
 class ServicesScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -40,6 +42,14 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
   String _searchQuery = '';
   final Map<String, Set<String>> _selectedUnitTypes = {};
+
+  late LanguageNotifier _languageNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context);
+  }
 
   @override
   void initState() {
@@ -235,7 +245,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
           onChanged: _onSearchChanged,
           style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black87),
           decoration: InputDecoration(
-            hintText: 'Search for a service',
+            hintText: _languageNotifier.translate('searchService'),
             prefixIcon: Icon(
               Icons.search,
               color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -284,7 +294,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Select service',
+                    _languageNotifier.translate('selectServiceTitle'),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -295,7 +305,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: Text(
-                      'Select the service category you want to provide.',
+                      _languageNotifier.translate('selectServiceDesc'),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
@@ -317,14 +327,14 @@ class _ServicesScreenState extends State<ServicesScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            _errorMessage!,
+                            _languageNotifier.translate('loadServicesFailed'),
                             style: TextStyle(
                               color: isDarkMode ? Colors.white : Colors.black,
                             ),
                           ),
                           TextButton(
                             onPressed: _loadData,
-                            child: const Text("Retry"),
+                            child: Text(_languageNotifier.translate('retry')),
                           ),
                         ],
                       ),
@@ -342,6 +352,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       },
                       bottomPadding: 20.0,
                       isDarkMode: isDarkMode,
+                      languageNotifier: _languageNotifier,
                     ),
             ),
           ],
@@ -410,6 +421,7 @@ class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
 
   @override
   Widget build(BuildContext context) {
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
     return Positioned(
       top: MediaQuery.of(context).padding.top + 5,
       left: 10,
@@ -422,9 +434,9 @@ class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: widget.onBackTap,
           ),
-          const Text(
-            'Ajeer',
-            style: TextStyle(
+          Text(
+            languageNotifier.translate('appName'),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 34,
               fontWeight: FontWeight.w900,
@@ -478,6 +490,7 @@ class _ProviderServiceGridView extends StatelessWidget {
   final ValueChanged<Map<String, Set<String>>> onUnitTypeSelectionChanged;
   final double bottomPadding;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _ProviderServiceGridView({
     required this.categories,
@@ -487,6 +500,7 @@ class _ProviderServiceGridView extends StatelessWidget {
     required this.onUnitTypeSelectionChanged,
     required this.bottomPadding,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -496,7 +510,12 @@ class _ProviderServiceGridView extends StatelessWidget {
 
     if (normalizedQuery.isNotEmpty) {
       categoriesToShow = categoriesToShow
-          .where((c) => c.name.toLowerCase().contains(normalizedQuery))
+          .where(
+            (c) => languageNotifier
+                .translate(c.name)
+                .toLowerCase()
+                .contains(normalizedQuery),
+          )
           .toList();
     }
     categoriesToShow = categoriesToShow
@@ -535,6 +554,7 @@ class _ProviderServiceGridView extends StatelessWidget {
               onUnitTypeSelectionChanged(updatedSelection);
             },
             isDarkMode: isDarkMode,
+            languageNotifier: languageNotifier,
           );
         },
       );
@@ -556,15 +576,19 @@ class _ProviderServiceGridView extends StatelessWidget {
           final unitCount = selectedUnitTypes[category.name]?.length ?? 0;
           final bool isHighlightedBySearch =
               normalizedQuery.isNotEmpty &&
-              category.name.toLowerCase().contains(normalizedQuery);
+              languageNotifier
+                  .translate(category.name)
+                  .toLowerCase()
+                  .contains(normalizedQuery);
 
           return _ProviderServiceGridItem(
             iconUrl: category.iconUrl,
-            name: category.name,
+            name: languageNotifier.translate(category.name),
             unitCount: unitCount,
             isSelected: isCategorySelected(category.name),
             isHighlightedBySearch: isHighlightedBySearch,
             isDarkMode: isDarkMode,
+            languageNotifier: languageNotifier,
             onTap: () => toggleServiceSelection(category),
             onUnitTypeTap: () => showUnitTypeSelectionDialog(category),
           );
@@ -583,6 +607,7 @@ class _ProviderServiceGridItem extends StatelessWidget {
   final VoidCallback onUnitTypeTap;
   final bool isDarkMode;
   final bool isHighlightedBySearch;
+  final LanguageNotifier languageNotifier;
 
   const _ProviderServiceGridItem({
     required this.iconUrl,
@@ -593,6 +618,7 @@ class _ProviderServiceGridItem extends StatelessWidget {
     required this.onUnitTypeTap,
     required this.isDarkMode,
     required this.isHighlightedBySearch,
+    required this.languageNotifier,
   });
 
   @override
@@ -694,7 +720,7 @@ class _ProviderServiceGridItem extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        '$unitCount',
+                        languageNotifier.convertNumbers('$unitCount'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -732,6 +758,7 @@ class _UnitTypeSelectionDialog extends StatefulWidget {
   final Set<String> initialSelectedUnitTypes;
   final ValueChanged<Set<String>> onSave;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _UnitTypeSelectionDialog({
     required this.categoryName,
@@ -739,6 +766,7 @@ class _UnitTypeSelectionDialog extends StatefulWidget {
     required this.initialSelectedUnitTypes,
     required this.onSave,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -773,11 +801,24 @@ class _UnitTypeSelectionDialogState extends State<_UnitTypeSelectionDialog> {
   }
 
   String _formattedTime(int estimatedTime) {
-    if (estimatedTime < 60) return '$estimatedTime mins';
-    final hours = estimatedTime ~/ 60;
-    final minutes = estimatedTime % 60;
-    if (minutes == 0) return '$hours hrs';
-    return '$hours hrs $minutes mins';
+    final hrStr = widget.languageNotifier.translate('hr');
+    final hrsStr = widget.languageNotifier.translate('hrs');
+    final minStr = widget.languageNotifier.translate('min');
+    final minsStr = widget.languageNotifier.translate('mins');
+
+    String result;
+    if (estimatedTime < 60) {
+      result = '$estimatedTime $minsStr';
+    } else {
+      final hours = estimatedTime ~/ 60;
+      final minutes = estimatedTime % 60;
+      if (minutes == 0) {
+        result = '$hours ${hours > 1 ? hrsStr : hrStr}';
+      } else {
+        result = '$hours ${hours > 1 ? hrsStr : hrStr} $minutes $minsStr';
+      }
+    }
+    return widget.languageNotifier.convertNumbers(result);
   }
 
   @override
@@ -789,7 +830,7 @@ class _UnitTypeSelectionDialogState extends State<_UnitTypeSelectionDialog> {
       backgroundColor: dialogBgColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       title: Text(
-        'Select unit type(s) for ${widget.categoryName}',
+        '${widget.languageNotifier.translate('selectUnitTypesFor')} ${widget.languageNotifier.translate(widget.categoryName)}',
         textAlign: TextAlign.center,
         style: TextStyle(
           fontWeight: FontWeight.bold,
@@ -815,9 +856,11 @@ class _UnitTypeSelectionDialogState extends State<_UnitTypeSelectionDialog> {
                   );
 
                   return _UnitTypeListItem(
-                    name: item.name,
+                    name: widget.languageNotifier.translate(item.name),
                     timeString: _formattedTime(item.timeInMinutes),
-                    priceString: 'JOD ${item.priceValue.toStringAsFixed(1)}',
+                    priceString: widget.languageNotifier.isArabic
+                        ? '${widget.languageNotifier.convertNumbers(item.priceValue.toStringAsFixed(1))} ${widget.languageNotifier.translate('jod')}'
+                        : 'JOD ${item.priceValue.toStringAsFixed(1)}',
                     isSelected: isSelected,
                     onTap: () => _onUnitTypeTapped(item.name),
                     isDarkMode: widget.isDarkMode,
@@ -832,7 +875,7 @@ class _UnitTypeSelectionDialogState extends State<_UnitTypeSelectionDialog> {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
-            'Cancel',
+            widget.languageNotifier.translate('cancel'),
             style: TextStyle(
               color: widget.isDarkMode ? Colors.grey : Colors.grey.shade700,
             ),
@@ -846,7 +889,10 @@ class _UnitTypeSelectionDialogState extends State<_UnitTypeSelectionDialog> {
               borderRadius: BorderRadius.circular(10.0),
             ),
           ),
-          child: const Text('Save', style: TextStyle(color: Colors.white)),
+          child: Text(
+            widget.languageNotifier.translate('save'),
+            style: const TextStyle(color: Colors.white),
+          ),
         ),
       ],
     );

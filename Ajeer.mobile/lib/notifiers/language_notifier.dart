@@ -153,6 +153,7 @@ class LanguageNotifier extends ChangeNotifier {
       'cancel': 'Cancel',
       'save': 'Save',
       'error': 'Error: ',
+      'retry': 'Retry',
 
       // Services & Units
       'Plumbing': 'Plumbing',
@@ -198,6 +199,10 @@ class LanguageNotifier extends ChangeNotifier {
       'Large': 'Large',
       'Standard': 'Standard',
       'Deep Clean': 'Deep Clean',
+      'Regular Clean': 'Regular Clean',
+      'Full Service': 'Full Service',
+      'Basic': 'Basic',
+      'Premium': 'Premium',
 
       // Profile Screen
       'myProfile': 'My Profile',
@@ -226,7 +231,7 @@ class LanguageNotifier extends ChangeNotifier {
       'updateFailed': 'Update failed: ',
       'passwordChanged': 'Password changed successfully!',
 
-      // Booking & Location
+      // Booking & Location (Customer)
       'selectService': 'Select a service',
       'searchHint': 'Search for a service',
       'fetchingError': 'Error fetching services: ',
@@ -258,6 +263,24 @@ class LanguageNotifier extends ChangeNotifier {
       'Al-Rabieh': 'Al-Rabieh', 'Dabouq': 'Dabouq', 'Al-Jubeiha': 'Al-Jubeiha',
       'Al-Bayader': 'Al-Bayader', "Tla' Al-Ali": "Tla' Al-Ali",
 
+      // Provider Location & Services
+      'pickLocationPlural': 'Pick location(s)',
+      'locationSelectionDesc':
+          'Select the cities and areas where you will be providing your services.',
+      'selectedLocations': 'Selected Locations',
+      'addLocation': 'Add Location',
+      'selectAreasToAdd': 'Select Areas to Add',
+      'noCitiesAvailable': 'No cities available\nor all added.',
+      'noCitySelection': 'No city available for selection.',
+      'noAreasFound': 'No areas found for',
+      'search': 'Search',
+      'selectServiceTitle': 'Select service',
+      'selectServiceDesc': 'Select the service category you want to provide.',
+      'searchService': 'Search for a service',
+      'loadServicesFailed':
+          'Failed to load services. Please check your connection.',
+      'selectUnitTypesFor': 'Select unit type(s) for',
+
       // Confirmation
       'confirmBooking': 'Confirm your booking',
       'estimatedCost': 'Estimated Cost',
@@ -283,7 +306,7 @@ class LanguageNotifier extends ChangeNotifier {
       'audioNotImplemented': 'Audio from files not implemented in simulation.',
       'audioSimulated': 'Audio recording is simulated.',
 
-      // Bookings List
+      // Bookings List (Client/Provider)
       'active': 'Active',
       'pending': 'Pending',
       'closed': 'Closed',
@@ -339,6 +362,14 @@ class LanguageNotifier extends ChangeNotifier {
       'Friday': 'Friday',
       'Saturday': 'Saturday',
       'Sunday': 'Sunday',
+
+      // Notifications (Mock)
+      'newBookingConf': 'New Booking Confirmation',
+      'bookingConfMsg': 'Your booking #1023 is confirmed.',
+      'providerAssigned': 'Provider Assigned',
+      'providerAssignedMsg': 'John Doe has been assigned.',
+      'paymentReminder': 'Payment Reminder',
+      'paymentReminderMsg': 'Service fee due tomorrow.',
     },
     'ar': {
       // General
@@ -368,6 +399,7 @@ class LanguageNotifier extends ChangeNotifier {
       'cancel': 'إلغاء',
       'save': 'حفظ',
       'error': 'خطأ: ',
+      'retry': 'إعادة المحاولة',
 
       // Services & Units
       'Plumbing': 'سباكة',
@@ -413,6 +445,10 @@ class LanguageNotifier extends ChangeNotifier {
       'Large': 'كبير',
       'Standard': 'قياسي',
       'Deep Clean': 'تنظيف عميق',
+      'Regular Clean': 'تنظيف عادي',
+      'Full Service': 'خدمة شاملة',
+      'Basic': 'أساسي',
+      'Premium': 'مميز',
 
       // Profile Screen
       'myProfile': 'ملفي الشخصي',
@@ -441,7 +477,7 @@ class LanguageNotifier extends ChangeNotifier {
       'updateFailed': 'فشل التحديث: ',
       'passwordChanged': 'تم تغيير كلمة المرور بنجاح!',
 
-      // Booking & Location
+      // Booking & Location (Customer)
       'selectService': 'اختر خدمة',
       'searchHint': 'ابحث عن خدمة',
       'fetchingError': 'خطأ في جلب الخدمات: ',
@@ -470,6 +506,22 @@ class LanguageNotifier extends ChangeNotifier {
       'Jabal Al-Weibdeh': 'جبل اللويبدة', 'Shmeisani': 'الشميساني',
       'Al-Rabieh': 'الرابية', 'Dabouq': 'دابوق', 'Al-Jubeiha': 'الجبيهة',
       'Al-Bayader': 'البيادر', "Tla' Al-Ali": 'تلاع العلي',
+
+      // Provider Location & Services
+      'pickLocationPlural': 'اختر الموقع/المواقع',
+      'locationSelectionDesc': 'حدد المدن والمناطق التي ستقدم خدماتك فيها.',
+      'selectedLocations': 'المواقع المحددة',
+      'addLocation': 'إضافة موقع',
+      'selectAreasToAdd': 'اختر مناطق للإضافة',
+      'noCitiesAvailable': 'لا توجد مدن متاحة\nأو تمت إضافتها جميعاً.',
+      'noCitySelection': 'لا توجد مدينة متاحة للاختيار.',
+      'noAreasFound': 'لا توجد مناطق تطابق',
+      'search': 'بحث',
+      'selectServiceTitle': 'اختر خدمة',
+      'selectServiceDesc': 'اختر فئة الخدمة التي تريد تقديمها.',
+      'searchService': 'ابحث عن خدمة',
+      'loadServicesFailed': 'فشل تحميل الخدمات. يرجى التحقق من الاتصال.',
+      'selectUnitTypesFor': 'اختر أنواع الوحدات لـ',
 
       // Confirmation
       'confirmBooking': 'تأكيد الحجز',
@@ -551,6 +603,14 @@ class LanguageNotifier extends ChangeNotifier {
       'Friday': 'الجمعة',
       'Saturday': 'السبت',
       'Sunday': 'الأحد',
+
+      // Notifications (Mock)
+      'newBookingConf': 'تأكيد حجز جديد',
+      'bookingConfMsg': 'تم تأكيد حجزك #1023.',
+      'providerAssigned': 'تم تعيين مزود',
+      'providerAssignedMsg': 'تم تعيين جون دو.',
+      'paymentReminder': 'تذكير بالدفع',
+      'paymentReminderMsg': 'رسوم الخدمة مستحقة غداً.',
     },
   };
 
