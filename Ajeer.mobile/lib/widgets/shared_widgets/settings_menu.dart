@@ -23,9 +23,10 @@ class _SettingsMenuState extends State<SettingsMenu>
   late Animation<double> _scaleAnimation;
   OverlayEntry? _overlayEntry;
 
+  // Internal notification list (Empty as requested)
+  final List<Map<String, dynamic>> _notifications = [];
   final Set<int> _selectedNotifications = {};
   bool _isDeleting = false;
-  final List<Map<String, dynamic>> _notifications = [];
 
   @override
   void initState() {
@@ -50,6 +51,29 @@ class _SettingsMenuState extends State<SettingsMenu>
     _overlayEntry?.remove();
     _overlayEntry = null;
     super.dispose();
+  }
+
+  void _toggleNotificationSelection(int index) {
+    setState(() {
+      _selectedNotifications.contains(index)
+          ? _selectedNotifications.remove(index)
+          : _selectedNotifications.add(index);
+      _isDeleting = _selectedNotifications.isNotEmpty;
+    });
+  }
+
+  void _deleteSelectedNotifications() {
+    setState(() {
+      final sortedIndices = _selectedNotifications.toList()
+        ..sort((a, b) => b.compareTo(a));
+      for (final index in sortedIndices) {
+        if (index >= 0 && index < _notifications.length) {
+          _notifications.removeAt(index);
+        }
+      }
+      _selectedNotifications.clear();
+      _isDeleting = false;
+    });
   }
 
   void _showLanguageOverlay() {
@@ -161,25 +185,6 @@ class _SettingsMenuState extends State<SettingsMenu>
 
     _overlayEntry?.remove();
     _overlayEntry = null;
-  }
-
-  void _toggleNotificationSelection(int index) {
-    setState(() {
-      _selectedNotifications.contains(index)
-          ? _selectedNotifications.remove(index)
-          : _selectedNotifications.add(index);
-      _isDeleting = _selectedNotifications.isNotEmpty;
-    });
-  }
-
-  void _deleteSelectedNotifications() {
-    setState(() {
-      _notifications.removeWhere(
-        (n) => _selectedNotifications.contains(_notifications.indexOf(n)),
-      );
-      _selectedNotifications.clear();
-      _isDeleting = false;
-    });
   }
 
   void _showInfoDialog(LanguageNotifier lang) {

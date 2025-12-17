@@ -10,6 +10,7 @@ import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import '../../widgets/shared_widgets/settings_menu.dart';
 import '../../themes/theme_notifier.dart';
 import '../../notifiers/user_notifier.dart';
+import '../../notifiers/language_notifier.dart';
 import '../../models/provider_data.dart';
 import '../../config/app_config.dart';
 
@@ -35,7 +36,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   static const Color _customerLightBlue = Color(0xFF8CCBFF);
   static const Color _providerPrimaryBlue = Color(0xFF2f6cfa);
   static const Color _providerLightBlue = Color(0xFFa2bdfc);
-  static const Color _darkBlue = Color(0xFF0D47A1);
   static const Color _subtleDark = Color(0xFF1E1E1E);
   static const Color _subtleLighterDark = Color(0xFF2C2C2C);
   static const Color _editableBorderColorDark = Color(0xFF757575);
@@ -56,6 +56,14 @@ class _ProfileScreenState extends State<ProfileScreen>
     Color(0xFFFFD54F),
     Color(0xFFFF8A65),
   ];
+
+  late LanguageNotifier _languageNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context);
+  }
 
   bool get _isProviderMode {
     return Provider.of<UserNotifier>(context, listen: false).isProvider;
@@ -228,7 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Profile updated successfully!'),
+            content: Text(_languageNotifier.translate('profileUpdated')),
             backgroundColor: Colors.green[700],
           ),
         );
@@ -239,7 +247,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Update failed: ${e.toString().replaceAll("Exception:", "")}',
+              '${_languageNotifier.translate('updateFailed')}${e.toString().replaceAll("Exception:", "")}',
             ),
             backgroundColor: Colors.red,
           ),
@@ -271,7 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             return AlertDialog(
               backgroundColor: dialogBgColor,
               title: Text(
-                'Change Password',
+                _languageNotifier.translate('changePassword'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: activePrimary,
@@ -291,7 +299,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                       style: TextStyle(color: textColor),
                       cursorColor: activePrimary,
                       decoration: InputDecoration(
-                        labelText: 'Current Password',
+                        labelText: _languageNotifier.translate(
+                          'currentPassword',
+                        ),
                         labelStyle: TextStyle(color: hintColor),
                         enabledBorder: UnderlineInputBorder(
                           borderSide: BorderSide(color: lineColor),
@@ -303,7 +313,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                         ),
                       ),
-                      validator: (v) => v!.isEmpty ? 'Required' : null,
+                      validator: (v) => v!.isEmpty
+                          ? _languageNotifier.translate('required')
+                          : null,
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -312,7 +324,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       style: TextStyle(color: textColor),
                       cursorColor: activePrimary,
                       decoration: InputDecoration(
-                        labelText: 'New Password',
+                        labelText: _languageNotifier.translate('newPassword'),
                         labelStyle: TextStyle(color: hintColor),
                         enabledBorder: UnderlineInputBorder(
                           borderSide: BorderSide(color: lineColor),
@@ -324,7 +336,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                         ),
                       ),
-                      validator: (v) => v!.length < 6 ? 'Min 6 chars' : null,
+                      validator: (v) => v!.length < 6
+                          ? _languageNotifier.translate('min6Chars')
+                          : null,
                     ),
                   ],
                 ),
@@ -333,7 +347,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   style: TextButton.styleFrom(foregroundColor: textColor),
-                  child: const Text('Cancel'),
+                  child: Text(_languageNotifier.translate('cancel')),
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
@@ -356,9 +370,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                               if (context.mounted) {
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text(
-                                      'Password changed successfully!',
+                                      _languageNotifier.translate(
+                                        'passwordChanged',
+                                      ),
                                     ),
                                     backgroundColor: Colors.green,
                                   ),
@@ -370,7 +386,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      'Error: ${e.toString().replaceAll("Exception:", "")}',
+                                      '${_languageNotifier.translate('error')}${e.toString().replaceAll("Exception:", "")}',
                                     ),
                                     backgroundColor: Colors.red,
                                   ),
@@ -399,7 +415,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Update'),
+                      : Text(_languageNotifier.translate('update')),
                 ),
               ],
             );
@@ -440,6 +456,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       final IconData targetIcon = userNotifier.isProvider
           ? Icons.person
           : Icons.handyman;
+
       final Color targetColor = userNotifier.isProvider
           ? _customerPrimaryBlue
           : _providerPrimaryBlue;
@@ -464,17 +481,17 @@ class _ProfileScreenState extends State<ProfileScreen>
   List<Map<String, dynamic>> _getNavItems(UserNotifier userNotifier) {
     final baseItems = [
       {
-        'label': 'Profile',
+        'label': _languageNotifier.translate('profile'),
         'icon': Icons.person_outline,
         'activeIcon': Icons.person,
       },
       {
-        'label': 'Chat',
+        'label': _languageNotifier.translate('chat'),
         'icon': Icons.chat_bubble_outline,
         'activeIcon': Icons.chat_bubble,
       },
       {
-        'label': 'Bookings',
+        'label': _languageNotifier.translate('bookings'),
         'icon': Icons.book_outlined,
         'activeIcon': Icons.book,
         'notificationCount': 3,
@@ -482,7 +499,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     ];
     if (!userNotifier.isProvider) {
       baseItems.add({
-        'label': 'Home',
+        'label': _languageNotifier.translate('home'),
         'icon': Icons.home_outlined,
         'activeIcon': Icons.home,
       });
@@ -495,23 +512,21 @@ class _ProfileScreenState extends State<ProfileScreen>
     final navItems = _getNavItems(userNotifier);
 
     if (index >= navItems.length) return;
-    final label = navItems[index]['label'];
 
     Widget? nextScreen;
-    switch (label) {
-      case 'Chat':
-        nextScreen = const ChatScreen();
-        break;
-      case 'Bookings':
-        if (userNotifier.isProvider) {
-          nextScreen = const provider_screens.ProviderBookingsScreen();
-        } else {
-          nextScreen = const BookingsScreen();
-        }
-        break;
-      case 'Home':
-        nextScreen = HomeScreen(themeNotifier: widget.themeNotifier);
-        break;
+    if (index == 1) {
+      // Chat
+      nextScreen = const ChatScreen();
+    } else if (index == 2) {
+      // Bookings
+      if (userNotifier.isProvider) {
+        nextScreen = const provider_screens.ProviderBookingsScreen();
+      } else {
+        nextScreen = const BookingsScreen();
+      }
+    } else if (index == 3) {
+      // Home
+      nextScreen = HomeScreen(themeNotifier: widget.themeNotifier);
     }
 
     if (nextScreen != null) {
@@ -544,6 +559,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           key: _scaffoldKey,
           extendBody: true,
           backgroundColor: isDarkMode ? Colors.black : Colors.white,
+          // Updated to remove arguments
           drawer: SettingsMenu(themeNotifier: widget.themeNotifier),
           body: Stack(
             children: [
@@ -634,10 +650,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       top: MediaQuery.of(context).padding.top + 5,
       left: 0,
       right: 0,
-      child: const Center(
+      child: Center(
         child: Text(
-          'Ajeer',
-          style: TextStyle(
+          _languageNotifier.translate('appName'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 34,
             fontWeight: FontWeight.w900,
@@ -663,10 +679,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     final bool isSetupComplete = userNotifier.isProviderSetupComplete;
 
     String label = !isSetupComplete
-        ? 'Become an Ajeer!'
+        ? _languageNotifier.translate('becomeAjeer')
         : (userNotifier.isProvider
-              ? 'Switch to Customer Mode'
-              : 'Switch to Provider Mode');
+              ? _languageNotifier.translate('switchToCustomer')
+              : _languageNotifier.translate('switchToProvider'));
     IconData icon = !isSetupComplete
         ? Icons.rocket_launch
         : (userNotifier.isProvider ? Icons.person : Icons.handyman);
@@ -836,7 +852,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'My Profile',
+                      _languageNotifier.translate('myProfile'),
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             fontSize: 28,
@@ -857,20 +873,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                       const SizedBox(height: 7),
                       _buildTextField(
                         _fullNameController,
-                        'Full Name',
+                        _languageNotifier.translate('fullName'),
                         Icons.person_outline,
                         isDarkMode,
                       ),
                       _buildTextField(
                         _mobileController,
-                        'Mobile Number',
+                        _languageNotifier.translate('mobileNumber'),
                         Icons.call_outlined,
                         isDarkMode,
                         type: TextInputType.phone,
                       ),
                       _buildTextField(
                         _emailController,
-                        'Email',
+                        _languageNotifier.translate('email'),
                         Icons.email_outlined,
                         isDarkMode,
                         type: TextInputType.emailAddress,
@@ -881,11 +897,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                           child: TextField(
                             controller: _passwordController,
                             readOnly: true,
-                            enableInteractiveSelection: _isEditing,
                             obscureText: true,
                             style: TextStyle(color: fieldTextColor),
                             decoration: InputDecoration(
-                              labelText: 'Password',
+                              labelText: _languageNotifier.translate(
+                                'password',
+                              ),
                               prefixIcon: Icon(
                                 Icons.lock_outline,
                                 color: _isEditing ? _primaryBlue : Colors.grey,
@@ -941,6 +958,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           editableBorderColorDark: _editableBorderColorDark,
                           subtleLighterDark: _subtleLighterDark,
                           primaryColor: _primaryBlue,
+                          languageNotifier: _languageNotifier,
                         ),
                     ],
                   ),
@@ -962,7 +980,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             Icons.check,
             _dataHasChanged ? _saveGreen : Colors.grey,
             _dataHasChanged ? _saveProfile : null,
-            'Save',
+            _languageNotifier.translate('save'),
           ),
           const SizedBox(width: 10),
         ],
@@ -970,14 +988,16 @@ class _ProfileScreenState extends State<ProfileScreen>
           _isEditing ? Icons.close : Icons.edit,
           _isEditing ? _cancelRed : _primaryBlue,
           _toggleEditMode,
-          _isEditing ? 'Cancel' : 'Edit',
+          _isEditing
+              ? _languageNotifier.translate('cancel')
+              : _languageNotifier.translate('edit'),
         ),
         const SizedBox(width: 10),
         _buildCircleButton(
           Icons.settings,
           _primaryBlue,
           () => _scaffoldKey.currentState?.openDrawer(),
-          'Settings',
+          _languageNotifier.translate('settings'),
         ),
       ],
     );
@@ -1038,7 +1058,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: TextField(
           controller: controller,
           readOnly: !_isEditing,
-          enableInteractiveSelection: _isEditing,
           obscureText: isPassword,
           keyboardType: type,
           style: TextStyle(color: textColor),
@@ -1081,6 +1100,7 @@ class _ProviderInfoSection extends StatelessWidget {
   final Color editableBorderColorDark;
   final Color subtleLighterDark;
   final Color primaryColor;
+  final LanguageNotifier languageNotifier;
 
   const _ProviderInfoSection({
     required this.providerData,
@@ -1090,6 +1110,7 @@ class _ProviderInfoSection extends StatelessWidget {
     required this.editableBorderColorDark,
     required this.subtleLighterDark,
     required this.primaryColor,
+    required this.languageNotifier,
   });
 
   @override
@@ -1109,7 +1130,7 @@ class _ProviderInfoSection extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Provider Information',
+                  languageNotifier.translate('providerInfo'),
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -1149,33 +1170,39 @@ class _ProviderInfoSection extends StatelessWidget {
             ),
           ),
           _infoBox(
-            'My Services',
+            languageNotifier.translate('myServices'),
             Icons.miscellaneous_services_outlined,
             providerData.services.isEmpty
-                ? ['No services.']
+                ? [languageNotifier.translate('noServices')]
                 : providerData.services
                       .map(
                         (s) =>
-                            '**${s.name}**: ${s.selectedUnitTypes.join(', ')}',
+                            '**${languageNotifier.translate(s.name)}**: ${languageNotifier.translateStringList(s.selectedUnitTypes)}',
                       )
                       .toList(),
           ),
           _infoBox(
-            'My Locations',
+            languageNotifier.translate('myLocations'),
             Icons.location_on_outlined,
             providerData.selectedLocations.isEmpty
-                ? ['No locations.']
+                ? [languageNotifier.translate('noLocations')]
                 : providerData.selectedLocations
-                      .map((l) => '**${l.city}**: ${l.areas.join(', ')}')
+                      .map(
+                        (l) =>
+                            '**${languageNotifier.translate(l.city)}**: ${languageNotifier.translateStringList(l.areas.toList())}',
+                      )
                       .toList(),
           ),
           _infoBox(
-            'My Schedule',
+            languageNotifier.translate('mySchedule'),
             Icons.schedule_outlined,
             providerData.finalSchedule.isEmpty
-                ? ['No schedule.']
+                ? [languageNotifier.translate('noSchedule')]
                 : providerData.finalSchedule
-                      .map((s) => '${s.day}: ${s.timeSlots.join(', ')}')
+                      .map(
+                        (s) =>
+                            '${languageNotifier.translateDay(s.day)}: ${s.timeSlots.map((t) => languageNotifier.translateTimeRange(t.toString())).join(languageNotifier.isArabic ? "، " : ", ")}',
+                      )
                       .toList(),
           ),
         ],

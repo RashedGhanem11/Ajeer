@@ -56,7 +56,6 @@ class LanguageNotifier extends ChangeNotifier {
       return DateFormat('MMMM d, y').format(date);
     }
 
-    // Custom Arabic formatting
     final String day = convertNumbers(date.day.toString());
     final String year = convertNumbers(date.year.toString());
     final String month = _arabicMonths[date.month] ?? '';
@@ -66,37 +65,46 @@ class LanguageNotifier extends ChangeNotifier {
 
   String translateCityArea(String input) {
     if (!isArabic) return input;
-
     List<String> parts = input.split(',');
     List<String> translatedParts = parts.map((part) {
       return translate(part.trim());
     }).toList();
-
     return translatedParts.join('، ');
   }
 
-  /// Splits a comma-separated string of services, translates each, and rejoins them.
   String translateServices(String input) {
-    // Split by comma
     List<String> parts = input.split(',');
-
-    // Translate each part
     List<String> translatedParts = parts.map((part) {
       return translate(part.trim());
     }).toList();
-
-    // Join with appropriate separator
     return translatedParts.join(isArabic ? '، ' : ', ');
+  }
+
+  String translateStringList(List<String> items) {
+    List<String> translated = items
+        .map((item) => translate(item.trim()))
+        .toList();
+    return translated.join(isArabic ? '، ' : ', ');
   }
 
   String translateAddress(String input) {
     if (!isArabic) return input;
-
     String translated = input
         .replaceAll(RegExp(r'\bStreet\b', caseSensitive: false), 'شارع')
         .replaceAll(RegExp(r'\bSt\b', caseSensitive: false), 'شارع')
         .replaceAll(RegExp(r'\bDistrict\b', caseSensitive: false), 'حي');
+    return convertNumbers(translated);
+  }
 
+  String translateDay(String day) {
+    return translate(day);
+  }
+
+  String translateTimeRange(String timeRange) {
+    if (!isArabic) return timeRange;
+    String translated = timeRange
+        .replaceAll('AM', translate('am'))
+        .replaceAll('PM', translate('pm'));
     return convertNumbers(translated);
   }
 
@@ -117,6 +125,7 @@ class LanguageNotifier extends ChangeNotifier {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
+      // General
       'settings': 'Settings',
       'language': 'Language',
       'darkMode': 'Enable Dark Mode',
@@ -136,68 +145,16 @@ class LanguageNotifier extends ChangeNotifier {
       'bookings': 'Bookings',
       'home': 'Home',
       'appName': 'Ajeer',
-      'selectService': 'Select a service',
-      'searchHint': 'Search for a service',
-      'fetchingError': 'Error fetching services: ',
-
-      'selectUnitType': 'Select unit type(s)',
-      'selectAtLeastOne': 'Please select at least one unit type first.',
-      'noUnitsAvailable': 'No unit types available for this service.',
-      'estTime': 'Est. Time',
-      'hr': 'hr',
-      'hrs': 'hrs',
-      'min': 'min',
-      'mins': 'mins',
+      'am': 'AM',
+      'pm': 'PM',
       'jod': 'JOD',
-
-      'selectDateTime': 'Select date & time',
-      'custom': 'Custom',
-      'instant': 'Instant',
-      'selectDate': 'Select Date',
-      'selectTime': 'Select Time',
-      'instantBookingMsg':
-          'An Ajeer will be assigned to you as soon as possible based on availability.',
-
-      'pickLocation': 'Pick a location',
-      'selectAreaInstruction':
-          'Select your area. This will be used to determine your Ajeer!',
-      'cityPicker': 'City Picker',
-      'areaPicker': 'Area Picker',
-      'selectCityFirst': 'Select a city first.',
-      'noAreas': 'No areas available.',
-      'selectAreaWarning':
-          'Please select an area and ensure location is picked.',
-      'errorValidating': 'Error validating area selection.',
-      'unnamedLocation': 'Unnamed location',
-
-      'uploadMedia': 'Upload media',
-      'mediaDescription':
-          'Add a photo, video, or audio recording describing your problem',
-      'photo': 'Photo',
-      'video': 'Video',
-      'audio': 'Audio',
-      'selectFromGallery': 'Select from Gallery',
-      'recordAudio': 'Record Audio',
-      'camera': 'Camera',
-      'addPhoto': 'Add Photo',
-      'addVideo': 'Add Video',
-      'addAudio': 'Add Audio',
-      'descriptionHint': 'Write a description of your problem (Optional)',
+      'confirm': 'Confirm',
+      'back': 'Back',
+      'cancel': 'Cancel',
       'save': 'Save',
-      'descriptionSaved': 'Description Saved',
-      'audioNotImplemented': 'Audio from files not implemented in simulation.',
-      'audioSimulated': 'Audio recording is simulated.',
+      'error': 'Error: ',
 
-      'confirmBooking': 'Confirm your booking',
-      'estimatedCost': 'Estimated Cost',
-      'estDuration': 'Est. Duration',
-      'customerNote': 'Customer Note',
-      'uploadedMedia': 'Uploaded Media',
-      'noImages': 'No images uploaded.',
-      'noVideos': 'No videos uploaded.',
-      'noAudio': 'No audio uploaded.',
-      'instantBooking': 'Instant Booking',
-
+      // Services & Units
       'Plumbing': 'Plumbing',
       'Electrical': 'Electrical',
       'Cleaning': 'Cleaning',
@@ -207,7 +164,6 @@ class LanguageNotifier extends ChangeNotifier {
       'Gardening': 'Gardening',
       'IT Support': 'IT Support',
       'Moving & Delivery': 'Moving & Delivery',
-
       'Leak Repair': 'Leak Repair',
       'Pipe Installation': 'Pipe Installation',
       'Drain Cleaning': 'Drain Cleaning',
@@ -232,29 +188,111 @@ class LanguageNotifier extends ChangeNotifier {
       'Office Relocation': 'Office Relocation',
       'Furniture Delivery': 'Furniture Delivery',
 
-      'Amman': 'Amman',
-      'Abdoun': 'Abdoun',
-      'Jabal Al-Weibdeh': 'Jabal Al-Weibdeh',
-      'Shmeisani': 'Shmeisani',
-      'Al-Rabieh': 'Al-Rabieh',
-      'Dabouq': 'Dabouq',
-      'Al-Jubeiha': 'Al-Jubeiha',
-      'Al-Bayader': 'Al-Bayader',
-      "Tla' Al-Ali": "Tla' Al-Ali",
+      'Studio': 'Studio',
+      '1 Bedroom': '1 Bedroom',
+      '2 Bedrooms': '2 Bedrooms',
+      '3 Bedrooms': '3 Bedrooms',
+      'Villa': 'Villa',
+      'Small': 'Small',
+      'Medium': 'Medium',
+      'Large': 'Large',
+      'Standard': 'Standard',
+      'Deep Clean': 'Deep Clean',
 
-      // Client Bookings Screen
+      // Profile Screen
+      'myProfile': 'My Profile',
+      'fullName': 'Full Name',
+      'mobileNumber': 'Mobile Number',
+      'email': 'Email',
+      'password': 'Password',
+      'changePassword': 'Change Password',
+      'currentPassword': 'Current Password',
+      'newPassword': 'New Password',
+      'required': 'Required',
+      'min6Chars': 'Min 6 chars',
+      'update': 'Update',
+      'edit': 'Edit',
+      'becomeAjeer': 'Become an Ajeer!',
+      'switchToCustomer': 'Switch to Customer Mode',
+      'switchToProvider': 'Switch to Provider Mode',
+      'providerInfo': 'Provider Information',
+      'myServices': 'My Services',
+      'myLocations': 'My Locations',
+      'mySchedule': 'My Schedule',
+      'noServices': 'No services.',
+      'noLocations': 'No locations.',
+      'noSchedule': 'No schedule.',
+      'profileUpdated': 'Profile updated successfully!',
+      'updateFailed': 'Update failed: ',
+      'passwordChanged': 'Password changed successfully!',
+
+      // Booking & Location
+      'selectService': 'Select a service',
+      'searchHint': 'Search for a service',
+      'fetchingError': 'Error fetching services: ',
+      'selectUnitType': 'Select unit type(s)',
+      'selectAtLeastOne': 'Please select at least one unit type first.',
+      'noUnitsAvailable': 'No unit types available for this service.',
+      'estTime': 'Est. Time',
+      'hr': 'hr', 'hrs': 'hrs', 'min': 'min', 'mins': 'mins',
+      'selectDateTime': 'Select date & time',
+      'custom': 'Custom',
+      'instant': 'Instant',
+      'selectDate': 'Select Date',
+      'selectTime': 'Select Time',
+      'instantBookingMsg':
+          'An Ajeer will be assigned to you as soon as possible based on availability.',
+      'pickLocation': 'Pick a location',
+      'selectAreaInstruction':
+          'Select your area. This will be used to determine your Ajeer!',
+      'cityPicker': 'City Picker',
+      'areaPicker': 'Area Picker',
+      'selectCityFirst': 'Select a city first.',
+      'noAreas': 'No areas available.',
+      'selectAreaWarning':
+          'Please select an area and ensure location is picked.',
+      'errorValidating': 'Error validating area selection.',
+      'unnamedLocation': 'Unnamed location',
+      'Amman': 'Amman', 'Abdoun': 'Abdoun',
+      'Jabal Al-Weibdeh': 'Jabal Al-Weibdeh', 'Shmeisani': 'Shmeisani',
+      'Al-Rabieh': 'Al-Rabieh', 'Dabouq': 'Dabouq', 'Al-Jubeiha': 'Al-Jubeiha',
+      'Al-Bayader': 'Al-Bayader', "Tla' Al-Ali": "Tla' Al-Ali",
+
+      // Confirmation
+      'confirmBooking': 'Confirm your booking',
+      'estimatedCost': 'Estimated Cost',
+      'estDuration': 'Est. Duration',
+      'customerNote': 'Customer Note',
+      'uploadedMedia': 'Uploaded Media',
+      'noImages': 'No images uploaded.',
+      'noVideos': 'No videos uploaded.',
+      'noAudio': 'No audio uploaded.',
+      'instantBooking': 'Instant Booking',
+      'uploadMedia': 'Upload media',
+      'mediaDescription':
+          'Add a photo, video, or audio recording describing your problem',
+      'photo': 'Photo', 'video': 'Video', 'audio': 'Audio',
+      'selectFromGallery': 'Select from Gallery',
+      'recordAudio': 'Record Audio',
+      'camera': 'Camera',
+      'addPhoto': 'Add Photo',
+      'addVideo': 'Add Video',
+      'addAudio': 'Add Audio',
+      'descriptionHint': 'Write a description of your problem (Optional)',
+      'descriptionSaved': 'Description Saved',
+      'audioNotImplemented': 'Audio from files not implemented in simulation.',
+      'audioSimulated': 'Audio recording is simulated.',
+
+      // Bookings List
       'active': 'Active',
       'pending': 'Pending',
       'closed': 'Closed',
       'noBookings': 'No bookings here.',
-      'cancel': 'Cancel',
       'completed': 'Completed',
       'cancelled': 'Cancelled',
       'rejected': 'Rejected',
       'cancelBooking': 'Cancel Booking',
       'cancelBookingMsg': 'Are you sure you want to cancel this booking?',
-      'confirm': 'Confirm',
-      'back': 'Back',
       'messageProvider': 'Message Provider',
       'messageProviderMsg': 'Would you like to message',
       'message': 'Message',
@@ -265,6 +303,7 @@ class LanguageNotifier extends ChangeNotifier {
       'details': 'Details',
       'serviceLabel': 'Service(s)',
       'providerLabel': 'Provider',
+      'customerLabel': 'Customer',
       'phoneLabel': 'Phone',
       'areaLabel': 'Area',
       'addressLabel': 'Address',
@@ -277,10 +316,6 @@ class LanguageNotifier extends ChangeNotifier {
       'cancelFailed': 'Failed to cancel booking',
       'loadDetailsFailed': 'Could not load booking details',
       'loadLocationFailed': 'Could not load location data',
-      'am': 'AM',
-      'pm': 'PM',
-
-      // Provider Bookings Screen
       'noJobs': 'No jobs found.',
       'actionFailed': 'Action failed. Please try again.',
       'bookingActionCancelled': 'Booking cancelled.',
@@ -295,9 +330,18 @@ class LanguageNotifier extends ChangeNotifier {
       'completeJob': 'Complete Job',
       'completeJobMsg': 'Mark this job as completed?',
       'messageCustomer': 'Message Customer',
-      'customerLabel': 'Customer',
+
+      // Days
+      'Monday': 'Monday',
+      'Tuesday': 'Tuesday',
+      'Wednesday': 'Wednesday',
+      'Thursday': 'Thursday',
+      'Friday': 'Friday',
+      'Saturday': 'Saturday',
+      'Sunday': 'Sunday',
     },
     'ar': {
+      // General
       'settings': 'الإعدادات',
       'language': 'اللغة',
       'darkMode': 'الوضع الليلي',
@@ -316,65 +360,16 @@ class LanguageNotifier extends ChangeNotifier {
       'bookings': 'الحجوزات',
       'home': 'الرئيسية',
       'appName': 'أجير',
-      'selectService': 'اختر خدمة',
-      'searchHint': 'ابحث عن خدمة',
-      'fetchingError': 'خطأ في جلب الخدمات: ',
-
-      'selectUnitType': 'اختر نوع الخدمة',
-      'selectAtLeastOne': 'الرجاء اختيار نوع وحدة واحد على الأقل.',
-      'noUnitsAvailable': 'لا توجد أنواع وحدات متاحة لهذه الخدمة.',
-      'estTime': 'الوقت المقدر',
-      'hr': 'ساعة',
-      'hrs': 'ساعة',
-      'min': 'دقيقة',
-      'mins': 'دقيقة',
+      'am': 'صباحاً',
+      'pm': 'مساءً',
       'jod': 'دينار',
-
-      'selectDateTime': 'اختر التاريخ والوقت',
-      'custom': 'مخصص',
-      'instant': 'فوري',
-      'selectDate': 'اختر التاريخ',
-      'selectTime': 'اختر الوقت',
-      'instantBookingMsg':
-          'سيتم تعيين أجير لك في أقرب وقت ممكن بناءً على التوفر.',
-
-      'pickLocation': 'اختر موقعاً',
-      'selectAreaInstruction': 'اختر منطقتك. سيتم استخدام هذا لتحديد أجيرك!',
-      'cityPicker': 'اختر المدينة',
-      'areaPicker': 'اختر المنطقة',
-      'selectCityFirst': 'اختر مدينة أولاً.',
-      'noAreas': 'لا توجد مناطق متاحة.',
-      'selectAreaWarning': 'الرجاء اختيار منطقة والتأكد من تحديد الموقع.',
-      'errorValidating': 'خطأ في التحقق من اختيار المنطقة.',
-      'unnamedLocation': 'موقع غير مسمى',
-
-      'uploadMedia': 'تحميل الوسائط',
-      'mediaDescription': 'أضف صورة أو فيديو أو تسجيل صوتي يصف مشكلتك',
-      'photo': 'صورة',
-      'video': 'فيديو',
-      'audio': 'صوت',
-      'selectFromGallery': 'اختر من المعرض',
-      'recordAudio': 'تسجيل صوت',
-      'camera': 'الكاميرا',
-      'addPhoto': 'إضافة صورة',
-      'addVideo': 'إضافة فيديو',
-      'addAudio': 'إضافة صوت',
-      'descriptionHint': 'اكتب وصفاً لمشكلتك (اختياري)',
+      'confirm': 'تأكيد',
+      'back': 'رجوع',
+      'cancel': 'إلغاء',
       'save': 'حفظ',
-      'descriptionSaved': 'تم حفظ الوصف',
-      'audioNotImplemented': 'الصوت من الملفات غير متاح في المحاكاة.',
-      'audioSimulated': 'تسجيل الصوت محاكى.',
+      'error': 'خطأ: ',
 
-      'confirmBooking': 'تأكيد الحجز',
-      'estimatedCost': 'التكلفة التقديرية',
-      'estDuration': 'الوقت المقدر',
-      'customerNote': 'ملاحظات العميل',
-      'uploadedMedia': 'الوسائط المرفوعة',
-      'noImages': 'لا يوجد صور مرفوعة.',
-      'noVideos': 'لا يوجد فيديو مرفوع.',
-      'noAudio': 'لا يوجد صوت مرفوع.',
-      'instantBooking': 'حجز فوري',
-
+      // Services & Units
       'Plumbing': 'سباكة',
       'Electrical': 'كهرباء',
       'Cleaning': 'تنظيف',
@@ -384,7 +379,6 @@ class LanguageNotifier extends ChangeNotifier {
       'Gardening': 'بستنة',
       'IT Support': 'دعم تقني',
       'Moving & Delivery': 'نقل وتوصيل',
-
       'Leak Repair': 'إصلاح التسريب',
       'Pipe Installation': 'تركيب الأنابيب',
       'Drain Cleaning': 'تنظيف المصارف',
@@ -409,29 +403,108 @@ class LanguageNotifier extends ChangeNotifier {
       'Office Relocation': 'نقل مكاتب',
       'Furniture Delivery': 'توصيل أثاث',
 
-      'Amman': 'عمان',
-      'Abdoun': 'عبدون',
-      'Jabal Al-Weibdeh': 'جبل اللويبدة',
-      'Shmeisani': 'الشميساني',
-      'Al-Rabieh': 'الرابية',
-      'Dabouq': 'دابوق',
-      'Al-Jubeiha': 'الجبيهة',
-      'Al-Bayader': 'البيادر',
-      "Tla' Al-Ali": 'تلاع العلي',
+      'Studio': 'استوديو',
+      '1 Bedroom': 'غرفة وصالة',
+      '2 Bedrooms': 'غرفتين وصالة',
+      '3 Bedrooms': '3 غرف وصالة',
+      'Villa': 'فيلا',
+      'Small': 'صغير',
+      'Medium': 'متوسط',
+      'Large': 'كبير',
+      'Standard': 'قياسي',
+      'Deep Clean': 'تنظيف عميق',
 
-      // Client Bookings Screen
+      // Profile Screen
+      'myProfile': 'ملفي الشخصي',
+      'fullName': 'الاسم الكامل',
+      'mobileNumber': 'رقم الهاتف',
+      'email': 'البريد الإلكتروني',
+      'password': 'كلمة المرور',
+      'changePassword': 'تغيير كلمة المرور',
+      'currentPassword': 'كلمة المرور الحالية',
+      'newPassword': 'كلمة المرور الجديدة',
+      'required': 'مطلوب',
+      'min6Chars': '6 حروف على الأقل',
+      'update': 'تحديث',
+      'edit': 'تعديل',
+      'becomeAjeer': 'كن أجيراً!',
+      'switchToCustomer': 'التبديل لوضع العميل',
+      'switchToProvider': 'التبديل لوضع المزود',
+      'providerInfo': 'معلومات المزود',
+      'myServices': 'خدماتي',
+      'myLocations': 'مواقعي',
+      'mySchedule': 'جدولي',
+      'noServices': 'لا توجد خدمات.',
+      'noLocations': 'لا توجد مواقع.',
+      'noSchedule': 'لا يوجد جدول.',
+      'profileUpdated': 'تم تحديث الملف الشخصي بنجاح!',
+      'updateFailed': 'فشل التحديث: ',
+      'passwordChanged': 'تم تغيير كلمة المرور بنجاح!',
+
+      // Booking & Location
+      'selectService': 'اختر خدمة',
+      'searchHint': 'ابحث عن خدمة',
+      'fetchingError': 'خطأ في جلب الخدمات: ',
+      'selectUnitType': 'اختر نوع الخدمة',
+      'selectAtLeastOne': 'الرجاء اختيار نوع وحدة واحد على الأقل.',
+      'noUnitsAvailable': 'لا توجد أنواع وحدات متاحة لهذه الخدمة.',
+      'estTime': 'الوقت المقدر',
+      'hr': 'ساعة', 'hrs': 'ساعة', 'min': 'دقيقة', 'mins': 'دقيقة',
+      'selectDateTime': 'اختر التاريخ والوقت',
+      'custom': 'مخصص',
+      'instant': 'فوري',
+      'selectDate': 'اختر التاريخ',
+      'selectTime': 'اختر الوقت',
+      'instantBookingMsg':
+          'سيتم تعيين أجير لك في أقرب وقت ممكن بناءً على التوفر.',
+      'pickLocation': 'اختر موقعاً',
+      'selectAreaInstruction': 'اختر منطقتك. سيتم استخدام هذا لتحديد أجيرك!',
+      'cityPicker': 'اختر المدينة',
+      'areaPicker': 'اختر المنطقة',
+      'selectCityFirst': 'اختر مدينة أولاً.',
+      'noAreas': 'لا توجد مناطق متاحة.',
+      'selectAreaWarning': 'الرجاء اختيار منطقة والتأكد من تحديد الموقع.',
+      'errorValidating': 'خطأ في التحقق من اختيار المنطقة.',
+      'unnamedLocation': 'موقع غير مسمى',
+      'Amman': 'عمان', 'Abdoun': 'عبدون',
+      'Jabal Al-Weibdeh': 'جبل اللويبدة', 'Shmeisani': 'الشميساني',
+      'Al-Rabieh': 'الرابية', 'Dabouq': 'دابوق', 'Al-Jubeiha': 'الجبيهة',
+      'Al-Bayader': 'البيادر', "Tla' Al-Ali": 'تلاع العلي',
+
+      // Confirmation
+      'confirmBooking': 'تأكيد الحجز',
+      'estimatedCost': 'التكلفة التقديرية',
+      'estDuration': 'الوقت المقدر',
+      'customerNote': 'ملاحظات العميل',
+      'uploadedMedia': 'الوسائط المرفوعة',
+      'noImages': 'لا يوجد صور مرفوعة.',
+      'noVideos': 'لا يوجد فيديو مرفوع.',
+      'noAudio': 'لا يوجد صوت مرفوع.',
+      'instantBooking': 'حجز فوري',
+      'uploadMedia': 'تحميل الوسائط',
+      'mediaDescription': 'أضف صورة أو فيديو أو تسجيل صوتي يصف مشكلتك',
+      'photo': 'صورة', 'video': 'فيديو', 'audio': 'صوت',
+      'selectFromGallery': 'اختر من المعرض',
+      'recordAudio': 'تسجيل صوت',
+      'camera': 'الكاميرا',
+      'addPhoto': 'إضافة صورة',
+      'addVideo': 'إضافة فيديو',
+      'addAudio': 'إضافة صوت',
+      'descriptionHint': 'اكتب وصفاً لمشكلتك (اختياري)',
+      'descriptionSaved': 'تم حفظ الوصف',
+      'audioNotImplemented': 'الصوت من الملفات غير متاح في المحاكاة.',
+      'audioSimulated': 'تسجيل الصوت محاكى.',
+
+      // Bookings List
       'active': 'نشط',
       'pending': 'معلق',
       'closed': 'مغلق',
       'noBookings': 'لا توجد حجوزات.',
-      'cancel': 'إلغاء',
       'completed': 'مكتمل',
       'cancelled': 'ملغي',
       'rejected': 'مرفوض',
       'cancelBooking': 'إلغاء الحجز',
       'cancelBookingMsg': 'هل أنت متأكد أنك تريد إلغاء هذا الحجز؟',
-      'confirm': 'تأكيد',
-      'back': 'رجوع',
       'messageProvider': 'مراسلة المزود',
       'messageProviderMsg': 'هل تود مراسلة',
       'message': 'مراسلة',
@@ -442,6 +515,7 @@ class LanguageNotifier extends ChangeNotifier {
       'details': 'التفاصيل',
       'serviceLabel': 'الخدمة/الخدمات',
       'providerLabel': 'المزود',
+      'customerLabel': 'العميل',
       'phoneLabel': 'الهاتف',
       'areaLabel': 'المنطقة',
       'addressLabel': 'العنوان',
@@ -454,10 +528,6 @@ class LanguageNotifier extends ChangeNotifier {
       'cancelFailed': 'فشل إلغاء الحجز',
       'loadDetailsFailed': 'تعذر تحميل تفاصيل الحجز',
       'loadLocationFailed': 'تعذر تحميل بيانات الموقع',
-      'am': 'صباحاً',
-      'pm': 'مساءً',
-
-      // Provider Bookings Screen
       'noJobs': 'لا توجد وظائف.',
       'actionFailed': 'فشل الإجراء. حاول مرة أخرى.',
       'bookingActionCancelled': 'تم إلغاء الحجز.',
@@ -472,7 +542,15 @@ class LanguageNotifier extends ChangeNotifier {
       'completeJob': 'إكمال العمل',
       'completeJobMsg': 'هل تود تحديد هذا العمل كمكتمل؟',
       'messageCustomer': 'مراسلة العميل',
-      'customerLabel': 'العميل',
+
+      // Days
+      'Monday': 'الاثنين',
+      'Tuesday': 'الثلاثاء',
+      'Wednesday': 'الأربعاء',
+      'Thursday': 'الخميس',
+      'Friday': 'الجمعة',
+      'Saturday': 'السبت',
+      'Sunday': 'الأحد',
     },
   };
 
