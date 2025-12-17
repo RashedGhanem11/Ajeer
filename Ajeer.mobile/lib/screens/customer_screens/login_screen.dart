@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../themes/theme_notifier.dart';
+import '../../notifiers/language_notifier.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import 'home_screen.dart';
@@ -25,6 +26,14 @@ class _LoginScreenState extends State<LoginScreen> {
   // UI Error messages
   String? _emailError;
   String? _passwordError;
+
+  late LanguageNotifier _languageNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context);
+  }
 
   // Primary Colors (from app_themes.dart)
   static const Color _primaryBlue = Color(0xFF1976D2);
@@ -57,19 +66,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // 1. Identifier (Email or Phone) Validation
     if (input.isEmpty) {
-      _emailError = "Email Or Phone is required.";
+      _emailError = _languageNotifier.translate('emailOrPhoneRequired');
       isValid = false;
     } else if (input.length > 100) {
-      _emailError = "Email Or Phone cannot exceed 100 characters.";
+      _emailError = _languageNotifier.translate('emailOrPhoneTooLong');
       isValid = false;
     }
 
     // 2. Password Validation
     if (password.isEmpty) {
-      _passwordError = "Password is required.";
+      _passwordError = _languageNotifier.translate('passwordRequired');
       isValid = false;
     } else if (password.length < 8) {
-      _passwordError = "Password must be at least 8 characters.";
+      _passwordError = _languageNotifier.translate('passwordTooShort');
       isValid = false;
     }
 
@@ -151,14 +160,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildTitle() {
-    return const SafeArea(
+    return SafeArea(
       child: Padding(
-        padding: EdgeInsets.only(top: 40.0),
+        padding: const EdgeInsets.only(top: 40.0),
         child: Align(
           alignment: Alignment.topCenter,
           child: Text(
-            "Ajeer",
-            style: TextStyle(
+            _languageNotifier.translate('appName'),
+            style: const TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.w900,
               color: Colors.white,
@@ -224,7 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Login",
+                  _languageNotifier.translate('loginTitle'),
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -305,7 +314,7 @@ class _LoginScreenState extends State<LoginScreen> {
       keyboardType: TextInputType.emailAddress,
       style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
       decoration: _createInputDecoration(
-        hint: "Email or phone number",
+        hint: _languageNotifier.translate('emailOrPhoneHint'),
         icon: Icons.email_outlined,
         error: _emailError,
       ),
@@ -318,7 +327,7 @@ class _LoginScreenState extends State<LoginScreen> {
       obscureText: !_isPasswordVisible,
       style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
       decoration: _createInputDecoration(
-        hint: "Password",
+        hint: _languageNotifier.translate('passwordHint'),
         icon: Icons.lock_outline,
         error: _passwordError,
         suffixIcon: IconButton(
@@ -350,9 +359,9 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         },
-        child: const Text(
-          "Forgot?",
-          style: TextStyle(color: _primaryBlue, fontSize: 14.0),
+        child: Text(
+          _languageNotifier.translate('forgotPassword'),
+          style: const TextStyle(color: _primaryBlue, fontSize: 14.0),
         ),
       ),
     );
@@ -401,9 +410,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           strokeWidth: 2,
                         ),
                       )
-                    : const Text(
-                        "LOGIN",
-                        style: TextStyle(
+                    : Text(
+                        _languageNotifier.translate('loginButton'),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18.0,
                           fontWeight: FontWeight.bold,
@@ -425,7 +434,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text("Don't have an account? ", style: TextStyle(color: linkTextColor)),
+        Text(
+          _languageNotifier.translate('dontHaveAccount'),
+          style: TextStyle(color: linkTextColor),
+        ),
         TextButton(
           onPressed: () {
             Navigator.push(
@@ -438,9 +450,12 @@ class _LoginScreenState extends State<LoginScreen> {
             minimumSize: const Size(50, 30),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Text(
-            "Sign up",
-            style: TextStyle(color: _primaryBlue, fontWeight: FontWeight.bold),
+          child: Text(
+            _languageNotifier.translate('signUp'),
+            style: const TextStyle(
+              color: _primaryBlue,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
@@ -472,7 +487,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       icon: Image.asset('assets/image/google.png', height: 22.0),
       label: Text(
-        "Sign up using Google",
+        _languageNotifier.translate('signUpGoogle'),
         style: TextStyle(color: buttonLabelColor, fontWeight: FontWeight.w600),
       ),
     );

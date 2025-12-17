@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../notifiers/language_notifier.dart';
 
 enum ResetStep { selectMethod, enterDetails, resetPassword }
 
@@ -36,6 +38,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   bool _isNewPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
+
+  late LanguageNotifier _languageNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context);
+  }
 
   // Helper method to determine if dark mode is active
   bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
@@ -111,17 +121,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       final confirmPassword = _confirmPasswordController.text;
 
       if (newPassword.isEmpty) {
-        _newPasswordError = 'Please enter a new password.';
+        _newPasswordError = _languageNotifier.translate('enterNewPassword');
         return;
       }
 
       if (newPassword.length < 6) {
-        _newPasswordError = 'Password must be at least 6 characters long.';
+        _newPasswordError = _languageNotifier.translate(
+          'passwordTooShortReset',
+        );
         return;
       }
 
       if (confirmPassword.isEmpty) {
-        _confirmPasswordError = 'Please confirm your password.';
+        _confirmPasswordError = _languageNotifier.translate(
+          'confirmYourPassword',
+        );
         return;
       }
 
@@ -129,7 +143,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         debugPrint('Passwords match! Resetting password...');
       } else {
         debugPrint('Passwords do not match.');
-        _confirmPasswordError = 'Passwords do not match.';
+        _confirmPasswordError = _languageNotifier.translate(
+          'passwordsDoNotMatch',
+        );
       }
     });
   }
@@ -140,13 +156,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       final input = _emailPhoneController.text.trim();
 
       if (input.isEmpty) {
-        _emailPhoneError =
-            'Please enter your ${_selectedMethod == ResetMethod.email ? 'email' : 'phone number'}.';
+        _emailPhoneError = _selectedMethod == ResetMethod.email
+            ? _languageNotifier.translate('enterYourEmail')
+            : _languageNotifier.translate('enterYourPhone');
         return;
       }
 
       if (_selectedMethod == ResetMethod.email && !input.contains('@')) {
-        _emailPhoneError = 'Please enter a valid email address.';
+        _emailPhoneError = _languageNotifier.translate('emailInvalid');
         return;
       }
 
@@ -200,7 +217,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          'Reset Password',
+          _languageNotifier.translate('resetPasswordTitle'),
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -209,7 +226,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 10),
         Text(
-          'How would you like to reset your password?',
+          _languageNotifier.translate('resetMethodDesc'),
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 16, color: subtitleColor),
         ),
@@ -218,7 +235,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           width: double.infinity,
           child: OutlinedButton.icon(
             icon: const Icon(Icons.email_outlined),
-            label: const Text('Reset using Email'),
+            label: Text(_languageNotifier.translate('resetUsingEmail')),
             onPressed: () {
               setState(() {
                 _selectedMethod = ResetMethod.email;
@@ -241,7 +258,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           width: double.infinity,
           child: OutlinedButton.icon(
             icon: const Icon(Icons.phone_outlined),
-            label: const Text('Reset using Phone'),
+            label: Text(_languageNotifier.translate('resetUsingPhone')),
             onPressed: () {
               setState(() {
                 _selectedMethod = ResetMethod.phone;
@@ -277,7 +294,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          isEmail ? 'Enter Email' : 'Enter Phone Number',
+          isEmail
+              ? _languageNotifier.translate('enterEmailTitle')
+              : _languageNotifier.translate('enterPhoneTitle'),
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -293,7 +312,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           textInputAction: TextInputAction.done,
           style: TextStyle(color: fieldTextColor),
           decoration: _buildInputDecoration(
-            isEmail ? 'your-email@example.com' : '+962 7XXXXXXXX',
+            isEmail
+                ? _languageNotifier.translate('emailHintExample')
+                : _languageNotifier.translate('phoneHintExample'),
             isEmail ? Icons.email_outlined : Icons.phone_outlined,
             _emailPhoneError,
           ),
@@ -306,7 +327,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             TextButton(
               onPressed: _handleCancel,
               child: Text(
-                'Cancel',
+                _languageNotifier.translate('cancel'),
                 style: TextStyle(color: buttonTextColor, fontSize: 16),
               ),
             ),
@@ -331,7 +352,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Reset Password',
+          _languageNotifier.translate('resetPasswordTitle'),
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -345,7 +366,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           obscureText: _isNewPasswordObscured,
           style: TextStyle(color: fieldTextColor),
           decoration: _buildInputDecoration(
-            'New Password',
+            _languageNotifier.translate('newPassword'),
             Icons.lock_outline,
             _newPasswordError,
             IconButton(
@@ -370,7 +391,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           obscureText: _isConfirmPasswordObscured,
           style: TextStyle(color: fieldTextColor),
           decoration: _buildInputDecoration(
-            'Confirm New Password',
+            _languageNotifier.translate('confirmNewPassword'),
             Icons.lock_outline,
             _confirmPasswordError,
             IconButton(
@@ -397,7 +418,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             TextButton(
               onPressed: _handleCancel,
               child: Text(
-                'Cancel',
+                _languageNotifier.translate('cancel'),
                 style: TextStyle(color: buttonTextColor, fontSize: 16),
               ),
             ),
@@ -446,9 +467,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             borderRadius: BorderRadius.circular(27),
           ),
         ),
-        child: const Text(
-          'Continue',
-          style: TextStyle(
+        child: Text(
+          _languageNotifier.translate('continueBtn'),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -477,6 +498,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         : Colors.white;
 
     const Color primaryColor = _ForgotPasswordConstants.primaryBlue;
+    final isArabic = _languageNotifier.isArabic;
 
     return Scaffold(
       backgroundColor: _isDarkMode
@@ -502,10 +524,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 child: Padding(
                   padding: const EdgeInsets.only(left: 12.0, top: 8.0),
                   child: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      color: Colors.white,
-                      size: 24.0,
+                    icon: RotatedBox(
+                      quarterTurns: isArabic ? 2 : 0,
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 24.0,
+                      ),
                     ),
                     onPressed: _handleBackButton,
                   ),

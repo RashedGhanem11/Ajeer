@@ -108,7 +108,6 @@ class LanguageNotifier extends ChangeNotifier {
     return convertNumbers(translated);
   }
 
-  /// Translates relative time strings like "Just now", "2 hours ago", "Yesterday".
   String translateTimeAgo(String input) {
     if (!isArabic) return input;
 
@@ -117,7 +116,6 @@ class LanguageNotifier extends ChangeNotifier {
     if (lowerInput == 'just now') return translate('justNow');
     if (lowerInput == 'yesterday') return translate('yesterday');
 
-    // Regex for "X days ago", "X hours ago", "X minutes ago"
     final daysRegex = RegExp(r'(\d+)\s+days?\s+ago', caseSensitive: false);
     final hoursRegex = RegExp(
       r'(\d+)\s+(hours?|hrs?)\s+ago',
@@ -131,7 +129,6 @@ class LanguageNotifier extends ChangeNotifier {
     if (daysRegex.hasMatch(input)) {
       final match = daysRegex.firstMatch(input);
       final count = match!.group(1);
-      // Simple pluralization for display
       return 'منذ ${convertNumbers(count!)} ${translate('days')}';
     }
     if (hoursRegex.hasMatch(input)) {
@@ -145,7 +142,6 @@ class LanguageNotifier extends ChangeNotifier {
       return 'منذ ${convertNumbers(count!)} ${translate('minutes')}';
     }
 
-    // Fallback to standard time range translation (for absolute dates/times)
     return translateTimeRange(input);
   }
 
@@ -195,6 +191,58 @@ class LanguageNotifier extends ChangeNotifier {
       'save': 'Save',
       'error': 'Error: ',
       'retry': 'Retry',
+
+      // Login Screen
+      'loginTitle': 'Login',
+      'emailOrPhoneHint': 'Email or phone number',
+      'passwordHint': 'Password',
+      'forgotPassword': 'Forgot?',
+      'dontHaveAccount': "Don't have an account? ",
+      'signUp': 'Sign up',
+      'signUpGoogle': 'Sign up using Google',
+      'loginButton': 'LOGIN',
+      'emailOrPhoneRequired': 'Email Or Phone is required.',
+      'emailOrPhoneTooLong': 'Email Or Phone cannot exceed 100 characters.',
+      'passwordRequired': 'Password is required.',
+      'passwordTooShort': 'Password must be at least 8 characters.',
+
+      // Sign Up Screen
+      'createAccount': 'Create Account',
+      'firstName': 'First Name',
+      'lastName': 'Last Name',
+      'nameRequired': 'Name is required.',
+      'phoneNumber': 'Phone Number',
+      'phoneRequired': 'Phone number is required.',
+      'phoneTooLong': 'Phone number cannot exceed 20 characters.',
+      'email': 'Email',
+      'emailRequired': 'Email is required.',
+      'emailTooLong': 'Email cannot exceed 100 characters.',
+      'emailInvalid': 'A valid email address is required.',
+      'confirmPassword': 'Confirm Password',
+      'passwordsDoNotMatch': 'Passwords do not match',
+      'signUpButton': 'SIGN UP',
+      'alreadyHaveAccount': 'Already have an account? ',
+      'logIn': 'Log in',
+      'fullNameTooLong': 'Full name cannot exceed 100 characters.',
+      'accountCreated': 'Account created successfully! Please login.',
+
+      // Forgot Password Screen
+      'resetPasswordTitle': 'Reset Password',
+      'resetMethodDesc': 'How would you like to reset your password?',
+      'resetUsingEmail': 'Reset using Email',
+      'resetUsingPhone': 'Reset using Phone',
+      'enterEmailTitle': 'Enter Email',
+      'enterPhoneTitle': 'Enter Phone Number',
+      'emailHintExample': 'your-email@example.com',
+      'phoneHintExample': '+962 7XXXXXXXX',
+      'enterYourEmail': 'Please enter your email.',
+      'enterYourPhone': 'Please enter your phone number.',
+      'newPassword': 'New Password',
+      'confirmNewPassword': 'Confirm New Password',
+      'enterNewPassword': 'Please enter a new password.',
+      'passwordTooShortReset': 'Password must be at least 6 characters long.',
+      'confirmYourPassword': 'Please confirm your password.',
+      'continueBtn': 'Continue',
 
       // Chat Screen
       'conversations': 'Conversations',
@@ -472,6 +520,59 @@ class LanguageNotifier extends ChangeNotifier {
       'save': 'حفظ',
       'error': 'خطأ: ',
       'retry': 'إعادة المحاولة',
+
+      // Login Screen
+      'loginTitle': 'تسجيل الدخول',
+      'emailOrPhoneHint': 'البريد الإلكتروني أو رقم الهاتف',
+      'passwordHint': 'كلمة المرور',
+      'forgotPassword': 'نسيت كلمة المرور؟',
+      'dontHaveAccount': 'ليس لديك حساب؟ ',
+      'signUp': 'إنشاء حساب',
+      'signUpGoogle': 'التسجيل باستخدام Google',
+      'loginButton': 'تسجيل الدخول',
+      'emailOrPhoneRequired': 'البريد الإلكتروني أو الهاتف مطلوب.',
+      'emailOrPhoneTooLong':
+          'البريد الإلكتروني أو الهاتف لا يمكن أن يتجاوز 100 حرف.',
+      'passwordRequired': 'كلمة المرور مطلوبة.',
+      'passwordTooShort': 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.',
+
+      // Sign Up Screen
+      'createAccount': 'إنشاء حساب',
+      'firstName': 'الاسم الأول',
+      'lastName': 'اسم العائلة',
+      'nameRequired': 'الاسم مطلوب.',
+      'phoneNumber': 'رقم الهاتف',
+      'phoneRequired': 'رقم الهاتف مطلوب.',
+      'phoneTooLong': 'رقم الهاتف لا يمكن أن يتجاوز 20 حرفاً.',
+      'email': 'البريد الإلكتروني',
+      'emailRequired': 'البريد الإلكتروني مطلوب.',
+      'emailTooLong': 'البريد الإلكتروني لا يمكن أن يتجاوز 100 حرف.',
+      'emailInvalid': 'بريد إلكتروني صالح مطلوب.',
+      'confirmPassword': 'تأكيد كلمة المرور',
+      'passwordsDoNotMatch': 'كلمات المرور غير متطابقة',
+      'signUpButton': 'إنشاء حساب',
+      'alreadyHaveAccount': 'لديك حساب بالفعل؟ ',
+      'logIn': 'تسجيل الدخول',
+      'fullNameTooLong': 'الاسم الكامل لا يمكن أن يتجاوز 100 حرف.',
+      'accountCreated': 'تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول.',
+
+      // Forgot Password Screen
+      'resetPasswordTitle': 'إعادة تعيين كلمة المرور',
+      'resetMethodDesc': 'كيف تود إعادة تعيين كلمة المرور؟',
+      'resetUsingEmail': 'إعادة تعيين عبر البريد',
+      'resetUsingPhone': 'إعادة تعيين عبر الهاتف',
+      'enterEmailTitle': 'أدخل البريد الإلكتروني',
+      'enterPhoneTitle': 'أدخل رقم الهاتف',
+      'emailHintExample': 'your-email@example.com',
+      'phoneHintExample': '+962 7XXXXXXXX',
+      'enterYourEmail': 'الرجاء إدخال بريدك الإلكتروني.',
+      'enterYourPhone': 'الرجاء إدخال رقم هاتفك.',
+      'newPassword': 'كلمة المرور الجديدة',
+      'confirmNewPassword': 'تأكيد كلمة المرور الجديدة',
+      'enterNewPassword': 'الرجاء إدخال كلمة مرور جديدة.',
+      'passwordTooShortReset': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
+      'confirmYourPassword': 'الرجاء تأكيد كلمة المرور.',
+      'continueBtn': 'متابعة',
 
       // Chat Screen
       'conversations': 'المحادثات',

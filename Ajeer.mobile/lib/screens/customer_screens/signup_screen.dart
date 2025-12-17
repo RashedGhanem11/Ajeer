@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
-import '../../models/auth_models.dart'; // Import your models
+import '../../models/auth_models.dart';
+import '../../notifiers/language_notifier.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -31,6 +33,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
   static const Color _darkScaffoldBackground = Color(0xFF121212);
   static const Color _darkCardColor = Color(0xFF1E1E1E);
 
+  late LanguageNotifier _languageNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context);
+  }
+
   bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
 
   @override
@@ -55,8 +65,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (fullName.length > 100) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Full name cannot exceed 100 characters.'),
+          SnackBar(
+            content: Text(_languageNotifier.translate('fullNameTooLong')),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -85,8 +95,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
         // 5. Success Feedback
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account created successfully! Please login.'),
+          SnackBar(
+            content: Text(_languageNotifier.translate('accountCreated')),
             backgroundColor: Colors.green,
           ),
         );
@@ -148,16 +158,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildTitleWithBackButton(BuildContext context) {
+    final isArabic = _languageNotifier.isArabic;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.only(top: 10.0),
         child: Stack(
           children: [
-            const Align(
+            Align(
               alignment: Alignment.topCenter,
               child: Text(
-                "Ajeer",
-                style: TextStyle(
+                _languageNotifier.translate('appName'),
+                style: const TextStyle(
                   fontSize: 34,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
@@ -176,10 +187,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
               child: Padding(
                 padding: const EdgeInsets.only(left: 12.0),
                 child: IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new,
-                    color: Colors.white,
-                    size: 24.0,
+                  icon: RotatedBox(
+                    quarterTurns: isArabic ? 2 : 0,
+                    child: const Icon(
+                      Icons.arrow_back_ios_new,
+                      color: Colors.white,
+                      size: 24.0,
+                    ),
                   ),
                   onPressed: () {
                     Navigator.pop(context);
@@ -243,7 +257,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Create Account",
+                    _languageNotifier.translate('createAccount'),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -331,14 +345,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
             controller: _firstNameController,
             style: TextStyle(color: fieldTextColor),
             decoration: _createInputDecoration(
-              hint: "First Name",
+              hint: _languageNotifier.translate('firstName'),
               icon: Icons.person_outline,
               fillColor: Colors.white,
             ),
             // VALIDATION: Name is required.
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Name is required.';
+                return _languageNotifier.translate('nameRequired');
               }
               return null;
             },
@@ -350,14 +364,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
             controller: _lastNameController,
             style: TextStyle(color: fieldTextColor),
             decoration: _createInputDecoration(
-              hint: "Last Name",
+              hint: _languageNotifier.translate('lastName'),
               icon: Icons.person_outline,
               fillColor: Colors.white,
             ),
             // VALIDATION: Name is required.
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Name is required.';
+                return _languageNotifier.translate('nameRequired');
               }
               return null;
             },
@@ -374,16 +388,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
       keyboardType: TextInputType.phone,
       style: TextStyle(color: fieldTextColor),
       decoration: _createInputDecoration(
-        hint: "Phone Number",
+        hint: _languageNotifier.translate('phoneNumber'),
         icon: Icons.phone_outlined,
       ),
       // VALIDATION: Phone NotEmpty and MaxLength(20)
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Phone number is required.';
+          return _languageNotifier.translate('phoneRequired');
         }
         if (value.length > 20) {
-          return 'Phone number cannot exceed 20 characters.';
+          return _languageNotifier.translate('phoneTooLong');
         }
         return null;
       },
@@ -400,19 +414,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
       keyboardType: TextInputType.emailAddress,
       style: TextStyle(color: fieldTextColor),
       decoration: _createInputDecoration(
-        hint: "Email",
+        hint: _languageNotifier.translate('email'),
         icon: Icons.email_outlined,
       ),
       // VALIDATION: Email NotEmpty, EmailAddress, and MaxLength(100)
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Email is required.';
+          return _languageNotifier.translate('emailRequired');
         }
         if (value.length > 100) {
-          return 'Email cannot exceed 100 characters.';
+          return _languageNotifier.translate('emailTooLong');
         }
         if (!emailRegex.hasMatch(value)) {
-          return 'A valid email address is required.';
+          return _languageNotifier.translate('emailInvalid');
         }
         return null;
       },
@@ -426,7 +440,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       obscureText: !_isPasswordVisible,
       style: TextStyle(color: fieldTextColor),
       decoration: _createInputDecoration(
-        hint: "Password",
+        hint: _languageNotifier.translate('passwordHint'),
         icon: Icons.lock_outline,
         suffixIcon: IconButton(
           icon: Icon(
@@ -445,10 +459,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       // VALIDATION: Password NotEmpty and MinLength(8)
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Password is required.';
+          return _languageNotifier.translate('passwordRequired');
         }
         if (value.length < 8) {
-          return 'Password must be at least 8 characters.';
+          return _languageNotifier.translate('passwordTooShort');
         }
         return null;
       },
@@ -462,7 +476,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       obscureText: !_isConfirmPasswordVisible,
       style: TextStyle(color: fieldTextColor),
       decoration: _createInputDecoration(
-        hint: "Confirm Password",
+        hint: _languageNotifier.translate('confirmPassword'),
         icon: Icons.lock_outline,
         fillColor: Colors.white,
         suffixIcon: IconButton(
@@ -482,10 +496,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       // VALIDATION: Match Password
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Password is required.';
+          return _languageNotifier.translate('passwordRequired');
         }
         if (value != _passwordController.text) {
-          return 'Passwords do not match';
+          return _languageNotifier.translate('passwordsDoNotMatch');
         }
         return null;
       },
@@ -535,9 +549,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           strokeWidth: 2,
                         ),
                       )
-                    : const Text(
-                        "SIGN UP",
-                        style: TextStyle(
+                    : Text(
+                        _languageNotifier.translate('signUpButton'),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18.0,
                           fontWeight: FontWeight.bold,
@@ -560,7 +574,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          "Already have an account? ",
+          _languageNotifier.translate('alreadyHaveAccount'),
           style: TextStyle(color: linkTextColor),
         ),
         TextButton(
@@ -572,9 +586,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
             minimumSize: const Size(50, 30),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Text(
-            "Log in",
-            style: TextStyle(color: _primaryBlue, fontWeight: FontWeight.bold),
+          child: Text(
+            _languageNotifier.translate('logIn'),
+            style: const TextStyle(
+              color: _primaryBlue,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
