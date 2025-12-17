@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'unit_type_screen.dart';
 import 'bookings_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import '../shared_screens/chat_screen.dart';
 import '../../themes/theme_notifier.dart';
+import '../../notifiers/language_notifier.dart';
 import '../../config/app_config.dart';
 import '../../models/service_models.dart';
 import '../../services/service_category_service.dart';
@@ -26,26 +28,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _overlayAnimationController;
   late AnimationController _gridAnimationController;
   ServiceCategory? _selectedCategoryForAnimation;
-
-  final List<Map<String, dynamic>> navItems = const [
-    {
-      'label': 'Profile',
-      'icon': Icons.person_outline,
-      'activeIcon': Icons.person,
-    },
-    {
-      'label': 'Chat',
-      'icon': Icons.chat_bubble_outline,
-      'activeIcon': Icons.chat_bubble,
-    },
-    {
-      'label': 'Bookings',
-      'icon': Icons.book_outlined,
-      'activeIcon': Icons.book,
-      'notificationCount': 3,
-    },
-    {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
-  ];
 
   @override
   void initState() {
@@ -87,9 +69,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Error fetching services: ${e.toString().replaceAll('Exception: ', '')}',
-          ),
+          content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
           backgroundColor: Colors.red,
         ),
       );
@@ -165,6 +145,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final lang = Provider.of<LanguageNotifier>(context);
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -193,6 +174,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         outerBottomMargin +
         MediaQuery.of(context).padding.bottom;
 
+    final List<Map<String, dynamic>> navItems = [
+      {
+        'label': lang.translate('profile'),
+        'icon': Icons.person_outline,
+        'activeIcon': Icons.person,
+      },
+      {
+        'label': lang.translate('chat'),
+        'icon': Icons.chat_bubble_outline,
+        'activeIcon': Icons.chat_bubble,
+      },
+      {
+        'label': lang.translate('bookings'),
+        'icon': Icons.book_outlined,
+        'activeIcon': Icons.book,
+        'notificationCount': 3,
+      },
+      {
+        'label': lang.translate('home'),
+        'icon': Icons.home_outlined,
+        'activeIcon': Icons.home,
+      },
+    ];
+
     return Stack(
       children: [
         Scaffold(
@@ -204,8 +209,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 containerTop: whiteContainerTop,
                 bottomNavClearance: bottomNavClearance,
                 isDarkMode: isDarkMode,
+                lang: lang,
               ),
-              SearchHeader(onChanged: _onSearchChanged),
+              SearchHeader(onChanged: _onSearchChanged, lang: lang),
               _buildHomeImage(logoTopPosition, logoHeight, isDarkMode),
               if (_isFetching)
                 Container(
@@ -316,6 +322,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required double containerTop,
     required double bottomNavClearance,
     required bool isDarkMode,
+    required LanguageNotifier lang,
   }) {
     return Positioned(
       top: containerTop,
@@ -343,9 +350,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: [
             const SizedBox(height: 15.0),
             Padding(
-              padding: const EdgeInsets.only(left: 20.0, top: 20.0),
+              padding: const EdgeInsetsDirectional.only(start: 20.0, top: 20.0),
               child: Text(
-                'Select a service',
+                lang.translate('selectService'),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -361,6 +368,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 isDarkMode: isDarkMode,
                 onCategorySelected: _onCategorySelected,
                 animationController: _gridAnimationController,
+                lang: lang,
               ),
             ),
           ],
@@ -372,8 +380,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
 class SearchHeader extends StatelessWidget {
   final ValueChanged<String> onChanged;
+  final LanguageNotifier lang;
 
-  const SearchHeader({super.key, required this.onChanged});
+  const SearchHeader({super.key, required this.onChanged, required this.lang});
 
   @override
   Widget build(BuildContext context) {
@@ -386,11 +395,11 @@ class SearchHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 8.0, bottom: 8.0),
+          Padding(
+            padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
             child: Text(
-              'Ajeer',
-              style: TextStyle(
+              lang.translate('appName'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 34,
                 fontWeight: FontWeight.w900,
@@ -430,7 +439,7 @@ class SearchHeader extends StatelessWidget {
                   textAlignVertical: TextAlignVertical.center,
                   style: const TextStyle(color: Colors.white, fontSize: 16.0),
                   decoration: InputDecoration(
-                    hintText: 'Search for a service',
+                    hintText: lang.translate('searchHint'),
                     hintStyle: const TextStyle(
                       color: Colors.white,
                       fontSize: 16.0,
@@ -463,6 +472,7 @@ class ServiceGridView extends StatelessWidget {
   final bool isDarkMode;
   final Function(ServiceCategory) onCategorySelected;
   final AnimationController animationController;
+  final LanguageNotifier lang;
 
   const ServiceGridView({
     super.key,
@@ -472,19 +482,25 @@ class ServiceGridView extends StatelessWidget {
     required this.isDarkMode,
     required this.onCategorySelected,
     required this.animationController,
+    required this.lang,
   });
 
   @override
   Widget build(BuildContext context) {
     String normalizedQuery = searchQuery.trim().toLowerCase();
 
+    String getTranslatedName(String backendName) {
+      return lang.translate(backendName);
+    }
+
     final filteredServices = services.where((service) {
-      return service.name.toLowerCase().contains(normalizedQuery);
+      final translatedName = getTranslatedName(service.name);
+      return translatedName.toLowerCase().contains(normalizedQuery);
     }).toList();
 
-    bool shouldHighlight(String serviceName) {
+    bool shouldHighlight(String translatedName) {
       return normalizedQuery.isNotEmpty &&
-          serviceName.toLowerCase().contains(normalizedQuery);
+          translatedName.toLowerCase().contains(normalizedQuery);
     }
 
     return Padding(
@@ -500,7 +516,7 @@ class ServiceGridView extends StatelessWidget {
         itemCount: filteredServices.length,
         itemBuilder: (context, index) {
           final service = filteredServices[index];
-          final serviceName = service.name;
+          final translatedServiceName = getTranslatedName(service.name);
           final serviceIconUrl = service.iconUrl;
 
           final double start =
@@ -523,8 +539,8 @@ class ServiceGridView extends StatelessWidget {
               ).animate(animation),
               child: ServiceGridItem(
                 iconUrl: serviceIconUrl,
-                name: serviceName,
-                isHighlighted: shouldHighlight(serviceName),
+                name: translatedServiceName,
+                isHighlighted: shouldHighlight(translatedServiceName),
                 isDarkMode: isDarkMode,
                 onTap: () {
                   onCategorySelected(service);

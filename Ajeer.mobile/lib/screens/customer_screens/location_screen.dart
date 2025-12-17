@@ -45,12 +45,12 @@ class LocationScreen extends StatefulWidget {
 }
 
 class _LocationScreenState extends State<LocationScreen> {
-  int _selectedIndex = 3;
+  final int _selectedIndex = 3;
   LatLng? _customerLocation;
   String? _resolvedAddress;
   String? _fullResolvedAddress;
   bool _isEditingLocation = false;
-  MapController _mapController = MapController();
+  final MapController _mapController = MapController();
   LatLng? _mapCenterDuringEdit;
   String? _selectedCity;
   String? _selectedArea;
@@ -66,29 +66,58 @@ class _LocationScreenState extends State<LocationScreen> {
   static const Color _subtleLighterDark = Color(0xFF2C2C2C);
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
-  static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
+  static const double _navBarTotalHeight = 86.0;
   static const double _mapBorderRadius = 25.0;
   static const double _horizontalPadding = 20.0;
   static const double _mapAspectRatio = 1.17;
 
+  static const Map<String, String> _locationTranslations = {
+    "Amman": "عمان",
+    "Abdoun": "عبدون",
+    "Jabal Al-Weibdeh": "جبل اللويبدة",
+    "Shmeisani": "الشميساني",
+    "Al-Rabieh": "الرابية",
+    "Dabouq": "دابوق",
+    "Al-Jubeiha": "الجبيهة",
+    "Al-Bayader": "البيادر",
+    "Tla' Al-Ali": "تلاع العلي",
+  };
+
+  String _translateBackendLocation(String englishName) {
+    return _locationTranslations[englishName] ?? englishName;
+  }
+
+  String _getEnglishNameFromArabic(String arabicName) {
+    return _locationTranslations.entries
+        .firstWhere(
+          (element) => element.value == arabicName,
+          orElse: () => MapEntry(arabicName, arabicName),
+        )
+        .key;
+  }
+
   final List<Map<String, dynamic>> _navItems = const [
     {
-      'label': 'Profile',
+      'label': 'الملف الشخصي',
       'icon': Icons.person_outline,
       'activeIcon': Icons.person,
     },
     {
-      'label': 'Chat',
+      'label': 'المحادثات',
       'icon': Icons.chat_bubble_outline,
       'activeIcon': Icons.chat_bubble,
     },
     {
-      'label': 'Bookings',
+      'label': 'حجوزاتي',
       'icon': Icons.book_outlined,
       'activeIcon': Icons.book,
       'notificationCount': 3,
     },
-    {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
+    {
+      'label': 'الرئيسية',
+      'icon': Icons.home_outlined,
+      'activeIcon': Icons.home,
+    },
   ];
 
   @override
@@ -105,8 +134,6 @@ class _LocationScreenState extends State<LocationScreen> {
       final prefs = await SharedPreferences.getInstance();
       final String? token = prefs.getString('authToken');
 
-      if (token == null) {}
-
       final response = await http
           .get(
             url,
@@ -120,25 +147,31 @@ class _LocationScreenState extends State<LocationScreen> {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
 
-        setState(() {
-          _apiData = data.map((json) => CityResponse.fromJson(json)).toList();
-          _customerCities = _apiData.map((city) => city.cityName).toList();
-          _customerCityAreas = {
-            for (var city in _apiData)
-              city.cityName: city.areas.map((area) => area.name).toList(),
-          };
+        if (mounted) {
+          setState(() {
+            _apiData = data.map((json) => CityResponse.fromJson(json)).toList();
+            _customerCities = _apiData
+                .map((city) => _translateBackendLocation(city.cityName))
+                .toList();
 
-          if (_customerCities.isNotEmpty && _selectedCity == null) {
-            _selectedCity = _customerCities.first;
-          }
+            _customerCityAreas = {
+              for (var city in _apiData)
+                _translateBackendLocation(city.cityName): city.areas
+                    .map((area) => _translateBackendLocation(area.name))
+                    .toList(),
+            };
 
-          _isLoadingAreas = false;
-        });
+            if (_customerCities.isNotEmpty && _selectedCity == null) {
+              _selectedCity = _customerCities.first;
+            }
+            _isLoadingAreas = false;
+          });
+        }
       } else {
-        setState(() => _isLoadingAreas = false);
+        if (mounted) setState(() => _isLoadingAreas = false);
       }
     } catch (e) {
-      setState(() => _isLoadingAreas = false);
+      if (mounted) setState(() => _isLoadingAreas = false);
     }
   }
 
@@ -162,10 +195,12 @@ class _LocationScreenState extends State<LocationScreen> {
       desiredAccuracy: LocationAccuracy.high,
     );
 
-    setState(() {
-      _customerLocation = LatLng(position.latitude, position.longitude);
-    });
-    await _resolveAddressFromCoordinates(_customerLocation!);
+    if (mounted) {
+      setState(() {
+        _customerLocation = LatLng(position.latitude, position.longitude);
+      });
+      await _resolveAddressFromCoordinates(_customerLocation!);
+    }
   }
 
   Future<void> _resolveAddressFromCoordinates(LatLng location) async {
@@ -173,6 +208,7 @@ class _LocationScreenState extends State<LocationScreen> {
       List<Placemark> placemarks = await placemarkFromCoordinates(
         location.latitude,
         location.longitude,
+        localeIdentifier: 'ar',
       );
 
       if (placemarks.isNotEmpty) {
@@ -193,12 +229,13 @@ class _LocationScreenState extends State<LocationScreen> {
 
         String visibleAddress = '';
         if (finalCity.isNotEmpty) visibleAddress += finalCity;
-        if (finalArea.isNotEmpty)
-          visibleAddress += ', $finalArea';
-        else if (finalGovernorate.isNotEmpty)
-          visibleAddress += ', $finalGovernorate';
-        else
-          visibleAddress += ', Unnamed location';
+        if (finalArea.isNotEmpty) {
+          visibleAddress += '، $finalArea';
+        } else if (finalGovernorate.isNotEmpty) {
+          visibleAddress += '، $finalGovernorate';
+        } else {
+          visibleAddress += '، موقع غير مسمى';
+        }
 
         String fullAddress = '';
         if (street != null && street.isNotEmpty) {
@@ -209,12 +246,14 @@ class _LocationScreenState extends State<LocationScreen> {
             (street == null || !building.contains(street))) {
           fullAddress += ' $building';
         }
-        fullAddress = fullAddress.trim().replaceAll(RegExp(r',\s+'), ', ');
+        fullAddress = fullAddress.trim().replaceAll(RegExp(r',\s+'), '، ');
 
-        setState(() {
-          _resolvedAddress = visibleAddress;
-          _fullResolvedAddress = fullAddress;
-        });
+        if (mounted) {
+          setState(() {
+            _resolvedAddress = visibleAddress;
+            _fullResolvedAddress = fullAddress;
+          });
+        }
       }
     } catch (e) {
       debugPrint('Failed to resolve address: $e');
@@ -225,36 +264,26 @@ class _LocationScreenState extends State<LocationScreen> {
     if (index == _selectedIndex) return;
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
+    Widget page;
     switch (index) {
       case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
-          ),
-        );
+        page = ProfileScreen(themeNotifier: themeNotifier);
         break;
       case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ChatScreen()),
-        );
+        page = const ChatScreen();
         break;
       case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const BookingsScreen()),
-        );
+        page = const BookingsScreen();
         break;
       case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
-          ),
-        );
+      default:
+        page = HomeScreen(themeNotifier: themeNotifier);
         break;
     }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => page),
+    );
   }
 
   void _onBackTap() {
@@ -270,7 +299,7 @@ class _LocationScreenState extends State<LocationScreen> {
     if (!_isNextEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select an area and ensure location is picked.'),
+          content: Text('الرجاء اختيار المنطقة والتأكد من تحديد الموقع.'),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
         ),
@@ -280,17 +309,26 @@ class _LocationScreenState extends State<LocationScreen> {
 
     int? selectedAreaId;
     try {
-      final cityObj = _apiData.firstWhere((c) => c.cityName == _selectedCity);
-      final areaObj = cityObj.areas.firstWhere((a) => a.name == _selectedArea);
+      final selectedCityEnglish = _getEnglishNameFromArabic(_selectedCity!);
+      final selectedAreaEnglish = _getEnglishNameFromArabic(_selectedArea!);
+
+      final cityObj = _apiData.firstWhere(
+        (c) => c.cityName == selectedCityEnglish || c.cityName == _selectedCity,
+      );
+
+      final areaObj = cityObj.areas.firstWhere(
+        (a) => a.name == selectedAreaEnglish || a.name == _selectedArea,
+      );
+
       selectedAreaId = areaObj.id;
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error validating area selection.')),
+        const SnackBar(content: Text('حدث خطأ في التحقق من المنطقة.')),
       );
       return;
     }
 
-    final String finalCityArea = '$_selectedCity, $_selectedArea';
+    final String finalCityArea = '$_selectedCity، $_selectedArea';
     String finalAddress = _fullResolvedAddress ?? '';
 
     Navigator.push(
@@ -383,48 +421,61 @@ class _LocationScreenState extends State<LocationScreen> {
     final double bottomNavClearance =
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: isDarkMode ? Colors.black : Colors.white,
-      body: Stack(
-        children: [
-          _buildBackgroundGradient(whiteContainerTop),
-          _buildLocationIcon(
-            whiteContainerTop,
-            MediaQuery.of(context).padding.top,
-          ),
-          _buildWhiteContainer(
-            containerTop: whiteContainerTop,
-            bottomNavClearance: bottomNavClearance,
-            isDarkMode: isDarkMode,
-          ),
-          _buildHomeImage(logoTopPosition, isDarkMode),
-          _NavigationHeader(
-            onBackTap: _onBackTap,
-            onNextTap: _onNextTap,
-            isNextEnabled: _isNextEnabled,
-          ),
-        ],
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        items: _navItems,
-        selectedIndex: _selectedIndex,
-        onIndexChanged: _onNavItemTapped,
-      ),
-    );
-  }
-
-  Widget _buildBackgroundGradient(double containerTop) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Container(
-        height: containerTop + 50,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [_lightBlue, _primaryBlue],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        extendBody: true,
+        backgroundColor: isDarkMode ? Colors.black : Colors.white,
+        body: Stack(
+          children: [
+            Align(
+              alignment: Alignment.topCenter,
+              child: Container(
+                height: whiteContainerTop + 50,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [_lightBlue, _primaryBlue],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+            _buildLocationIcon(
+              whiteContainerTop,
+              MediaQuery.of(context).padding.top,
+            ),
+            _buildWhiteContainer(
+              containerTop: whiteContainerTop,
+              bottomNavClearance: bottomNavClearance,
+              isDarkMode: isDarkMode,
+            ),
+            Positioned(
+              top: logoTopPosition,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Image.asset(
+                  isDarkMode
+                      ? 'assets/image/home_dark.png'
+                      : 'assets/image/home.png',
+                  width: 140,
+                  height: _logoHeight,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            _NavigationHeader(
+              onBackTap: _onBackTap,
+              onNextTap: _onNextTap,
+              isNextEnabled: _isNextEnabled,
+            ),
+          ],
+        ),
+        bottomNavigationBar: CustomBottomNavBar(
+          items: _navItems,
+          selectedIndex: _selectedIndex,
+          onIndexChanged: _onNavItemTapped,
         ),
       ),
     );
@@ -466,25 +517,6 @@ class _LocationScreenState extends State<LocationScreen> {
     );
   }
 
-  Widget _buildHomeImage(double logoTopPosition, bool isDarkMode) {
-    final String imagePath = isDarkMode
-        ? 'assets/image/home_dark.png'
-        : 'assets/image/home.png';
-    return Positioned(
-      top: logoTopPosition,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Image.asset(
-          imagePath,
-          width: 140,
-          height: _logoHeight,
-          fit: BoxFit.contain,
-        ),
-      ),
-    );
-  }
-
   Widget _buildWhiteContainer({
     required double containerTop,
     required double bottomNavClearance,
@@ -521,10 +553,11 @@ class _LocationScreenState extends State<LocationScreen> {
               Padding(
                 padding: const EdgeInsets.only(
                   left: _horizontalPadding,
+                  right: _horizontalPadding,
                   top: 20.0,
                 ),
                 child: Text(
-                  'Pick a location',
+                  'حدد موقعك',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -758,131 +791,134 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
         ? const Color(0xFF1E1E1E)
         : Colors.white;
 
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                center: _editingCenter,
-                zoom: _currentZoom,
-                onPositionChanged: (pos, hasGesture) {
-                  if (_isEditing) {
-                    setState(() {
-                      _editingCenter = pos.center!;
-                      _currentZoom = pos.zoom!;
-                    });
-                  } else if (hasGesture) {
-                    setState(() {
-                      _currentZoom = pos.zoom!;
-                    });
-                  }
-                },
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate:
-                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  subdomains: const ['a', 'b', 'c'],
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: backgroundColor,
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  center: _editingCenter,
+                  zoom: _currentZoom,
+                  onPositionChanged: (pos, hasGesture) {
+                    if (_isEditing) {
+                      setState(() {
+                        _editingCenter = pos.center!;
+                        _currentZoom = pos.zoom!;
+                      });
+                    } else if (hasGesture) {
+                      setState(() {
+                        _currentZoom = pos.zoom!;
+                      });
+                    }
+                  },
                 ),
-                if (!_isEditing)
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: widget.customerLocation,
-                        width: 50,
-                        height: 50,
-                        child: const Icon(
-                          Icons.location_pin,
-                          color: Colors.red,
-                          size: 40,
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    subdomains: const ['a', 'b', 'c'],
+                  ),
+                  if (!_isEditing)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: widget.customerLocation,
+                          width: 50,
+                          height: 50,
+                          child: const Icon(
+                            Icons.location_pin,
+                            color: Colors.red,
+                            size: 40,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-          if (_isEditing)
-            const Align(
-              alignment: Alignment.center,
-              child: IgnorePointer(
-                child: Icon(Icons.location_pin, size: 50, color: Colors.red),
+                      ],
+                    ),
+                ],
               ),
             ),
-          Positioned(
-            bottom: 30,
-            right: 20,
-            child: Column(
-              children: [
-                FloatingActionButton(
-                  heroTag: 'zoomIn',
-                  mini: true,
-                  backgroundColor: widget.primaryColor,
-                  onPressed: _zoomIn,
-                  child: const Icon(Icons.add, color: Colors.white),
+            if (_isEditing)
+              const Align(
+                alignment: Alignment.center,
+                child: IgnorePointer(
+                  child: Icon(Icons.location_pin, size: 50, color: Colors.red),
                 ),
-                const SizedBox(height: 10),
-                FloatingActionButton(
-                  heroTag: 'zoomOut',
-                  mini: true,
-                  backgroundColor: widget.primaryColor,
-                  onPressed: _zoomOut,
-                  child: const Icon(Icons.remove, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            right: 10,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_isEditing)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: FloatingActionButton(
-                      mini: true,
-                      backgroundColor: Colors.green,
-                      onPressed: () {
-                        Navigator.of(context).pop(_editingCenter);
-                      },
-                      child: const Icon(Icons.check, color: Colors.white),
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: FloatingActionButton(
+              ),
+            Positioned(
+              bottom: 30,
+              right: 20,
+              child: Column(
+                children: [
+                  FloatingActionButton(
+                    heroTag: 'zoomIn',
                     mini: true,
                     backgroundColor: widget.primaryColor,
-                    onPressed: () {
-                      setState(() {
-                        _isEditing = true;
-                        _editingCenter = widget.customerLocation;
-                      });
-                    },
+                    onPressed: _zoomIn,
+                    child: const Icon(Icons.add, color: Colors.white),
+                  ),
+                  const SizedBox(height: 10),
+                  FloatingActionButton(
+                    heroTag: 'zoomOut',
+                    mini: true,
+                    backgroundColor: widget.primaryColor,
+                    onPressed: _zoomOut,
+                    child: const Icon(Icons.remove, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 10,
+              right: 10,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isEditing)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: FloatingActionButton(
+                        mini: true,
+                        backgroundColor: Colors.green,
+                        onPressed: () {
+                          Navigator.of(context).pop(_editingCenter);
+                        },
+                        child: const Icon(Icons.check, color: Colors.white),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: FloatingActionButton(
+                      mini: true,
+                      backgroundColor: widget.primaryColor,
+                      onPressed: () {
+                        setState(() {
+                          _isEditing = true;
+                          _editingCenter = widget.customerLocation;
+                        });
+                      },
+                      child: const Icon(
+                        Icons.edit_location_alt,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  FloatingActionButton(
+                    mini: true,
+                    backgroundColor: widget.primaryColor,
+                    onPressed: () => Navigator.of(context).pop(),
                     child: const Icon(
-                      Icons.edit_location_alt,
+                      Icons.close_fullscreen,
                       color: Colors.white,
                     ),
                   ),
-                ),
-                FloatingActionButton(
-                  mini: true,
-                  backgroundColor: widget.primaryColor,
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Icon(
-                    Icons.close_fullscreen,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -955,15 +991,16 @@ class _NavigationHeaderState extends State<_NavigationHeader>
         children: [
           IconButton(
             iconSize: 28.0,
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
             onPressed: widget.onBackTap,
           ),
           const Text(
-            'Ajeer',
+            'أجير',
             style: TextStyle(
               color: Colors.white,
               fontSize: 34,
               fontWeight: FontWeight.w900,
+              fontFamily: 'Cairo',
               shadows: [
                 Shadow(
                   blurRadius: 2.0,
@@ -991,7 +1028,7 @@ class _NavigationHeaderState extends State<_NavigationHeader>
               IconButton(
                 iconSize: 28.0,
                 icon: Icon(
-                  Icons.arrow_forward_ios,
+                  Icons.arrow_back_ios_new,
                   color: widget.isNextEnabled
                       ? Colors.white
                       : Colors.white.withOpacity(0.5),
@@ -1033,7 +1070,7 @@ class _CustomerLocationSelector extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 15.0, left: 20, right: 20),
           child: const Text(
-            'Select your area. This will be used to determine your Ajeer!',
+            'يرجى تحديد منطقتك، سيتم استخدام هذا لتحديد "الأجير" المناسب!',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
@@ -1049,7 +1086,7 @@ class _CustomerLocationSelector extends StatelessWidget {
             children: [
               Expanded(
                 child: _LocationBox(
-                  title: 'City Picker',
+                  title: 'المدينة',
                   isDarkMode: isDarkMode,
                   child: _CustomerCityList(
                     cities: cities,
@@ -1062,7 +1099,7 @@ class _CustomerLocationSelector extends StatelessWidget {
               const SizedBox(width: 5),
               Expanded(
                 child: _LocationBox(
-                  title: 'Area Picker',
+                  title: 'المنطقة',
                   isDarkMode: isDarkMode,
                   child: _CustomerAreaList(
                     selectedCity: city,
@@ -1207,7 +1244,7 @@ class _CustomerAreaList extends StatelessWidget {
     if (selectedCity == null) {
       return Center(
         child: Text(
-          'Select a city first.',
+          'اختر مدينة أولاً',
           style: TextStyle(
             color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
             fontSize: 14,
@@ -1221,7 +1258,7 @@ class _CustomerAreaList extends StatelessWidget {
     if (availableAreas.isEmpty) {
       return Center(
         child: Text(
-          'No areas available.',
+          'لا توجد مناطق متاحة',
           style: TextStyle(
             color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
             fontSize: 14,

@@ -8,6 +8,7 @@ import '../shared_screens/profile_screen.dart';
 import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
 import '../../themes/theme_notifier.dart';
+import '../../notifiers/language_notifier.dart';
 import '../../config/app_config.dart';
 import '../../models/service_models.dart';
 import '../../services/unit_type_service.dart';
@@ -76,26 +77,6 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     }
   }
 
-  final List<Map<String, dynamic>> _navItems = const [
-    {
-      'label': 'Profile',
-      'icon': Icons.person_outline,
-      'activeIcon': Icons.person,
-    },
-    {
-      'label': 'Chat',
-      'icon': Icons.chat_bubble_outline,
-      'activeIcon': Icons.chat_bubble,
-    },
-    {
-      'label': 'Bookings',
-      'icon': Icons.book_outlined,
-      'activeIcon': Icons.book,
-      'notificationCount': 3,
-    },
-    {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
-  ];
-
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
@@ -142,7 +123,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     });
   }
 
-  void _onNextTap() {
+  void _onNextTap(LanguageNotifier lang) {
     if (_selectedIds.isNotEmpty) {
       double totalCost = 0.0;
       int totalMinutes = 0;
@@ -152,7 +133,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
         if (_selectedIds.contains(service.id)) {
           totalCost += service.priceValue;
           totalMinutes += service.timeInMinutes;
-          selectedNames.add(service.name);
+          selectedNames.add(lang.translate(service.name));
         }
       }
 
@@ -161,7 +142,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
         MaterialPageRoute(
           builder: (context) => DateTimeScreen(
             serviceIds: _selectedIds.toList(),
-            serviceName: widget.category.name,
+            serviceName: lang.translate(widget.category.name),
             unitType: selectedNames.join(', '),
             totalTimeMinutes: totalMinutes,
             totalPrice: totalCost,
@@ -170,8 +151,8 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one unit type first.'),
+        SnackBar(
+          content: Text(lang.translate('selectAtLeastOne')),
           backgroundColor: Colors.red,
         ),
       );
@@ -181,6 +162,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final lang = Provider.of<LanguageNotifier>(context);
     final bool isDarkMode = themeNotifier.isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -200,6 +182,30 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     final double bottomNavClearance =
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
+    final List<Map<String, dynamic>> navItems = [
+      {
+        'label': lang.translate('profile'),
+        'icon': Icons.person_outline,
+        'activeIcon': Icons.person,
+      },
+      {
+        'label': lang.translate('chat'),
+        'icon': Icons.chat_bubble_outline,
+        'activeIcon': Icons.chat_bubble,
+      },
+      {
+        'label': lang.translate('bookings'),
+        'icon': Icons.book_outlined,
+        'activeIcon': Icons.book,
+        'notificationCount': 3,
+      },
+      {
+        'label': lang.translate('home'),
+        'icon': Icons.home_outlined,
+        'activeIcon': Icons.home,
+      },
+    ];
+
     return Scaffold(
       extendBody: true,
       body: Stack(
@@ -213,17 +219,19 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
             isDarkMode: isDarkMode,
+            lang: lang,
           ),
           _buildHomeImage(logoTopPosition, isDarkMode),
           _UnitTypeNavigationHeader(
             onBackTap: () => Navigator.pop(context),
-            onNextTap: _onNextTap,
+            onNextTap: () => _onNextTap(lang),
             isNextEnabled: _selectedIds.isNotEmpty,
+            lang: lang,
           ),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        items: _navItems,
+        items: navItems,
         selectedIndex: _selectedIndex,
         onIndexChanged: _onNavItemTapped,
       ),
@@ -251,9 +259,9 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     final double availableHeight = containerTop - headerHeight;
     final double iconTopPosition = headerHeight + (availableHeight / 2) - 70;
 
-    return Positioned(
+    return PositionedDirectional(
       top: iconTopPosition,
-      right: 25.0,
+      end: 25.0,
       child: Container(
         width: 100.0,
         height: 100.0,
@@ -313,6 +321,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     required double containerTop,
     required double bottomNavClearance,
     required bool isDarkMode,
+    required LanguageNotifier lang,
   }) {
     return Positioned(
       top: containerTop,
@@ -340,13 +349,13 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
           children: [
             const SizedBox(height: 15.0),
             Padding(
-              padding: const EdgeInsets.only(
-                left: 20.0,
+              padding: const EdgeInsetsDirectional.only(
+                start: 20.0,
                 top: 20.0,
                 bottom: 10.0,
               ),
               child: Text(
-                'Select unit type(s)',
+                lang.translate('selectUnitType'),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -360,9 +369,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
                   : _errorMessage != null
                   ? Center(child: Text("Error: $_errorMessage"))
                   : _availableServices.isEmpty
-                  ? const Center(
-                      child: Text("No unit types available for this service."),
-                    )
+                  ? Center(child: Text(lang.translate('noUnitsAvailable')))
                   : _UnitTypeListView(
                       services: _availableServices,
                       selectedIds: _selectedIds,
@@ -370,6 +377,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
                       bottomPadding: bottomNavClearance,
                       isDarkMode: isDarkMode,
                       animationController: _listAnimationController,
+                      lang: lang,
                     ),
             ),
           ],
@@ -383,11 +391,13 @@ class _UnitTypeNavigationHeader extends StatefulWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
   final bool isNextEnabled;
+  final LanguageNotifier lang;
 
   const _UnitTypeNavigationHeader({
     required this.onBackTap,
     required this.onNextTap,
     this.isNextEnabled = false,
+    required this.lang,
   });
 
   @override
@@ -450,9 +460,9 @@ class _UnitTypeNavigationHeaderState extends State<_UnitTypeNavigationHeader>
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: widget.onBackTap,
           ),
-          const Text(
-            'Ajeer',
-            style: TextStyle(
+          Text(
+            widget.lang.translate('appName'),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 34,
               fontWeight: FontWeight.w900,
@@ -505,6 +515,7 @@ class _UnitTypeListView extends StatelessWidget {
   final double bottomPadding;
   final bool isDarkMode;
   final AnimationController animationController;
+  final LanguageNotifier lang;
 
   const _UnitTypeListView({
     required this.services,
@@ -513,7 +524,36 @@ class _UnitTypeListView extends StatelessWidget {
     required this.bottomPadding,
     required this.isDarkMode,
     required this.animationController,
+    required this.lang,
   });
+
+  String _formatPrice(double price) {
+    final String formattedNumber = lang.convertNumbers(
+      price.toStringAsFixed(2),
+    );
+    return lang.isArabic
+        ? '$formattedNumber ${lang.translate('jod')}'
+        : '${lang.translate('jod')} $formattedNumber';
+  }
+
+  String _formatTime(int minutes) {
+    final int h = minutes ~/ 60;
+    final int m = minutes % 60;
+    String result = '';
+
+    if (h > 0) {
+      String hrsLabel = h > 1 ? lang.translate('hrs') : lang.translate('hr');
+      result += '${lang.convertNumbers(h.toString())} $hrsLabel';
+    }
+
+    if (m > 0) {
+      if (result.isNotEmpty) result += ' ';
+      String minsLabel = m > 1 ? lang.translate('mins') : lang.translate('min');
+      result += '${lang.convertNumbers(m.toString())} $minsLabel';
+    }
+
+    return '${lang.translate('estTime')}: $result';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -546,9 +586,9 @@ class _UnitTypeListView extends StatelessWidget {
               end: Offset.zero,
             ).animate(animation),
             child: _SelectableUnitItem(
-              name: service.name,
-              estimatedTime: service.estimatedTime ?? "N/A",
-              priceDisplay: service.formattedPrice ?? "N/A",
+              name: lang.translate(service.name),
+              estimatedTime: _formatTime(service.timeInMinutes),
+              priceDisplay: _formatPrice(service.priceValue),
               isSelected: isSelected,
               onTap: () => onServiceTap(service.id),
               isDarkMode: isDarkMode,

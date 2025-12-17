@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../themes/theme_notifier.dart';
+import '../../notifiers/language_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
 import 'location_screen.dart';
@@ -36,26 +37,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   DateTime _selectedDate = DateTime.now();
   late TimeOfDay _selectedTime;
   late List<DateTime> _days;
-
-  final List<Map<String, dynamic>> _navItems = const [
-    {
-      'label': 'Profile',
-      'icon': Icons.person_outline,
-      'activeIcon': Icons.person,
-    },
-    {
-      'label': 'Chat',
-      'icon': Icons.chat_bubble_outline,
-      'activeIcon': Icons.chat_bubble,
-    },
-    {
-      'label': 'Bookings',
-      'icon': Icons.book_outlined,
-      'activeIcon': Icons.book,
-      'notificationCount': 3,
-    },
-    {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
-  ];
 
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
@@ -132,13 +113,13 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 
   void _showDatePicker() async {
-    final isDarkMode = Provider.of<ThemeNotifier>(
-      context,
-      listen: false,
-    ).isDarkMode;
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+    final isDarkMode = themeNotifier.isDarkMode;
+    final lang = Provider.of<LanguageNotifier>(context, listen: false);
 
     final pickedDate = await showDatePicker(
       context: context,
+      locale: lang.appLocale,
       initialDate: _selectedDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
@@ -156,20 +137,24 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                 onSurface: Colors.black87,
               );
 
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: colorScheme,
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: _primaryBlue),
-            ),
-            datePickerTheme: DatePickerThemeData(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(_dialogBorderRadius),
+        return Localizations.override(
+          context: context,
+          locale: lang.appLocale,
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: colorScheme,
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(foregroundColor: _primaryBlue),
               ),
-              backgroundColor: isDarkMode ? _subtleDark : Colors.white,
+              datePickerTheme: DatePickerThemeData(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(_dialogBorderRadius),
+                ),
+                backgroundColor: isDarkMode ? _subtleDark : Colors.white,
+              ),
             ),
+            child: child!,
           ),
-          child: child!,
         );
       },
     );
@@ -180,10 +165,9 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 
   void _showTimePicker() async {
-    final isDarkMode = Provider.of<ThemeNotifier>(
-      context,
-      listen: false,
-    ).isDarkMode;
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+    final isDarkMode = themeNotifier.isDarkMode;
+    final lang = Provider.of<LanguageNotifier>(context, listen: false);
 
     final pickedTime = await showTimePicker(
       context: context,
@@ -206,42 +190,46 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                 secondaryContainer: _secondaryLightBlue,
               );
 
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: colorScheme,
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: _primaryBlue,
-                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+        return Localizations.override(
+          context: context,
+          locale: lang.appLocale,
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: colorScheme,
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: _primaryBlue,
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              timePickerTheme: TimePickerThemeData(
+                backgroundColor: isDarkMode ? _subtleDark : Colors.white,
+                dialBackgroundColor: isDarkMode
+                    ? _subtleLighterDark
+                    : Colors.grey.shade200,
+                dialHandColor: _primaryBlue,
+                entryModeIconColor: _primaryBlue,
+                dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return Colors.white;
+                  }
+                  return isDarkMode ? Colors.white70 : Colors.black87;
+                }),
+                dayPeriodColor: WidgetStateColor.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return _primaryBlue;
+                  }
+                  return Colors.transparent;
+                }),
+                dayPeriodBorderSide: const BorderSide(color: _primaryBlue),
+                hourMinuteTextColor: isDarkMode ? Colors.white : Colors.black87,
+                hourMinuteColor: isDarkMode
+                    ? _subtleLighterDark
+                    : Colors.grey.shade200,
               ),
             ),
-            timePickerTheme: TimePickerThemeData(
-              backgroundColor: isDarkMode ? _subtleDark : Colors.white,
-              dialBackgroundColor: isDarkMode
-                  ? _subtleLighterDark
-                  : Colors.grey.shade200,
-              dialHandColor: _primaryBlue,
-              entryModeIconColor: _primaryBlue,
-              dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return Colors.white;
-                }
-                return isDarkMode ? Colors.white70 : Colors.black87;
-              }),
-              dayPeriodColor: WidgetStateColor.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return _primaryBlue;
-                }
-                return Colors.transparent;
-              }),
-              dayPeriodBorderSide: const BorderSide(color: _primaryBlue),
-              hourMinuteTextColor: isDarkMode ? Colors.white : Colors.black87,
-              hourMinuteColor: isDarkMode
-                  ? _subtleLighterDark
-                  : Colors.grey.shade200,
-            ),
+            child: child!,
           ),
-          child: child!,
         );
       },
     );
@@ -274,6 +262,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
+    final lang = Provider.of<LanguageNotifier>(context);
 
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
@@ -294,6 +283,30 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     final double bottomNavClearance =
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
+    final List<Map<String, dynamic>> navItems = [
+      {
+        'label': lang.translate('profile'),
+        'icon': Icons.person_outline,
+        'activeIcon': Icons.person,
+      },
+      {
+        'label': lang.translate('chat'),
+        'icon': Icons.chat_bubble_outline,
+        'activeIcon': Icons.chat_bubble,
+      },
+      {
+        'label': lang.translate('bookings'),
+        'icon': Icons.book_outlined,
+        'activeIcon': Icons.book,
+        'notificationCount': 3,
+      },
+      {
+        'label': lang.translate('home'),
+        'icon': Icons.home_outlined,
+        'activeIcon': Icons.home,
+      },
+    ];
+
     return Scaffold(
       extendBody: true,
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
@@ -308,16 +321,18 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
             isDarkMode: isDarkMode,
+            lang: lang,
           ),
           _buildHomeImage(logoTopPosition, isDarkMode),
           _NavigationHeader(
             onBackTap: () => Navigator.pop(context),
             onNextTap: _onNextTap,
+            lang: lang,
           ),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        items: _navItems,
+        items: navItems,
         selectedIndex: _selectedIndex,
         onIndexChanged: _onNavItemTapped,
       ),
@@ -345,9 +360,9 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     final double availableHeight = containerTop - headerHeight;
     final double iconTopPosition = headerHeight + (availableHeight / 2) - 70;
 
-    return Positioned(
+    return PositionedDirectional(
       top: iconTopPosition,
-      right: 25.0,
+      end: 25.0,
       child: Container(
         width: 100.0,
         height: 100.0,
@@ -400,6 +415,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     required double containerTop,
     required double bottomNavClearance,
     required bool isDarkMode,
+    required LanguageNotifier lang,
   }) {
     return Positioned(
       top: containerTop,
@@ -427,9 +443,9 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           children: [
             const SizedBox(height: 15.0),
             Padding(
-              padding: const EdgeInsets.only(left: 20.0, top: 20.0),
+              padding: const EdgeInsetsDirectional.only(start: 20.0, top: 20.0),
               child: Text(
-                'Select date & time',
+                lang.translate('selectDateTime'),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -438,7 +454,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
               ),
             ),
             Expanded(
-              child: _buildDateTimeContent(bottomNavClearance, isDarkMode),
+              child: _buildDateTimeContent(
+                bottomNavClearance,
+                isDarkMode,
+                lang,
+              ),
             ),
           ],
         ),
@@ -446,7 +466,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  Widget _buildDateTimeContent(double bottomNavClearance, bool isDarkMode) {
+  Widget _buildDateTimeContent(
+    double bottomNavClearance,
+    bool isDarkMode,
+    LanguageNotifier lang,
+  ) {
     return SingleChildScrollView(
       padding: EdgeInsets.only(
         left: 20.0,
@@ -457,33 +481,38 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTopControls(isDarkMode),
+          _buildTopControls(isDarkMode, lang),
           const SizedBox(height: 15),
           if (_selectionMode == 'Custom') ...[
-            _buildDateDisplay(isDarkMode),
-            _buildDaySlider(isDarkMode),
+            _buildDateDisplay(isDarkMode, lang),
+            _buildDaySlider(isDarkMode, lang),
             const SizedBox(height: 10),
-            _buildTimeSelector(isDarkMode),
+            _buildTimeSelector(isDarkMode, lang),
           ] else ...[
-            _buildInstantBookingCard(isDarkMode),
+            _buildInstantBookingCard(isDarkMode, lang),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildTopControls(bool isDarkMode) {
+  Widget _buildTopControls(bool isDarkMode, LanguageNotifier lang) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        _buildModeChip('Custom', _selectionMode == 'Custom', isDarkMode),
+        _buildModeChip('Custom', _selectionMode == 'Custom', isDarkMode, lang),
         const SizedBox(width: 8),
-        _buildModeChip('Instant', _selectionMode == 'Instant', isDarkMode),
+        _buildModeChip(
+          'Instant',
+          _selectionMode == 'Instant',
+          isDarkMode,
+          lang,
+        ),
       ],
     );
   }
 
-  Widget _buildDateDisplay(bool isDarkMode) {
+  Widget _buildDateDisplay(bool isDarkMode, LanguageNotifier lang) {
     final Color textColor = isDarkMode ? Colors.white70 : Colors.black87;
     final Color containerColor = isDarkMode
         ? _subtleLighterDark
@@ -496,7 +525,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Select Date',
+          lang.translate('selectDate'),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -521,7 +550,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  DateFormat.yMMMMd().format(_selectedDate),
+                  lang.convertNumbers(
+                    DateFormat.yMMMMd(
+                      lang.appLocale.languageCode,
+                    ).format(_selectedDate),
+                  ),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -541,9 +574,14 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  Widget _buildModeChip(String label, bool isSelected, bool isDarkMode) {
+  Widget _buildModeChip(
+    String modeKey,
+    bool isSelected,
+    bool isDarkMode,
+    LanguageNotifier lang,
+  ) {
     return GestureDetector(
-      onTap: () => _onModeSelected(label),
+      onTap: () => _onModeSelected(modeKey),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
         decoration: BoxDecoration(
@@ -558,7 +596,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           ),
         ),
         child: Text(
-          label,
+          lang.translate(modeKey.toLowerCase()),
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isSelected
@@ -570,7 +608,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  Widget _buildDaySlider(bool isDarkMode) {
+  Widget _buildDaySlider(bool isDarkMode, LanguageNotifier lang) {
     return Container(
       height: 100,
       margin: const EdgeInsets.symmetric(vertical: 20),
@@ -590,13 +628,14 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
             isSelected: isSelected,
             isDarkMode: isDarkMode,
             onTap: () => _onDateSelected(date),
+            lang: lang,
           );
         },
       ),
     );
   }
 
-  Widget _buildTimeSelector(bool isDarkMode) {
+  Widget _buildTimeSelector(bool isDarkMode, LanguageNotifier lang) {
     final Color textColor = isDarkMode ? Colors.white70 : Colors.black87;
     final Color containerColor = isDarkMode
         ? _subtleLighterDark
@@ -609,7 +648,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Select Time',
+          lang.translate('selectTime'),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -634,7 +673,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _selectedTime.format(context),
+                  lang.convertNumbers(_selectedTime.format(context)),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -650,7 +689,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     );
   }
 
-  Widget _buildInstantBookingCard(bool isDarkMode) {
+  Widget _buildInstantBookingCard(bool isDarkMode, LanguageNotifier lang) {
     final Color cardColor = isDarkMode
         ? Colors.blue[900]!.withOpacity(0.3)
         : Colors.blue[50]!;
@@ -675,7 +714,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           const SizedBox(width: 15),
           Expanded(
             child: Text(
-              'An Ajeer will be assigned to you as soon as possible based on availability.',
+              lang.translate('instantBookingMsg'),
               style: TextStyle(
                 fontSize: 16,
                 color: messageColor,
@@ -694,12 +733,14 @@ class _BounceableDayItem extends StatefulWidget {
   final bool isSelected;
   final bool isDarkMode;
   final VoidCallback onTap;
+  final LanguageNotifier lang;
 
   const _BounceableDayItem({
     required this.date,
     required this.isSelected,
     required this.isDarkMode,
     required this.onTap,
+    required this.lang,
   });
 
   @override
@@ -788,7 +829,9 @@ class _BounceableDayItemState extends State<_BounceableDayItem>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  DateFormat.MMM().format(widget.date).toUpperCase(),
+                  DateFormat.MMM(
+                    widget.lang.appLocale.languageCode,
+                  ).format(widget.date).toUpperCase(),
                   style: TextStyle(
                     color: widget.isSelected
                         ? Colors.white.withOpacity(0.9)
@@ -801,7 +844,7 @@ class _BounceableDayItemState extends State<_BounceableDayItem>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  widget.date.day.toString(),
+                  widget.lang.convertNumbers(widget.date.day.toString()),
                   style: TextStyle(
                     color: widget.isSelected
                         ? Colors.white
@@ -814,7 +857,9 @@ class _BounceableDayItemState extends State<_BounceableDayItem>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  DateFormat.E().format(widget.date).toUpperCase(),
+                  DateFormat.E(
+                    widget.lang.appLocale.languageCode,
+                  ).format(widget.date).toUpperCase(),
                   style: TextStyle(
                     color: widget.isSelected
                         ? Colors.white.withOpacity(0.9)
@@ -837,8 +882,13 @@ class _BounceableDayItemState extends State<_BounceableDayItem>
 class _NavigationHeader extends StatefulWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
+  final LanguageNotifier lang;
 
-  const _NavigationHeader({required this.onBackTap, required this.onNextTap});
+  const _NavigationHeader({
+    required this.onBackTap,
+    required this.onNextTap,
+    required this.lang,
+  });
 
   @override
   State<_NavigationHeader> createState() => _NavigationHeaderState();
@@ -883,9 +933,9 @@ class _NavigationHeaderState extends State<_NavigationHeader>
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: widget.onBackTap,
           ),
-          const Text(
-            'Ajeer',
-            style: TextStyle(
+          Text(
+            widget.lang.translate('appName'),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 34,
               fontWeight: FontWeight.w900,
