@@ -28,6 +28,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
   List<ServiceItem> _availableServices = [];
   bool _isLoading = true;
   String? _errorMessage;
+  late AnimationController _listAnimationController;
 
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _primaryBlue = Color(0xFF1976D2);
@@ -40,7 +41,17 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
   @override
   void initState() {
     super.initState();
+    _listAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
     _fetchData();
+  }
+
+  @override
+  void dispose() {
+    _listAnimationController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -55,6 +66,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
         _availableServices = items;
         _isLoading = false;
       });
+      _listAnimationController.forward();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -357,6 +369,7 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
                       onServiceTap: _onServiceTapped,
                       bottomPadding: bottomNavClearance,
                       isDarkMode: isDarkMode,
+                      animationController: _listAnimationController,
                     ),
             ),
           ],
@@ -491,6 +504,7 @@ class _UnitTypeListView extends StatelessWidget {
   final ValueChanged<int> onServiceTap;
   final double bottomPadding;
   final bool isDarkMode;
+  final AnimationController animationController;
 
   const _UnitTypeListView({
     required this.services,
@@ -498,6 +512,7 @@ class _UnitTypeListView extends StatelessWidget {
     required this.onServiceTap,
     required this.bottomPadding,
     required this.isDarkMode,
+    required this.animationController,
   });
 
   @override
@@ -514,13 +529,31 @@ class _UnitTypeListView extends StatelessWidget {
         final service = services[index];
         final bool isSelected = selectedIds.contains(service.id);
 
-        return _SelectableUnitItem(
-          name: service.name,
-          estimatedTime: service.estimatedTime ?? "N/A",
-          priceDisplay: service.formattedPrice ?? "N/A",
-          isSelected: isSelected,
-          onTap: () => onServiceTap(service.id),
-          isDarkMode: isDarkMode,
+        final double start =
+            (index / (services.isNotEmpty ? services.length : 1)) * 0.5;
+        final double end = (start + 0.5).clamp(0.0, 1.0);
+
+        final Animation<double> animation = CurvedAnimation(
+          parent: animationController,
+          curve: Interval(start, end, curve: Curves.easeOutQuart),
+        );
+
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.2),
+              end: Offset.zero,
+            ).animate(animation),
+            child: _SelectableUnitItem(
+              name: service.name,
+              estimatedTime: service.estimatedTime ?? "N/A",
+              priceDisplay: service.formattedPrice ?? "N/A",
+              isSelected: isSelected,
+              onTap: () => onServiceTap(service.id),
+              isDarkMode: isDarkMode,
+            ),
+          ),
         );
       },
     );

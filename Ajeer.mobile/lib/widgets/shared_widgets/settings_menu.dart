@@ -1,29 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../themes/theme_notifier.dart';
 import '../../notifiers/user_notifier.dart';
+import '../../screens/customer_screens/login_screen.dart';
 
 class SettingsMenu extends StatefulWidget {
   final ThemeNotifier themeNotifier;
-  final VoidCallback onInfoTap;
-  final VoidCallback onSignOutTap;
-  final List<Map<String, dynamic>> notifications;
-  final Set<int> selectedNotifications;
-  final bool isDeleting;
-  final ValueChanged<int> onToggleNotificationSelection;
-  final VoidCallback onDeleteSelectedNotifications;
 
-  const SettingsMenu({
-    super.key,
-    required this.themeNotifier,
-    required this.onInfoTap,
-    required this.onSignOutTap,
-    required this.notifications,
-    required this.selectedNotifications,
-    required this.isDeleting,
-    required this.onToggleNotificationSelection,
-    required this.onDeleteSelectedNotifications,
-  });
+  const SettingsMenu({super.key, required this.themeNotifier});
 
   @override
   State<SettingsMenu> createState() => _SettingsMenuState();
@@ -35,6 +21,29 @@ class _SettingsMenuState extends State<SettingsMenu>
   late Animation<double> _opacityAnimation;
   late Animation<double> _scaleAnimation;
   OverlayEntry? _overlayEntry;
+
+  final Set<int> _selectedNotifications = {};
+  bool _isDeleting = false;
+  final List<Map<String, dynamic>> _notifications = [
+    {
+      'title': 'New Booking Confirmation',
+      'subtitle': 'Your booking #1023 is confirmed.',
+      'icon': Icons.calendar_today,
+      'color': Colors.green,
+    },
+    {
+      'title': 'Provider Assigned',
+      'subtitle': 'John Doe has been assigned.',
+      'icon': Icons.people_alt,
+      'color': Colors.blue,
+    },
+    {
+      'title': 'Payment Reminder',
+      'subtitle': 'Service fee due tomorrow.',
+      'icon': Icons.payments,
+      'color': Colors.orange,
+    },
+  ];
 
   @override
   void initState() {
@@ -117,6 +126,106 @@ class _SettingsMenuState extends State<SettingsMenu>
 
     _overlayEntry?.remove();
     _overlayEntry = null;
+  }
+
+  void _toggleNotificationSelection(int index) {
+    setState(() {
+      _selectedNotifications.contains(index)
+          ? _selectedNotifications.remove(index)
+          : _selectedNotifications.add(index);
+      _isDeleting = _selectedNotifications.isNotEmpty;
+    });
+  }
+
+  void _deleteSelectedNotifications() {
+    setState(() {
+      _notifications.removeWhere(
+        (n) => _selectedNotifications.contains(_notifications.indexOf(n)),
+      );
+      _selectedNotifications.clear();
+      _isDeleting = false;
+    });
+  }
+
+  void _showInfoDialog() {
+    final bool isDarkMode = widget.themeNotifier.isDarkMode;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+    final Color bgColor = isDarkMode ? const Color(0xFF2C2C2C) : Colors.white;
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: bgColor,
+        title: Text(
+          'Ajeer Info',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+        ),
+        content: Text(
+          'Ajeer connects customers with professional service providers for a seamless experience.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: textColor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: textColor),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSignOutDialog() {
+    final bool isDarkMode = widget.themeNotifier.isDarkMode;
+    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+    final Color bgColor = isDarkMode ? const Color(0xFF2C2C2C) : Colors.white;
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: bgColor,
+        title: const Text(
+          'Sign Out',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to sign out?',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: textColor),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: textColor),
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Provider.of<UserNotifier>(context, listen: false).clearData();
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('currentUser');
+              await prefs.remove('authToken');
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (r) => false,
+                );
+              }
+            },
+            child: const Text(
+              'Sign Out',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -211,7 +320,7 @@ class _SettingsMenuState extends State<SettingsMenu>
               color: isDarkMode ? Colors.white70 : Colors.black54,
             ),
             title: Text('Ajeer Info', style: TextStyle(color: textColor)),
-            onTap: widget.onInfoTap,
+            onTap: _showInfoDialog,
           ),
           Padding(
             padding: const EdgeInsets.symmetric(
@@ -248,7 +357,7 @@ class _SettingsMenuState extends State<SettingsMenu>
                           ),
                         ),
                         const Spacer(),
-                        if (widget.notifications.isNotEmpty)
+                        if (_notifications.isNotEmpty)
                           Container(
                             padding: const EdgeInsets.all(5),
                             decoration: const BoxDecoration(
@@ -256,7 +365,7 @@ class _SettingsMenuState extends State<SettingsMenu>
                               shape: BoxShape.circle,
                             ),
                             child: Text(
-                              '${widget.notifications.length}',
+                              '${_notifications.length}',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
@@ -268,7 +377,7 @@ class _SettingsMenuState extends State<SettingsMenu>
                     ),
                     const Divider(height: 20, thickness: 1),
                     Expanded(
-                      child: widget.notifications.isEmpty
+                      child: _notifications.isEmpty
                           ? Center(
                               child: Text(
                                 'No new notifications.',
@@ -283,22 +392,18 @@ class _SettingsMenuState extends State<SettingsMenu>
                               children: [
                                 ListView.builder(
                                   padding: EdgeInsets.zero,
-                                  itemCount: widget.notifications.length,
+                                  itemCount: _notifications.length,
                                   itemBuilder: (context, index) {
-                                    final notification =
-                                        widget.notifications[index];
-                                    final isSelected = widget
-                                        .selectedNotifications
+                                    final notification = _notifications[index];
+                                    final isSelected = _selectedNotifications
                                         .contains(index);
 
                                     return GestureDetector(
-                                      onLongPress: () => widget
-                                          .onToggleNotificationSelection(index),
+                                      onLongPress: () =>
+                                          _toggleNotificationSelection(index),
                                       onTap: () {
-                                        if (widget.isDeleting) {
-                                          widget.onToggleNotificationSelection(
-                                            index,
-                                          );
+                                        if (_isDeleting) {
+                                          _toggleNotificationSelection(index);
                                         }
                                       },
                                       child: Container(
@@ -321,7 +426,7 @@ class _SettingsMenuState extends State<SettingsMenu>
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            if (widget.isDeleting)
+                                            if (_isDeleting)
                                               Padding(
                                                 padding: const EdgeInsets.only(
                                                   right: 8.0,
@@ -383,13 +488,12 @@ class _SettingsMenuState extends State<SettingsMenu>
                                     );
                                   },
                                 ),
-                                if (widget.isDeleting)
+                                if (_isDeleting)
                                   Positioned(
                                     bottom: 10,
                                     right: 10,
                                     child: FloatingActionButton(
-                                      onPressed:
-                                          widget.onDeleteSelectedNotifications,
+                                      onPressed: _deleteSelectedNotifications,
                                       backgroundColor: Colors.red,
                                       mini: true,
                                       child: const Icon(
@@ -424,7 +528,7 @@ class _SettingsMenuState extends State<SettingsMenu>
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12.0),
                 ),
-                onPressed: widget.onSignOutTap,
+                onPressed: _showSignOutDialog,
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

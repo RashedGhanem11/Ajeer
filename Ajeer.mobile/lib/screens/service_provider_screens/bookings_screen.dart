@@ -1071,7 +1071,7 @@ class _CustomTabBar extends StatelessWidget {
                   top: -8,
                   right: 10,
                   child: Container(
-                    padding: const EdgeInsets.all(5),
+                    padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,

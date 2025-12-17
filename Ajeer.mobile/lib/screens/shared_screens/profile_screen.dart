@@ -16,7 +16,6 @@ import '../../config/app_config.dart';
 import '../customer_screens/bookings_screen.dart';
 import '../customer_screens/home_screen.dart';
 import 'chat_screen.dart';
-import '../customer_screens/login_screen.dart';
 import '../service_provider_screens/services_screen.dart';
 import '../../services/user_service.dart';
 import '../../models/change_password_request.dart';
@@ -47,15 +46,14 @@ class _ProfileScreenState extends State<ProfileScreen>
   static const double _navBarTotalHeight = 86.0;
   static const double _whiteContainerHeightRatio = 0.3;
 
-  // Vibrant colors list for avatars
   static const List<Color> _vibrantColors = [
-    Color(0xFFE57373), // Red
-    Color(0xFFF06292), // Pink
-    Color(0xFFBA68C8), // Purple
-    Color(0xFF64B5F6), // Blue
-    Color(0xFF4DB6AC), // Teal
-    Color(0xFF81C784), // Green
-    Color(0xFFFFD54F), // Yellow (Amber-ish for visibility)
+    Color(0xFFE57373),
+    Color(0xFFF06292),
+    Color(0xFFBA68C8),
+    Color(0xFF64B5F6),
+    Color(0xFF4DB6AC),
+    Color(0xFF81C784),
+    Color(0xFFFFD54F),
     Color(0xFFFF8A65),
   ];
 
@@ -88,29 +86,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   late TextEditingController _mobileController;
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
-
-  final Set<int> _selectedNotifications = {};
-  bool _isDeleting = false;
-  final List<Map<String, dynamic>> _notifications = [
-    {
-      'title': 'New Booking Confirmation',
-      'subtitle': 'Your booking #1023 is confirmed.',
-      'icon': Icons.calendar_today,
-      'color': Colors.green,
-    },
-    {
-      'title': 'Provider Assigned',
-      'subtitle': 'John Doe has been assigned.',
-      'icon': Icons.people_alt,
-      'color': Colors.blue,
-    },
-    {
-      'title': 'Payment Reminder',
-      'subtitle': 'Service fee due tomorrow.',
-      'icon': Icons.payments,
-      'color': Colors.orange,
-    },
-  ];
 
   late AnimationController _overlayController;
   bool _showOverlay = false;
@@ -465,7 +440,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       final IconData targetIcon = userNotifier.isProvider
           ? Icons.person
           : Icons.handyman;
-
       final Color targetColor = userNotifier.isProvider
           ? _customerPrimaryBlue
           : _providerPrimaryBlue;
@@ -570,7 +544,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           key: _scaffoldKey,
           extendBody: true,
           backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          drawer: _buildDrawer(),
+          drawer: SettingsMenu(themeNotifier: widget.themeNotifier),
           body: Stack(
             children: [
               _buildBackgroundGradient(
@@ -636,34 +610,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildDrawer() {
-    return SettingsMenu(
-      themeNotifier: widget.themeNotifier,
-      onInfoTap: () => _showInfoDialog(context),
-      onSignOutTap: () => _showSignOutDialog(context),
-      notifications: _notifications,
-      selectedNotifications: _selectedNotifications,
-      isDeleting: _isDeleting,
-      onToggleNotificationSelection: (i) {
-        setState(() {
-          _selectedNotifications.contains(i)
-              ? _selectedNotifications.remove(i)
-              : _selectedNotifications.add(i);
-          _isDeleting = _selectedNotifications.isNotEmpty;
-        });
-      },
-      onDeleteSelectedNotifications: () {
-        setState(() {
-          _notifications.removeWhere(
-            (n) => _selectedNotifications.contains(_notifications.indexOf(n)),
-          );
-          _selectedNotifications.clear();
-          _isDeleting = false;
-        });
-      },
     );
   }
 
@@ -935,6 +881,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           child: TextField(
                             controller: _passwordController,
                             readOnly: true,
+                            enableInteractiveSelection: _isEditing,
                             obscureText: true,
                             style: TextStyle(color: fieldTextColor),
                             decoration: InputDecoration(
@@ -1091,6 +1038,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: TextField(
           controller: controller,
           readOnly: !_isEditing,
+          enableInteractiveSelection: _isEditing,
           obscureText: isPassword,
           keyboardType: type,
           style: TextStyle(color: textColor),
@@ -1120,85 +1068,6 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  void _showInfoDialog(BuildContext context) {
-    final bool isDarkMode = widget.themeNotifier.isDarkMode;
-    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: isDarkMode ? _subtleLighterDark : Colors.white,
-        title: Text(
-          'Ajeer Info',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
-        ),
-        content: Text(
-          'Ajeer connects customers with professional service providers for a seamless experience.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: textColor),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(foregroundColor: textColor),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSignOutDialog(BuildContext context) {
-    final bool isDarkMode = widget.themeNotifier.isDarkMode;
-    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: isDarkMode ? _subtleLighterDark : Colors.white,
-        title: const Text(
-          'Sign Out',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Are you sure you want to sign out?',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: textColor),
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(foregroundColor: textColor),
-            child: const Text('No'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              Provider.of<UserNotifier>(context, listen: false).clearData();
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('currentUser');
-              await prefs.remove('authToken');
-              if (context.mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (r) => false,
-                );
-              }
-            },
-            child: const Text(
-              'Sign Out',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
       ),
     );
   }

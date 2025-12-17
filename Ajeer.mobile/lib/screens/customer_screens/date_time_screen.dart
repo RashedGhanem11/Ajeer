@@ -123,6 +123,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   void _onModeSelected(String mode) {
     setState(() {
       _selectionMode = mode;
+      if (mode == 'Instant') {
+        final DateTime now = DateTime.now();
+        final DateTime futureTime = now.add(const Duration(minutes: 30));
+        _selectedTime = TimeOfDay.fromDateTime(futureTime);
+      }
     });
   }
 
@@ -216,7 +221,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                   ? _subtleLighterDark
                   : Colors.grey.shade200,
               dialHandColor: _primaryBlue,
-              dialTextColor: isDarkMode ? Colors.white : Colors.black87,
               entryModeIconColor: _primaryBlue,
               dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
@@ -524,7 +528,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                     color: isDarkMode ? Colors.white : Colors.grey[700],
                   ),
                 ),
-                Icon(Icons.edit_outlined, color: Colors.blue[400], size: 20),
+                Icon(
+                  Icons.calendar_month_outlined,
+                  color: Colors.blue[400],
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -534,38 +542,31 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   }
 
   Widget _buildModeChip(String label, bool isSelected, bool isDarkMode) {
-    final Color selectedGray = isDarkMode
-        ? Colors.grey.shade800
-        : Colors.grey.shade300;
-    final Color selectedTextColor = isDarkMode ? Colors.white : Colors.black87;
-
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      showCheckmark: false,
-      onSelected: (selected) {
-        if (selected) _onModeSelected(label);
-      },
-      backgroundColor: isDarkMode ? _subtleLighterDark : Colors.grey[100],
-      selectedColor: selectedGray,
-      labelStyle: TextStyle(
-        fontWeight: FontWeight.bold,
-        color: isSelected
-            ? selectedTextColor
-            : isDarkMode
-            ? Colors.white70
-            : Colors.black54,
-      ),
-      shape: StadiumBorder(
-        side: BorderSide(
+    return GestureDetector(
+      onTap: () => _onModeSelected(label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+        decoration: BoxDecoration(
           color: isSelected
-              ? selectedGray
-              : isDarkMode
-              ? Colors.grey[700]!
-              : Colors.grey[400]!,
+              ? _primaryBlue
+              : (isDarkMode ? _subtleLighterDark : Colors.grey[100]),
+          borderRadius: BorderRadius.circular(20.0),
+          border: Border.all(
+            color: isSelected
+                ? Colors.transparent
+                : (isDarkMode ? Colors.grey[700]! : Colors.grey[400]!),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isSelected
+                ? Colors.white
+                : (isDarkMode ? Colors.white70 : Colors.black54),
+          ),
         ),
       ),
-      elevation: isSelected ? 1 : 0,
     );
   }
 
@@ -615,7 +616,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
             color: textColor,
           ),
         ),
-        const SizedBox(height: 15),
+        const SizedBox(height: 10),
         GestureDetector(
           onTap: _showTimePicker,
           child: Container(
@@ -640,7 +641,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                     color: isDarkMode ? Colors.white : Colors.grey[700],
                   ),
                 ),
-                Icon(Icons.edit_calendar_outlined, color: Colors.blue[400]),
+                Icon(Icons.access_time_outlined, color: Colors.blue[400]),
               ],
             ),
           ),
@@ -749,7 +750,7 @@ class _BounceableDayItemState extends State<_BounceableDayItem>
           scale: _scaleAnimation,
           child: Container(
             width: 65,
-            height: 95, // Fixed height ensures proper centering
+            height: 95,
             margin: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(
               gradient: widget.isSelected

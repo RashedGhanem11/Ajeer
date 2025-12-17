@@ -18,13 +18,13 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _selectedIndex = 3;
   String _searchQuery = '';
   List<ServiceCategory> _categories = [];
   bool _isFetching = true;
-  late AnimationController _animationController;
+  late AnimationController _overlayAnimationController;
+  late AnimationController _gridAnimationController;
   ServiceCategory? _selectedCategoryForAnimation;
 
   final List<Map<String, dynamic>> navItems = const [
@@ -50,16 +50,21 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _fetchCategories();
-    _animationController = AnimationController(
+    _overlayAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
+    _gridAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+    _fetchCategories();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _overlayAnimationController.dispose();
+    _gridAnimationController.dispose();
     super.dispose();
   }
 
@@ -74,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen>
         _categories = fetchedCategories;
         _isFetching = false;
       });
+      _gridAnimationController.forward();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -95,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen>
       _selectedCategoryForAnimation = category;
     });
 
-    await _animationController.forward(from: 0.0);
+    await _overlayAnimationController.forward(from: 0.0);
 
     if (!mounted) return;
 
@@ -111,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen>
     setState(() {
       _selectedCategoryForAnimation = null;
     });
-    _animationController.reset();
+    _overlayAnimationController.reset();
   }
 
   void _onSearchChanged(String query) {
@@ -227,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen>
         child: Center(
           child: ScaleTransition(
             scale: CurvedAnimation(
-              parent: _animationController,
+              parent: _overlayAnimationController,
               curve: Curves.elasticOut,
             ),
             child: Container(
@@ -354,6 +360,7 @@ class _HomeScreenState extends State<HomeScreen>
                 bottomPadding: bottomNavClearance,
                 isDarkMode: isDarkMode,
                 onCategorySelected: _onCategorySelected,
+                animationController: _gridAnimationController,
               ),
             ),
           ],
@@ -455,6 +462,7 @@ class ServiceGridView extends StatelessWidget {
   final double bottomPadding;
   final bool isDarkMode;
   final Function(ServiceCategory) onCategorySelected;
+  final AnimationController animationController;
 
   const ServiceGridView({
     super.key,
@@ -463,6 +471,7 @@ class ServiceGridView extends StatelessWidget {
     required this.bottomPadding,
     required this.isDarkMode,
     required this.onCategorySelected,
+    required this.animationController,
   });
 
   @override
@@ -494,14 +503,34 @@ class ServiceGridView extends StatelessWidget {
           final serviceName = service.name;
           final serviceIconUrl = service.iconUrl;
 
-          return ServiceGridItem(
-            iconUrl: serviceIconUrl,
-            name: serviceName,
-            isHighlighted: shouldHighlight(serviceName),
-            isDarkMode: isDarkMode,
-            onTap: () {
-              onCategorySelected(service);
-            },
+          final double start =
+              (index /
+                  (filteredServices.length > 0 ? filteredServices.length : 1)) *
+              0.5;
+          final double end = (start + 0.5).clamp(0.0, 1.0);
+
+          final Animation<double> animation = CurvedAnimation(
+            parent: animationController,
+            curve: Interval(start, end, curve: Curves.easeOutQuart),
+          );
+
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.2),
+                end: Offset.zero,
+              ).animate(animation),
+              child: ServiceGridItem(
+                iconUrl: serviceIconUrl,
+                name: serviceName,
+                isHighlighted: shouldHighlight(serviceName),
+                isDarkMode: isDarkMode,
+                onTap: () {
+                  onCategorySelected(service);
+                },
+              ),
+            ),
           );
         },
       ),
