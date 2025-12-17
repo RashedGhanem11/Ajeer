@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../themes/theme_notifier.dart';
 import '../../notifiers/user_notifier.dart';
+import '../../notifiers/language_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import '../../models/chat_models.dart';
 import '../../services/chat_service.dart';
@@ -81,30 +82,37 @@ class _ChatScreenState extends State<ChatScreen> {
     }).toList();
   }
 
-  List<Map<String, dynamic>> _getNavItems(UserNotifier userNotifier) {
+  List<Map<String, dynamic>> _getNavItems(
+    UserNotifier userNotifier,
+    LanguageNotifier languageNotifier,
+  ) {
     final baseItems = [
       {
-        'label': 'Profile',
+        'label': languageNotifier.translate('profile'),
         'icon': Icons.person_outline,
         'activeIcon': Icons.person,
+        'key': 'Profile',
       },
       {
-        'label': 'Chat',
+        'label': languageNotifier.translate('chat'),
         'icon': Icons.chat_bubble_outline,
         'activeIcon': Icons.chat_bubble,
+        'key': 'Chat',
       },
       {
-        'label': 'Bookings',
+        'label': languageNotifier.translate('bookings'),
         'icon': Icons.book_outlined,
         'activeIcon': Icons.book,
+        'key': 'Bookings',
       },
     ];
 
     if (!userNotifier.isProvider) {
       baseItems.add({
-        'label': 'Home',
+        'label': languageNotifier.translate('home'),
         'icon': Icons.home_outlined,
         'activeIcon': Icons.home,
+        'key': 'Home',
       });
     }
     return baseItems;
@@ -115,14 +123,19 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
     final userNotifier = Provider.of<UserNotifier>(context, listen: false);
-    final navItems = _getNavItems(userNotifier);
+    final languageNotifier = Provider.of<LanguageNotifier>(
+      context,
+      listen: false,
+    );
+    final navItems = _getNavItems(userNotifier, languageNotifier);
 
     if (index >= navItems.length) return;
-    final label = navItems[index]['label'];
+    // Use the internal key to switch, not the translated label
+    final key = navItems[index]['key'];
 
     Widget? nextScreen;
 
-    switch (label) {
+    switch (key) {
       case 'Profile':
         nextScreen = ProfileScreen(themeNotifier: themeNotifier);
         break;
@@ -150,8 +163,9 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final bool isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
     final userNotifier = Provider.of<UserNotifier>(context);
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
     final bool isProvider = userNotifier.isProvider;
-    final navItems = _getNavItems(userNotifier);
+    final navItems = _getNavItems(userNotifier, languageNotifier);
 
     final Color primaryColor = isProvider
         ? const Color(0xFF2f6cfa)
@@ -192,7 +206,7 @@ class _ChatScreenState extends State<ChatScreen> {
             right: 0,
             child: Center(
               child: Text(
-                'Ajeer',
+                languageNotifier.translate('appName'),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 34,
@@ -236,9 +250,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   const SizedBox(height: 35.0),
                   Padding(
-                    padding: const EdgeInsets.only(left: 20.0),
+                    padding: const EdgeInsets.only(left: 20.0, right: 20.0),
                     child: Text(
-                      'Conversations',
+                      languageNotifier.translate('conversations'),
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             fontSize: 28,
@@ -250,7 +264,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   const SizedBox(height: 15.0),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: _buildSearchBar(isDarkMode),
+                    child: _buildSearchBar(isDarkMode, languageNotifier),
                   ),
                   const SizedBox(height: 10.0),
                   Expanded(
@@ -265,7 +279,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         } else if (snapshot.hasError) {
                           return Center(
                             child: Text(
-                              'Error loading chats',
+                              languageNotifier.translate('errorLoadingChats'),
                               style: TextStyle(
                                 color: isDarkMode ? Colors.white : Colors.black,
                               ),
@@ -275,7 +289,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             snapshot.data!.isEmpty) {
                           return Center(
                             child: Text(
-                              'No conversations found.',
+                              languageNotifier.translate('noConversations'),
                               style: TextStyle(
                                 color: isDarkMode ? Colors.grey : Colors.grey,
                               ),
@@ -298,6 +312,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               isDarkMode: isDarkMode,
                               primaryColor: primaryColor,
                               lightColor: lightColor,
+                              languageNotifier: languageNotifier,
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -347,11 +362,11 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildSearchBar(bool isDarkMode) {
+  Widget _buildSearchBar(bool isDarkMode, LanguageNotifier languageNotifier) {
     return TextField(
       onChanged: (value) => setState(() => _searchQuery = value),
       decoration: InputDecoration(
-        hintText: 'Search chats...',
+        hintText: languageNotifier.translate('searchChats'),
         hintStyle: TextStyle(
           color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade500,
         ),
@@ -383,6 +398,7 @@ class _ChatListItem extends StatelessWidget {
   final VoidCallback onTap;
   final Color primaryColor;
   final Color lightColor;
+  final LanguageNotifier languageNotifier;
 
   const _ChatListItem({
     required this.chat,
@@ -390,6 +406,7 @@ class _ChatListItem extends StatelessWidget {
     required this.onTap,
     required this.primaryColor,
     required this.lightColor,
+    required this.languageNotifier,
   });
 
   @override
@@ -477,7 +494,9 @@ class _ChatListItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  chat.lastMessageFormattedTime,
+                  languageNotifier.translateTimeAgo(
+                    chat.lastMessageFormattedTime,
+                  ),
                   style: TextStyle(
                     fontSize: 12,
                     color: isUnread ? primaryColor : subtitleColor,
@@ -529,6 +548,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = true;
   int? _selectedMessageId;
+
+  late LanguageNotifier _languageNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context);
+  }
 
   @override
   void initState() {
@@ -593,9 +620,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${_languageNotifier.translate('error')}${e.toString()}',
+            ),
+          ),
+        );
       }
     }
   }
@@ -626,9 +657,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         _scrollToBottom();
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Failed to send message")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_languageNotifier.translate('sendFailed'))),
+      );
     }
   }
 
@@ -642,9 +673,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Failed to delete message")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_languageNotifier.translate('deleteFailed'))),
+      );
     }
   }
 
@@ -660,9 +691,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   void _copyMessage(String text) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Message copied!')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_languageNotifier.translate('messageCopied'))),
+    );
     setState(() => _selectedMessageId = null);
   }
 
@@ -707,6 +738,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                             isDarkMode: widget.isDarkMode,
                             primaryColor: widget.primaryColor,
                             isSelected: _selectedMessageId == message.id,
+                            languageNotifier: _languageNotifier,
                             onTap: () =>
                                 setState(() => _selectedMessageId = null),
                             onLongPress: () => _onMessageLongPress(message),
@@ -752,7 +784,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               child: TextField(
                 controller: _messageController,
                 decoration: InputDecoration(
-                  hintText: 'Type a message...',
+                  hintText: _languageNotifier.translate('typeMessage'),
                   hintStyle: TextStyle(color: Colors.grey.shade500),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10.0),
@@ -786,6 +818,7 @@ class _MessageBubble extends StatelessWidget {
   final VoidCallback onCopy;
   final VoidCallback onDelete;
   final Color primaryColor;
+  final LanguageNotifier languageNotifier;
 
   const _MessageBubble({
     required this.message,
@@ -796,6 +829,7 @@ class _MessageBubble extends StatelessWidget {
     required this.onCopy,
     required this.onDelete,
     required this.primaryColor,
+    required this.languageNotifier,
   });
 
   @override
@@ -881,7 +915,9 @@ class _MessageBubble extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            message.formattedTime,
+                            languageNotifier.translateTimeAgo(
+                              message.formattedTime,
+                            ),
                             style: TextStyle(
                               color: timestampColor,
                               fontSize: 10,

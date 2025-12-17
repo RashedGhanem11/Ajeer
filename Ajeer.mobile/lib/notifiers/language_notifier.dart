@@ -108,6 +108,47 @@ class LanguageNotifier extends ChangeNotifier {
     return convertNumbers(translated);
   }
 
+  /// Translates relative time strings like "Just now", "2 hours ago", "Yesterday".
+  String translateTimeAgo(String input) {
+    if (!isArabic) return input;
+
+    final lowerInput = input.toLowerCase().trim();
+
+    if (lowerInput == 'just now') return translate('justNow');
+    if (lowerInput == 'yesterday') return translate('yesterday');
+
+    // Regex for "X days ago", "X hours ago", "X minutes ago"
+    final daysRegex = RegExp(r'(\d+)\s+days?\s+ago', caseSensitive: false);
+    final hoursRegex = RegExp(
+      r'(\d+)\s+(hours?|hrs?)\s+ago',
+      caseSensitive: false,
+    );
+    final minutesRegex = RegExp(
+      r'(\d+)\s+(minutes?|mins?)\s+ago',
+      caseSensitive: false,
+    );
+
+    if (daysRegex.hasMatch(input)) {
+      final match = daysRegex.firstMatch(input);
+      final count = match!.group(1);
+      // Simple pluralization for display
+      return 'منذ ${convertNumbers(count!)} ${translate('days')}';
+    }
+    if (hoursRegex.hasMatch(input)) {
+      final match = hoursRegex.firstMatch(input);
+      final count = match!.group(1);
+      return 'منذ ${convertNumbers(count!)} ${translate('hours')}';
+    }
+    if (minutesRegex.hasMatch(input)) {
+      final match = minutesRegex.firstMatch(input);
+      final count = match!.group(1);
+      return 'منذ ${convertNumbers(count!)} ${translate('minutes')}';
+    }
+
+    // Fallback to standard time range translation (for absolute dates/times)
+    return translateTimeRange(input);
+  }
+
   static final Map<int, String> _arabicMonths = {
     1: 'يناير',
     2: 'فبراير',
@@ -154,6 +195,21 @@ class LanguageNotifier extends ChangeNotifier {
       'save': 'Save',
       'error': 'Error: ',
       'retry': 'Retry',
+
+      // Chat Screen
+      'conversations': 'Conversations',
+      'searchChats': 'Search chats...',
+      'errorLoadingChats': 'Error loading chats',
+      'noConversations': 'No conversations found.',
+      'typeMessage': 'Type a message...',
+      'messageCopied': 'Message copied!',
+      'sendFailed': 'Failed to send message',
+      'deleteFailed': 'Failed to delete message',
+      'justNow': 'Just now',
+      'yesterday': 'Yesterday',
+      'days': 'days',
+      'hours': 'hours',
+      'minutes': 'minutes',
 
       // Services & Units
       'Plumbing': 'Plumbing',
@@ -416,6 +472,21 @@ class LanguageNotifier extends ChangeNotifier {
       'save': 'حفظ',
       'error': 'خطأ: ',
       'retry': 'إعادة المحاولة',
+
+      // Chat Screen
+      'conversations': 'المحادثات',
+      'searchChats': 'البحث في المحادثات...',
+      'errorLoadingChats': 'خطأ في تحميل المحادثات',
+      'noConversations': 'لا توجد محادثات.',
+      'typeMessage': 'اكتب رسالة...',
+      'messageCopied': 'تم نسخ الرسالة!',
+      'sendFailed': 'فشل إرسال الرسالة',
+      'deleteFailed': 'فشل حذف الرسالة',
+      'justNow': 'الآن',
+      'yesterday': 'أمس',
+      'days': 'أيام',
+      'hours': 'ساعات',
+      'minutes': 'دقائق',
 
       // Services & Units
       'Plumbing': 'سباكة',
