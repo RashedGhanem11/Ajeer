@@ -17,6 +17,7 @@ import 'media_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
+import '../../notifiers/language_notifier.dart';
 
 class LocationScreen extends StatefulWidget {
   final List<int> serviceIds;
@@ -45,12 +46,12 @@ class LocationScreen extends StatefulWidget {
 }
 
 class _LocationScreenState extends State<LocationScreen> {
-  final int _selectedIndex = 3;
+  int _selectedIndex = 3;
   LatLng? _customerLocation;
   String? _resolvedAddress;
   String? _fullResolvedAddress;
   bool _isEditingLocation = false;
-  final MapController _mapController = MapController();
+  MapController _mapController = MapController();
   LatLng? _mapCenterDuringEdit;
   String? _selectedCity;
   String? _selectedArea;
@@ -66,59 +67,18 @@ class _LocationScreenState extends State<LocationScreen> {
   static const Color _subtleLighterDark = Color(0xFF2C2C2C);
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
-  static const double _navBarTotalHeight = 86.0;
+  static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
   static const double _mapBorderRadius = 25.0;
   static const double _horizontalPadding = 20.0;
   static const double _mapAspectRatio = 1.17;
 
-  static const Map<String, String> _locationTranslations = {
-    "Amman": "عمان",
-    "Abdoun": "عبدون",
-    "Jabal Al-Weibdeh": "جبل اللويبدة",
-    "Shmeisani": "الشميساني",
-    "Al-Rabieh": "الرابية",
-    "Dabouq": "دابوق",
-    "Al-Jubeiha": "الجبيهة",
-    "Al-Bayader": "البيادر",
-    "Tla' Al-Ali": "تلاع العلي",
-  };
+  late LanguageNotifier _languageNotifier;
 
-  String _translateBackendLocation(String englishName) {
-    return _locationTranslations[englishName] ?? englishName;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context, listen: false);
   }
-
-  String _getEnglishNameFromArabic(String arabicName) {
-    return _locationTranslations.entries
-        .firstWhere(
-          (element) => element.value == arabicName,
-          orElse: () => MapEntry(arabicName, arabicName),
-        )
-        .key;
-  }
-
-  final List<Map<String, dynamic>> _navItems = const [
-    {
-      'label': 'الملف الشخصي',
-      'icon': Icons.person_outline,
-      'activeIcon': Icons.person,
-    },
-    {
-      'label': 'المحادثات',
-      'icon': Icons.chat_bubble_outline,
-      'activeIcon': Icons.chat_bubble,
-    },
-    {
-      'label': 'حجوزاتي',
-      'icon': Icons.book_outlined,
-      'activeIcon': Icons.book,
-      'notificationCount': 3,
-    },
-    {
-      'label': 'الرئيسية',
-      'icon': Icons.home_outlined,
-      'activeIcon': Icons.home,
-    },
-  ];
 
   @override
   void initState() {
@@ -134,6 +94,8 @@ class _LocationScreenState extends State<LocationScreen> {
       final prefs = await SharedPreferences.getInstance();
       final String? token = prefs.getString('authToken');
 
+      if (token == null) {}
+
       final response = await http
           .get(
             url,
@@ -147,31 +109,25 @@ class _LocationScreenState extends State<LocationScreen> {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
 
-        if (mounted) {
-          setState(() {
-            _apiData = data.map((json) => CityResponse.fromJson(json)).toList();
-            _customerCities = _apiData
-                .map((city) => _translateBackendLocation(city.cityName))
-                .toList();
+        setState(() {
+          _apiData = data.map((json) => CityResponse.fromJson(json)).toList();
+          _customerCities = _apiData.map((city) => city.cityName).toList();
+          _customerCityAreas = {
+            for (var city in _apiData)
+              city.cityName: city.areas.map((area) => area.name).toList(),
+          };
 
-            _customerCityAreas = {
-              for (var city in _apiData)
-                _translateBackendLocation(city.cityName): city.areas
-                    .map((area) => _translateBackendLocation(area.name))
-                    .toList(),
-            };
+          if (_customerCities.isNotEmpty && _selectedCity == null) {
+            _selectedCity = _customerCities.first;
+          }
 
-            if (_customerCities.isNotEmpty && _selectedCity == null) {
-              _selectedCity = _customerCities.first;
-            }
-            _isLoadingAreas = false;
-          });
-        }
+          _isLoadingAreas = false;
+        });
       } else {
-        if (mounted) setState(() => _isLoadingAreas = false);
+        setState(() => _isLoadingAreas = false);
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoadingAreas = false);
+      setState(() => _isLoadingAreas = false);
     }
   }
 
@@ -195,12 +151,10 @@ class _LocationScreenState extends State<LocationScreen> {
       desiredAccuracy: LocationAccuracy.high,
     );
 
-    if (mounted) {
-      setState(() {
-        _customerLocation = LatLng(position.latitude, position.longitude);
-      });
-      await _resolveAddressFromCoordinates(_customerLocation!);
-    }
+    setState(() {
+      _customerLocation = LatLng(position.latitude, position.longitude);
+    });
+    await _resolveAddressFromCoordinates(_customerLocation!);
   }
 
   Future<void> _resolveAddressFromCoordinates(LatLng location) async {
@@ -208,7 +162,6 @@ class _LocationScreenState extends State<LocationScreen> {
       List<Placemark> placemarks = await placemarkFromCoordinates(
         location.latitude,
         location.longitude,
-        localeIdentifier: 'ar',
       );
 
       if (placemarks.isNotEmpty) {
@@ -229,13 +182,13 @@ class _LocationScreenState extends State<LocationScreen> {
 
         String visibleAddress = '';
         if (finalCity.isNotEmpty) visibleAddress += finalCity;
-        if (finalArea.isNotEmpty) {
-          visibleAddress += '، $finalArea';
-        } else if (finalGovernorate.isNotEmpty) {
-          visibleAddress += '، $finalGovernorate';
-        } else {
-          visibleAddress += '، موقع غير مسمى';
-        }
+        if (finalArea.isNotEmpty)
+          visibleAddress += ', $finalArea';
+        else if (finalGovernorate.isNotEmpty)
+          visibleAddress += ', $finalGovernorate';
+        else
+          visibleAddress +=
+              ', ${_languageNotifier.translate('unnamedLocation')}';
 
         String fullAddress = '';
         if (street != null && street.isNotEmpty) {
@@ -246,14 +199,12 @@ class _LocationScreenState extends State<LocationScreen> {
             (street == null || !building.contains(street))) {
           fullAddress += ' $building';
         }
-        fullAddress = fullAddress.trim().replaceAll(RegExp(r',\s+'), '، ');
+        fullAddress = fullAddress.trim().replaceAll(RegExp(r',\s+'), ', ');
 
-        if (mounted) {
-          setState(() {
-            _resolvedAddress = visibleAddress;
-            _fullResolvedAddress = fullAddress;
-          });
-        }
+        setState(() {
+          _resolvedAddress = visibleAddress;
+          _fullResolvedAddress = fullAddress;
+        });
       }
     } catch (e) {
       debugPrint('Failed to resolve address: $e');
@@ -264,26 +215,36 @@ class _LocationScreenState extends State<LocationScreen> {
     if (index == _selectedIndex) return;
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
-    Widget page;
     switch (index) {
       case 0:
-        page = ProfileScreen(themeNotifier: themeNotifier);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfileScreen(themeNotifier: themeNotifier),
+          ),
+        );
         break;
       case 1:
-        page = const ChatScreen();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ChatScreen()),
+        );
         break;
       case 2:
-        page = const BookingsScreen();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BookingsScreen()),
+        );
         break;
       case 3:
-      default:
-        page = HomeScreen(themeNotifier: themeNotifier);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(themeNotifier: themeNotifier),
+          ),
+        );
         break;
     }
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => page),
-    );
   }
 
   void _onBackTap() {
@@ -296,12 +257,13 @@ class _LocationScreenState extends State<LocationScreen> {
       _customerLocation != null;
 
   void _onNextTap() {
+    final lang = Provider.of<LanguageNotifier>(context, listen: false);
     if (!_isNextEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('الرجاء اختيار المنطقة والتأكد من تحديد الموقع.'),
+        SnackBar(
+          content: Text(lang.translate('selectAreaWarning')),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -309,26 +271,17 @@ class _LocationScreenState extends State<LocationScreen> {
 
     int? selectedAreaId;
     try {
-      final selectedCityEnglish = _getEnglishNameFromArabic(_selectedCity!);
-      final selectedAreaEnglish = _getEnglishNameFromArabic(_selectedArea!);
-
-      final cityObj = _apiData.firstWhere(
-        (c) => c.cityName == selectedCityEnglish || c.cityName == _selectedCity,
-      );
-
-      final areaObj = cityObj.areas.firstWhere(
-        (a) => a.name == selectedAreaEnglish || a.name == _selectedArea,
-      );
-
+      final cityObj = _apiData.firstWhere((c) => c.cityName == _selectedCity);
+      final areaObj = cityObj.areas.firstWhere((a) => a.name == _selectedArea);
       selectedAreaId = areaObj.id;
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('حدث خطأ في التحقق من المنطقة.')),
+        SnackBar(content: Text(lang.translate('errorValidating'))),
       );
       return;
     }
 
-    final String finalCityArea = '$_selectedCity، $_selectedArea';
+    final String finalCityArea = '$_selectedCity, $_selectedArea';
     String finalAddress = _fullResolvedAddress ?? '';
 
     Navigator.push(
@@ -400,6 +353,7 @@ class _LocationScreenState extends State<LocationScreen> {
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
     final bool isDarkMode = themeNotifier.isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -421,61 +375,74 @@ class _LocationScreenState extends State<LocationScreen> {
     final double bottomNavClearance =
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        extendBody: true,
-        backgroundColor: isDarkMode ? Colors.black : Colors.white,
-        body: Stack(
-          children: [
-            Align(
-              alignment: Alignment.topCenter,
-              child: Container(
-                height: whiteContainerTop + 50,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_lightBlue, _primaryBlue],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-              ),
-            ),
-            _buildLocationIcon(
-              whiteContainerTop,
-              MediaQuery.of(context).padding.top,
-            ),
-            _buildWhiteContainer(
-              containerTop: whiteContainerTop,
-              bottomNavClearance: bottomNavClearance,
-              isDarkMode: isDarkMode,
-            ),
-            Positioned(
-              top: logoTopPosition,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Image.asset(
-                  isDarkMode
-                      ? 'assets/image/home_dark.png'
-                      : 'assets/image/home.png',
-                  width: 140,
-                  height: _logoHeight,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-            _NavigationHeader(
-              onBackTap: _onBackTap,
-              onNextTap: _onNextTap,
-              isNextEnabled: _isNextEnabled,
-            ),
-          ],
-        ),
-        bottomNavigationBar: CustomBottomNavBar(
-          items: _navItems,
-          selectedIndex: _selectedIndex,
-          onIndexChanged: _onNavItemTapped,
+    final navItems = [
+      {
+        'label': languageNotifier.translate('profile'),
+        'icon': Icons.person_outline,
+        'activeIcon': Icons.person,
+      },
+      {
+        'label': languageNotifier.translate('chat'),
+        'icon': Icons.chat_bubble_outline,
+        'activeIcon': Icons.chat_bubble,
+      },
+      {
+        'label': languageNotifier.translate('bookings'),
+        'icon': Icons.book_outlined,
+        'activeIcon': Icons.book,
+        'notificationCount': 3,
+      },
+      {
+        'label': languageNotifier.translate('home'),
+        'icon': Icons.home_outlined,
+        'activeIcon': Icons.home,
+      },
+    ];
+
+    return Scaffold(
+      extendBody: true,
+      backgroundColor: isDarkMode ? Colors.black : Colors.white,
+      body: Stack(
+        children: [
+          _buildBackgroundGradient(whiteContainerTop),
+          _buildLocationIcon(
+            whiteContainerTop,
+            MediaQuery.of(context).padding.top,
+          ),
+          _buildWhiteContainer(
+            containerTop: whiteContainerTop,
+            bottomNavClearance: bottomNavClearance,
+            isDarkMode: isDarkMode,
+            languageNotifier: languageNotifier,
+          ),
+          _buildHomeImage(logoTopPosition, isDarkMode),
+          _NavigationHeader(
+            onBackTap: _onBackTap,
+            onNextTap: _onNextTap,
+            isNextEnabled: _isNextEnabled,
+            appName: languageNotifier.translate('appName'),
+          ),
+        ],
+      ),
+      bottomNavigationBar: CustomBottomNavBar(
+        items: navItems,
+        selectedIndex: _selectedIndex,
+        onIndexChanged: _onNavItemTapped,
+      ),
+    );
+  }
+
+  Widget _buildBackgroundGradient(double containerTop) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Container(
+        height: containerTop + 50,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [_lightBlue, _primaryBlue],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
       ),
     );
@@ -488,7 +455,7 @@ class _LocationScreenState extends State<LocationScreen> {
 
     return Positioned(
       top: iconTopPosition,
-      right: 25.0,
+      left: 25.0,
       child: Container(
         width: 100.0,
         height: 100.0,
@@ -517,10 +484,30 @@ class _LocationScreenState extends State<LocationScreen> {
     );
   }
 
+  Widget _buildHomeImage(double logoTopPosition, bool isDarkMode) {
+    final String imagePath = isDarkMode
+        ? 'assets/image/home_dark.png'
+        : 'assets/image/home.png';
+    return Positioned(
+      top: logoTopPosition,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Image.asset(
+          imagePath,
+          width: 140,
+          height: _logoHeight,
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
+
   Widget _buildWhiteContainer({
     required double containerTop,
     required double bottomNavClearance,
     required bool isDarkMode,
+    required LanguageNotifier languageNotifier,
   }) {
     return Positioned(
       top: containerTop,
@@ -557,7 +544,7 @@ class _LocationScreenState extends State<LocationScreen> {
                   top: 20.0,
                 ),
                 child: Text(
-                  'حدد موقعك',
+                  languageNotifier.translate('pickLocation'),
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -596,6 +583,7 @@ class _LocationScreenState extends State<LocationScreen> {
                         onCitySelected: _onCitySelected,
                         onAreaTapped: _onAreaTapped,
                         isDarkMode: isDarkMode,
+                        languageNotifier: languageNotifier,
                       ),
               ),
               const SizedBox(height: 30.0),
@@ -791,134 +779,131 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
         ? const Color(0xFF1E1E1E)
         : Colors.white;
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: backgroundColor,
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  center: _editingCenter,
-                  zoom: _currentZoom,
-                  onPositionChanged: (pos, hasGesture) {
-                    if (_isEditing) {
-                      setState(() {
-                        _editingCenter = pos.center!;
-                        _currentZoom = pos.zoom!;
-                      });
-                    } else if (hasGesture) {
-                      setState(() {
-                        _currentZoom = pos.zoom!;
-                      });
-                    }
-                  },
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                center: _editingCenter,
+                zoom: _currentZoom,
+                onPositionChanged: (pos, hasGesture) {
+                  if (_isEditing) {
+                    setState(() {
+                      _editingCenter = pos.center!;
+                      _currentZoom = pos.zoom!;
+                    });
+                  } else if (hasGesture) {
+                    setState(() {
+                      _currentZoom = pos.zoom!;
+                    });
+                  }
+                },
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  subdomains: const ['a', 'b', 'c'],
                 ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    subdomains: const ['a', 'b', 'c'],
-                  ),
-                  if (!_isEditing)
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: widget.customerLocation,
-                          width: 50,
-                          height: 50,
-                          child: const Icon(
-                            Icons.location_pin,
-                            color: Colors.red,
-                            size: 40,
-                          ),
+                if (!_isEditing)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: widget.customerLocation,
+                        width: 50,
+                        height: 50,
+                        child: const Icon(
+                          Icons.location_pin,
+                          color: Colors.red,
+                          size: 40,
                         ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-            if (_isEditing)
-              const Align(
-                alignment: Alignment.center,
-                child: IgnorePointer(
-                  child: Icon(Icons.location_pin, size: 50, color: Colors.red),
-                ),
-              ),
-            Positioned(
-              bottom: 30,
-              right: 20,
-              child: Column(
-                children: [
-                  FloatingActionButton(
-                    heroTag: 'zoomIn',
-                    mini: true,
-                    backgroundColor: widget.primaryColor,
-                    onPressed: _zoomIn,
-                    child: const Icon(Icons.add, color: Colors.white),
-                  ),
-                  const SizedBox(height: 10),
-                  FloatingActionButton(
-                    heroTag: 'zoomOut',
-                    mini: true,
-                    backgroundColor: widget.primaryColor,
-                    onPressed: _zoomOut,
-                    child: const Icon(Icons.remove, color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 10,
-              right: 10,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isEditing)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: FloatingActionButton(
-                        mini: true,
-                        backgroundColor: Colors.green,
-                        onPressed: () {
-                          Navigator.of(context).pop(_editingCenter);
-                        },
-                        child: const Icon(Icons.check, color: Colors.white),
                       ),
-                    ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          if (_isEditing)
+            const Align(
+              alignment: Alignment.center,
+              child: IgnorePointer(
+                child: Icon(Icons.location_pin, size: 50, color: Colors.red),
+              ),
+            ),
+          Positioned(
+            bottom: 30,
+            right: 20,
+            child: Column(
+              children: [
+                FloatingActionButton(
+                  heroTag: 'zoomIn',
+                  mini: true,
+                  backgroundColor: widget.primaryColor,
+                  onPressed: _zoomIn,
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
+                const SizedBox(height: 10),
+                FloatingActionButton(
+                  heroTag: 'zoomOut',
+                  mini: true,
+                  backgroundColor: widget.primaryColor,
+                  onPressed: _zoomOut,
+                  child: const Icon(Icons.remove, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            right: 10,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isEditing)
                   Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
+                    padding: const EdgeInsets.only(right: 8.0),
                     child: FloatingActionButton(
                       mini: true,
-                      backgroundColor: widget.primaryColor,
+                      backgroundColor: Colors.green,
                       onPressed: () {
-                        setState(() {
-                          _isEditing = true;
-                          _editingCenter = widget.customerLocation;
-                        });
+                        Navigator.of(context).pop(_editingCenter);
                       },
-                      child: const Icon(
-                        Icons.edit_location_alt,
-                        color: Colors.white,
-                      ),
+                      child: const Icon(Icons.check, color: Colors.white),
                     ),
                   ),
-                  FloatingActionButton(
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: FloatingActionButton(
                     mini: true,
                     backgroundColor: widget.primaryColor,
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () {
+                      setState(() {
+                        _isEditing = true;
+                        _editingCenter = widget.customerLocation;
+                      });
+                    },
                     child: const Icon(
-                      Icons.close_fullscreen,
+                      Icons.edit_location_alt,
                       color: Colors.white,
                     ),
                   ),
-                ],
-              ),
+                ),
+                FloatingActionButton(
+                  mini: true,
+                  backgroundColor: widget.primaryColor,
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Icon(
+                    Icons.close_fullscreen,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -928,11 +913,13 @@ class _NavigationHeader extends StatefulWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
   final bool isNextEnabled;
+  final String appName;
 
   const _NavigationHeader({
     required this.onBackTap,
     required this.onNextTap,
     required this.isNextEnabled,
+    required this.appName,
   });
 
   @override
@@ -991,16 +978,15 @@ class _NavigationHeaderState extends State<_NavigationHeader>
         children: [
           IconButton(
             iconSize: 28.0,
-            icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: widget.onBackTap,
           ),
-          const Text(
-            'أجير',
-            style: TextStyle(
+          Text(
+            widget.appName,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 34,
               fontWeight: FontWeight.w900,
-              fontFamily: 'Cairo',
               shadows: [
                 Shadow(
                   blurRadius: 2.0,
@@ -1028,7 +1014,7 @@ class _NavigationHeaderState extends State<_NavigationHeader>
               IconButton(
                 iconSize: 28.0,
                 icon: Icon(
-                  Icons.arrow_back_ios_new,
+                  Icons.arrow_forward_ios,
                   color: widget.isNextEnabled
                       ? Colors.white
                       : Colors.white.withOpacity(0.5),
@@ -1051,6 +1037,7 @@ class _CustomerLocationSelector extends StatelessWidget {
   final ValueChanged<String> onCitySelected;
   final ValueChanged<String> onAreaTapped;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _CustomerLocationSelector({
     required this.city,
@@ -1060,6 +1047,7 @@ class _CustomerLocationSelector extends StatelessWidget {
     required this.onCitySelected,
     required this.onAreaTapped,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -1069,10 +1057,10 @@ class _CustomerLocationSelector extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 15.0, left: 20, right: 20),
-          child: const Text(
-            'يرجى تحديد منطقتك، سيتم استخدام هذا لتحديد "الأجير" المناسب!',
+          child: Text(
+            languageNotifier.translate('selectAreaInstruction'),
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.normal,
               color: Colors.grey,
@@ -1086,20 +1074,21 @@ class _CustomerLocationSelector extends StatelessWidget {
             children: [
               Expanded(
                 child: _LocationBox(
-                  title: 'المدينة',
+                  title: languageNotifier.translate('cityPicker'),
                   isDarkMode: isDarkMode,
                   child: _CustomerCityList(
                     cities: cities,
                     selectedCity: city,
                     onCitySelected: onCitySelected,
                     isDarkMode: isDarkMode,
+                    languageNotifier: languageNotifier,
                   ),
                 ),
               ),
               const SizedBox(width: 5),
               Expanded(
                 child: _LocationBox(
-                  title: 'المنطقة',
+                  title: languageNotifier.translate('areaPicker'),
                   isDarkMode: isDarkMode,
                   child: _CustomerAreaList(
                     selectedCity: city,
@@ -1107,6 +1096,7 @@ class _CustomerLocationSelector extends StatelessWidget {
                     cityAreas: cityAreas,
                     onAreaTapped: onAreaTapped,
                     isDarkMode: isDarkMode,
+                    languageNotifier: languageNotifier,
                   ),
                 ),
               ),
@@ -1176,12 +1166,14 @@ class _CustomerCityList extends StatelessWidget {
   final String? selectedCity;
   final ValueChanged<String> onCitySelected;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _CustomerCityList({
     required this.cities,
     required this.selectedCity,
     required this.onCitySelected,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -1204,7 +1196,7 @@ class _CustomerCityList extends StatelessWidget {
           visualDensity: const VisualDensity(vertical: -4),
           dense: true,
           title: Text(
-            city,
+            languageNotifier.translate(city),
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
@@ -1230,6 +1222,7 @@ class _CustomerAreaList extends StatelessWidget {
   final Map<String, List<String>> cityAreas;
   final ValueChanged<String> onAreaTapped;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _CustomerAreaList({
     required this.selectedCity,
@@ -1237,6 +1230,7 @@ class _CustomerAreaList extends StatelessWidget {
     required this.cityAreas,
     required this.onAreaTapped,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -1244,7 +1238,7 @@ class _CustomerAreaList extends StatelessWidget {
     if (selectedCity == null) {
       return Center(
         child: Text(
-          'اختر مدينة أولاً',
+          languageNotifier.translate('selectCityFirst'),
           style: TextStyle(
             color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
             fontSize: 14,
@@ -1258,7 +1252,7 @@ class _CustomerAreaList extends StatelessWidget {
     if (availableAreas.isEmpty) {
       return Center(
         child: Text(
-          'لا توجد مناطق متاحة',
+          languageNotifier.translate('noAreas'),
           style: TextStyle(
             color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
             fontSize: 14,
@@ -1279,6 +1273,7 @@ class _CustomerAreaList extends StatelessWidget {
           isSelected: isSelected,
           isDarkMode: isDarkMode,
           onTap: () => onAreaTapped(area),
+          languageNotifier: languageNotifier,
         );
       },
     );
@@ -1290,12 +1285,14 @@ class _BounceableAreaItem extends StatefulWidget {
   final bool isSelected;
   final bool isDarkMode;
   final VoidCallback onTap;
+  final LanguageNotifier languageNotifier;
 
   const _BounceableAreaItem({
     required this.area,
     required this.isSelected,
     required this.isDarkMode,
     required this.onTap,
+    required this.languageNotifier,
   });
 
   @override
@@ -1348,7 +1345,7 @@ class _BounceableAreaItemState extends State<_BounceableAreaItem>
             visualDensity: const VisualDensity(vertical: -4),
             dense: true,
             title: Text(
-              widget.area,
+              widget.languageNotifier.translate(widget.area),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: widget.isSelected

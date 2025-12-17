@@ -93,6 +93,18 @@ class LanguageNotifier extends ChangeNotifier {
       'instantBookingMsg':
           'An Ajeer will be assigned to you as soon as possible based on availability.',
 
+      'pickLocation': 'Pick a location',
+      'selectAreaInstruction':
+          'Select your area. This will be used to determine your Ajeer!',
+      'cityPicker': 'City Picker',
+      'areaPicker': 'Area Picker',
+      'selectCityFirst': 'Select a city first.',
+      'noAreas': 'No areas available.',
+      'selectAreaWarning':
+          'Please select an area and ensure location is picked.',
+      'errorValidating': 'Error validating area selection.',
+      'unnamedLocation': 'Unnamed location',
+
       'Plumbing': 'Plumbing',
       'Electrical': 'Electrical',
       'Cleaning': 'Cleaning',
@@ -126,6 +138,16 @@ class LanguageNotifier extends ChangeNotifier {
       'Home Moving': 'Home Moving',
       'Office Relocation': 'Office Relocation',
       'Furniture Delivery': 'Furniture Delivery',
+
+      'Amman': 'Amman',
+      'Abdoun': 'Abdoun',
+      'Jabal Al-Weibdeh': 'Jabal Al-Weibdeh',
+      'Shmeisani': 'Shmeisani',
+      'Al-Rabieh': 'Al-Rabieh',
+      'Dabouq': 'Dabouq',
+      'Al-Jubeiha': 'Al-Jubeiha',
+      'Al-Bayader': 'Al-Bayader',
+      "Tla' Al-Ali": "Tla' Al-Ali",
     },
     'ar': {
       'settings': 'الإعدادات',
@@ -168,6 +190,16 @@ class LanguageNotifier extends ChangeNotifier {
       'instantBookingMsg':
           'سيتم تعيين أجير لك في أقرب وقت ممكن بناءً على التوفر.',
 
+      'pickLocation': 'اختر موقعاً',
+      'selectAreaInstruction': 'اختر منطقتك. سيتم استخدام هذا لتحديد أجيرك!',
+      'cityPicker': 'اختر المدينة',
+      'areaPicker': 'اختر المنطقة',
+      'selectCityFirst': 'اختر مدينة أولاً.',
+      'noAreas': 'لا توجد مناطق متاحة.',
+      'selectAreaWarning': 'الرجاء اختيار منطقة والتأكد من تحديد الموقع.',
+      'errorValidating': 'خطأ في التحقق من اختيار المنطقة.',
+      'unnamedLocation': 'موقع غير مسمى',
+
       'Plumbing': 'سباكة',
       'Electrical': 'كهرباء',
       'Cleaning': 'تنظيف',
@@ -201,6 +233,16 @@ class LanguageNotifier extends ChangeNotifier {
       'Home Moving': 'نقل أثاث منزلي',
       'Office Relocation': 'نقل مكاتب',
       'Furniture Delivery': 'توصيل أثاث',
+
+      'Amman': 'عمان',
+      'Abdoun': 'عبدون',
+      'Jabal Al-Weibdeh': 'جبل اللويبدة',
+      'Shmeisani': 'الشميساني',
+      'Al-Rabieh': 'الرابية',
+      'Dabouq': 'دابوق',
+      'Al-Jubeiha': 'الجبيهة',
+      'Al-Bayader': 'البيادر',
+      "Tla' Al-Ali": 'تلاع العلي',
     },
   };
 
