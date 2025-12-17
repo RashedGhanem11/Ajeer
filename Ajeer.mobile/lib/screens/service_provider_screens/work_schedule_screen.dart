@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../themes/theme_notifier.dart';
 import '../../models/provider_data.dart';
 import '../../notifiers/user_notifier.dart';
+import '../../notifiers/language_notifier.dart';
 import '../shared_screens/profile_screen.dart';
 
 const Color kPrimaryBlue = Color(0xFF2f6cfa);
@@ -57,6 +58,14 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
   TimeOfDay _endTime = const TimeOfDay(hour: 17, minute: 0);
   List<WorkSchedule> _finalSchedule = [];
   List<WorkTime> _currentDayTimeSlots = [];
+
+  late LanguageNotifier _languageNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context);
+  }
 
   List<String> get _availableDays => kWeekDays
       .where((day) => !_finalSchedule.any((schedule) => schedule.day == day))
@@ -134,7 +143,9 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
               ),
               const SizedBox(height: 15.0),
               Text(
-                widget.isEdit ? 'Save Changes?' : 'Become an Ajeer!',
+                widget.isEdit
+                    ? _languageNotifier.translate('saveChanges')
+                    : _languageNotifier.translate('becomeAjeer'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -144,27 +155,13 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
               ),
               const SizedBox(height: 10.0),
               if (!widget.isEdit) ...[
-                RichText(
+                Text(
+                  _languageNotifier.translate('freeTrialMsg'),
                   textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: bodyTextColor,
-                      height: 1.5,
-                    ),
-                    children: const [
-                      TextSpan(
-                        text: 'Start providing your services to customers and ',
-                      ),
-                      TextSpan(
-                        text: 'using the Ajeer App for free for 30 days',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      TextSpan(
-                        text:
-                            '. After this period, you will need to subscribe to continue.',
-                      ),
-                    ],
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: bodyTextColor,
+                    height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 25.0),
@@ -183,9 +180,9 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                           borderRadius: BorderRadius.circular(10.0),
                         ),
                       ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        _languageNotifier.translate('cancel'),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -245,12 +242,17 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                                 .trim();
 
                             if (errorMsg.startsWith('{')) {
-                              errorMsg = extractErrorMessage(e);
+                              errorMsg = extractErrorMessage(
+                                e,
+                                _languageNotifier,
+                              );
                             }
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(errorMsg),
+                                content: Text(
+                                  '${_languageNotifier.translate('error')}$errorMsg',
+                                ),
                                 backgroundColor: kDeleteRed,
                                 duration: const Duration(seconds: 5),
                               ),
@@ -267,9 +269,9 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                         ),
                         elevation: 5,
                       ),
-                      child: const Text(
-                        'Confirm',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        _languageNotifier.translate('confirm'),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -380,8 +382,8 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
 
     if (startMinutes >= endMinutes) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Start time must be before end time.'),
+        SnackBar(
+          content: Text(_languageNotifier.translate('startTimeError')),
           backgroundColor: kDeleteRed,
         ),
       );
@@ -390,10 +392,8 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
 
     if (_isOverlapping(newSlot)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'The selected time slot overlaps with an existing one or is a duplicate.',
-          ),
+        SnackBar(
+          content: Text(_languageNotifier.translate('overlapError')),
           backgroundColor: kDeleteRed,
         ),
       );
@@ -542,7 +542,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Work Schedule',
+                      _languageNotifier.translate('workDaysHours'),
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             fontSize: 28,
@@ -583,6 +583,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                 onEditSchedule: _onEditSchedule,
                 onDeleteSchedule: _onDeleteSchedule,
                 isDarkMode: isDarkMode,
+                languageNotifier: _languageNotifier,
               ),
               const SizedBox(height: 15.0),
             ],
@@ -650,26 +651,10 @@ class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
     super.dispose();
   }
 
-  Widget _buildAjeerTitle() {
-    return const Text(
-      'Ajeer',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 34,
-        fontWeight: FontWeight.w900,
-        shadows: [
-          Shadow(
-            blurRadius: 2.0,
-            color: Colors.black26,
-            offset: Offset(1.0, 1.0),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
+    final isArabic = languageNotifier.isArabic;
     final Color buttonBackgroundColor = widget.isNextEnabled
         ? kSelectedGreen
         : Colors.white.withOpacity(0.2);
@@ -683,10 +668,27 @@ class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
         children: [
           IconButton(
             iconSize: 28.0,
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            icon: RotatedBox(
+              quarterTurns: isArabic ? 2 : 0,
+              child: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            ),
             onPressed: widget.onBackTap,
           ),
-          _buildAjeerTitle(),
+          Text(
+            languageNotifier.translate('appName'),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(
+                  blurRadius: 2.0,
+                  color: Colors.black26,
+                  offset: Offset(1.0, 1.0),
+                ),
+              ],
+            ),
+          ),
           ScaleTransition(
             scale: widget.isNextEnabled
                 ? _scaleAnimation
@@ -729,6 +731,7 @@ class _ScheduleContent extends StatelessWidget {
   final ValueChanged<WorkSchedule> onEditSchedule;
   final ValueChanged<String> onDeleteSchedule;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _ScheduleContent({
     required this.availableDays,
@@ -745,6 +748,7 @@ class _ScheduleContent extends StatelessWidget {
     required this.onEditSchedule,
     required this.onDeleteSchedule,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -763,6 +767,7 @@ class _ScheduleContent extends StatelessWidget {
             selectedDay: selectedDay,
             onDaySelected: onDaySelected,
             isDarkMode: isDarkMode,
+            languageNotifier: languageNotifier,
           ),
           const SizedBox(height: 25.0),
           _TimeSlotCreator(
@@ -775,6 +780,7 @@ class _ScheduleContent extends StatelessWidget {
             onRemoveTimeSlot: onRemoveTimeSlot,
             onSaveSchedule: onSaveSchedule,
             isDarkMode: isDarkMode,
+            languageNotifier: languageNotifier,
           ),
           if (finalSchedule.isNotEmpty) ...[
             const SizedBox(height: 20.0),
@@ -783,6 +789,7 @@ class _ScheduleContent extends StatelessWidget {
               onEditSchedule: onEditSchedule,
               onDeleteSchedule: onDeleteSchedule,
               isDarkMode: isDarkMode,
+              languageNotifier: languageNotifier,
             ),
           ],
         ],
@@ -796,12 +803,14 @@ class _DaySelector extends StatelessWidget {
   final String? selectedDay;
   final ValueChanged<String> onDaySelected;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _DaySelector({
     required this.availableDays,
     required this.selectedDay,
     required this.onDaySelected,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -811,7 +820,7 @@ class _DaySelector extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Text(
-            'All days have been scheduled!',
+            languageNotifier.translate('allDaysScheduled'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -843,6 +852,7 @@ class _DaySelector extends StatelessWidget {
               isSelected: isSelected,
               isDarkMode: isDarkMode,
               onTap: () => onDaySelected(day),
+              languageNotifier: languageNotifier,
             ),
           );
         },
@@ -856,12 +866,14 @@ class _DayItem extends StatefulWidget {
   final bool isSelected;
   final bool isDarkMode;
   final VoidCallback onTap;
+  final LanguageNotifier languageNotifier;
 
   const _DayItem({
     required this.day,
     required this.isSelected,
     required this.isDarkMode,
     required this.onTap,
+    required this.languageNotifier,
   });
 
   @override
@@ -899,6 +911,15 @@ class _DayItemState extends State<_DayItem>
 
   @override
   Widget build(BuildContext context) {
+    // Translate the day name
+    final translatedDay = widget.languageNotifier.translateDay(widget.day);
+    // Determine display text: substring if not Arabic (e.g. Mon), full if Arabic (e.g. الاثنين)
+    final displayText = widget.languageNotifier.isArabic
+        ? translatedDay
+        : (translatedDay.length > 3
+              ? translatedDay.substring(0, 3)
+              : translatedDay);
+
     return ScaleTransition(
       scale: _scaleAnimation,
       child: InkWell(
@@ -922,7 +943,7 @@ class _DayItemState extends State<_DayItem>
           ),
           child: Center(
             child: Text(
-              widget.day.substring(0, 3),
+              displayText,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -944,6 +965,7 @@ class _TimePickerButton extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isDarkMode;
   final bool isEnabled;
+  final LanguageNotifier languageNotifier;
 
   const _TimePickerButton({
     required this.label,
@@ -951,6 +973,7 @@ class _TimePickerButton extends StatelessWidget {
     required this.onTap,
     required this.isDarkMode,
     required this.isEnabled,
+    required this.languageNotifier,
   });
 
   @override
@@ -963,6 +986,11 @@ class _TimePickerButton extends StatelessWidget {
         ? kPrimaryBlue
         : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400);
     final Color bgColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
+
+    // Use translateTimeRange logic to format single TimeOfDay
+    final timeString = languageNotifier.translateTimeRange(
+      time.format(context),
+    );
 
     return InkWell(
       onTap: onTap,
@@ -979,7 +1007,7 @@ class _TimePickerButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              time.format(context),
+              timeString,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1004,6 +1032,7 @@ class _TimeSlotCreator extends StatelessWidget {
   final VoidCallback onSaveSchedule;
   final ValueChanged<WorkTime> onRemoveTimeSlot;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _TimeSlotCreator({
     required this.selectedDay,
@@ -1015,6 +1044,7 @@ class _TimeSlotCreator extends StatelessWidget {
     required this.onSaveSchedule,
     required this.onRemoveTimeSlot,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -1024,6 +1054,13 @@ class _TimeSlotCreator extends StatelessWidget {
         ? Colors.grey.shade700
         : Colors.grey.shade300;
 
+    final translatedDay = selectedDay != null
+        ? languageNotifier.translateDay(selectedDay!)
+        : '';
+    final titleText = selectedDay != null
+        ? '${languageNotifier.translate('timeSlotsFor')} $translatedDay:'
+        : languageNotifier.translate('selectDayToSchedule');
+
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: kContentHorizontalPadding,
@@ -1032,9 +1069,7 @@ class _TimeSlotCreator extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            selectedDay != null
-                ? 'Time Slots for ${selectedDay!}:'
-                : 'Select a Day to Schedule Time',
+            titleText,
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 17,
@@ -1048,21 +1083,23 @@ class _TimeSlotCreator extends StatelessWidget {
             children: [
               Expanded(
                 child: _TimePickerButton(
-                  label: 'Start Time',
+                  label: languageNotifier.translate('startTime'),
                   time: startTime,
                   onTap: isEnabled ? () => onPickTime(context, true) : null,
                   isDarkMode: isDarkMode,
                   isEnabled: isEnabled,
+                  languageNotifier: languageNotifier,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _TimePickerButton(
-                  label: 'End Time',
+                  label: languageNotifier.translate('endTime'),
                   time: endTime,
                   onTap: isEnabled ? () => onPickTime(context, false) : null,
                   isDarkMode: isDarkMode,
                   isEnabled: isEnabled,
+                  languageNotifier: languageNotifier,
                 ),
               ),
               const SizedBox(width: 10),
@@ -1094,7 +1131,7 @@ class _TimeSlotCreator extends StatelessWidget {
                 return Chip(
                   backgroundColor: kPrimaryBlue.withOpacity(0.1),
                   label: Text(
-                    timeSlot.toString(),
+                    languageNotifier.translateTimeRange(timeSlot.toString()),
                     style: const TextStyle(
                       color: kPrimaryBlue,
                       fontWeight: FontWeight.bold,
@@ -1135,8 +1172,8 @@ class _TimeSlotCreator extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: Text(
                     currentDayTimeSlots.isNotEmpty
-                        ? 'Save Schedule for ${selectedDay!}'
-                        : 'Add Time Slots to Save',
+                        ? '${languageNotifier.translate('saveScheduleFor')} $translatedDay'
+                        : languageNotifier.translate('addTimeSlotsToSave'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -1158,12 +1195,14 @@ class _WorkScheduleList extends StatelessWidget {
   final ValueChanged<WorkSchedule> onEditSchedule;
   final ValueChanged<String> onDeleteSchedule;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _WorkScheduleList({
     required this.finalSchedule,
     required this.onEditSchedule,
     required this.onDeleteSchedule,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -1180,7 +1219,7 @@ class _WorkScheduleList extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 5.0, bottom: 5.0),
             child: Text(
-              'Work Days & Hours (${finalSchedule.length})',
+              '${languageNotifier.translate('workDaysHours')} (${languageNotifier.convertNumbers(finalSchedule.length.toString())})',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -1196,8 +1235,8 @@ class _WorkScheduleList extends StatelessWidget {
             itemBuilder: (context, index) {
               final schedule = finalSchedule[index];
               final times = schedule.timeSlots
-                  .map((t) => t.toString())
-                  .join(', ');
+                  .map((t) => languageNotifier.translateTimeRange(t.toString()))
+                  .join(languageNotifier.isArabic ? '، ' : ', ');
 
               final Color itemBgColor = isDarkMode
                   ? Colors.black
@@ -1237,7 +1276,7 @@ class _WorkScheduleList extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            schedule.day,
+                            languageNotifier.translateDay(schedule.day),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -1308,7 +1347,7 @@ class _WorkScheduleList extends StatelessWidget {
   }
 }
 
-String extractErrorMessage(dynamic error) {
+String extractErrorMessage(dynamic error, LanguageNotifier lang) {
   String errorString = error.toString();
   try {
     int jsonStartIndex = errorString.indexOf('{');
@@ -1330,5 +1369,5 @@ String extractErrorMessage(dynamic error) {
       }
     }
   } catch (e) {}
-  return "An unexpected error occurred.";
+  return lang.translate('unexpectedError');
 }

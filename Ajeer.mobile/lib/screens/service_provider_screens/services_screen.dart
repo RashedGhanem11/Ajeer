@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart'; // Added missing import
 import '../../models/service_models.dart';
 import '../../services/service_category_service.dart';
 import '../shared_screens/profile_screen.dart';
@@ -422,6 +422,7 @@ class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
   @override
   Widget build(BuildContext context) {
     final languageNotifier = Provider.of<LanguageNotifier>(context);
+    final isArabic = languageNotifier.isArabic;
     return Positioned(
       top: MediaQuery.of(context).padding.top + 5,
       left: 10,
@@ -466,12 +467,7 @@ class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
                 ),
               IconButton(
                 iconSize: 28.0,
-                icon: Icon(
-                  Icons.arrow_forward_ios,
-                  color: widget.isNextEnabled
-                      ? Colors.white
-                      : Colors.white.withOpacity(0.5),
-                ),
+                icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
                 onPressed: widget.isNextEnabled ? widget.onNextTap : null,
               ),
             ],
@@ -864,6 +860,7 @@ class _UnitTypeSelectionDialogState extends State<_UnitTypeSelectionDialog> {
                     isSelected: isSelected,
                     onTap: () => _onUnitTypeTapped(item.name),
                     isDarkMode: widget.isDarkMode,
+                    languageNotifier: widget.languageNotifier,
                   );
                 },
               ),
@@ -906,6 +903,7 @@ class _UnitTypeListItem extends StatefulWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _UnitTypeListItem({
     required this.name,
@@ -914,6 +912,7 @@ class _UnitTypeListItem extends StatefulWidget {
     required this.isSelected,
     required this.onTap,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -1002,7 +1001,7 @@ class _UnitTypeListItemState extends State<_UnitTypeListItem>
                     ),
                     const SizedBox(height: 2.0),
                     Text(
-                      'Est. Time: ${widget.timeString}',
+                      '${widget.languageNotifier.translate('estTime')}: ${widget.timeString}',
                       style: TextStyle(fontSize: 13, color: timeTextColor),
                     ),
                   ],

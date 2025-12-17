@@ -188,7 +188,6 @@ class LanguageNotifier extends ChangeNotifier {
       'Home Moving': 'Home Moving',
       'Office Relocation': 'Office Relocation',
       'Furniture Delivery': 'Furniture Delivery',
-
       'Studio': 'Studio',
       '1 Bedroom': '1 Bedroom',
       '2 Bedrooms': '2 Bedrooms',
@@ -281,6 +280,23 @@ class LanguageNotifier extends ChangeNotifier {
           'Failed to load services. Please check your connection.',
       'selectUnitTypesFor': 'Select unit type(s) for',
 
+      // Work Schedule Screen
+      'timeSlotsFor': 'Time Slots for',
+      'selectDayToSchedule': 'Select a Day to Schedule Time',
+      'startTime': 'Start Time',
+      'endTime': 'End Time',
+      'startTimeError': 'Start time must be before end time.',
+      'overlapError':
+          'The selected time slot overlaps with an existing one or is a duplicate.',
+      'saveScheduleFor': 'Save Schedule for',
+      'addTimeSlotsToSave': 'Add Time Slots to Save',
+      'workDaysHours': 'Work Days & Hours',
+      'allDaysScheduled': 'All days have been scheduled!',
+      'saveChanges': 'Save Changes?',
+      'freeTrialMsg':
+          'Start providing your services to customers and using the Ajeer App for free for 30 days. After this period, you will need to subscribe to continue.',
+      'unexpectedError': 'An unexpected error occurred.',
+
       // Confirmation
       'confirmBooking': 'Confirm your booking',
       'estimatedCost': 'Estimated Cost',
@@ -290,7 +306,6 @@ class LanguageNotifier extends ChangeNotifier {
       'noImages': 'No images uploaded.',
       'noVideos': 'No videos uploaded.',
       'noAudio': 'No audio uploaded.',
-      'instantBooking': 'Instant Booking',
       'uploadMedia': 'Upload media',
       'mediaDescription':
           'Add a photo, video, or audio recording describing your problem',
@@ -522,6 +537,22 @@ class LanguageNotifier extends ChangeNotifier {
       'searchService': 'ابحث عن خدمة',
       'loadServicesFailed': 'فشل تحميل الخدمات. يرجى التحقق من الاتصال.',
       'selectUnitTypesFor': 'اختر أنواع الوحدات لـ',
+
+      // Work Schedule Screen
+      'timeSlotsFor': 'فترات العمل لـ',
+      'selectDayToSchedule': 'اختر يوماً لجدولة الوقت',
+      'startTime': 'وقت البدء',
+      'endTime': 'وقت الانتهاء',
+      'startTimeError': 'وقت البدء يجب أن يكون قبل وقت الانتهاء.',
+      'overlapError': 'الفترة الزمنية المحددة تتداخل مع فترة موجودة أو مكررة.',
+      'saveScheduleFor': 'حفظ الجدول لـ',
+      'addTimeSlotsToSave': 'أضف فترات زمنية للحفظ',
+      'workDaysHours': 'أيام وساعات العمل',
+      'allDaysScheduled': 'تم جدولة جميع الأيام!',
+      'saveChanges': 'حفظ التغييرات؟',
+      'freeTrialMsg':
+          'ابدأ بتقديم خدماتك للعملاء واستخدم تطبيق أجير مجانًا لمدة 30 يومًا. بعد هذه الفترة، ستحتاج إلى الاشتراك للمتابعة.',
+      'unexpectedError': 'حدث خطأ غير متوقع.',
 
       // Confirmation
       'confirmBooking': 'تأكيد الحجز',
