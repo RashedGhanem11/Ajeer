@@ -16,6 +16,7 @@ import '../../services/review_service.dart';
 import '../../services/chat_service.dart';
 import '../shared_screens/chat_screen.dart';
 import '../shared_screens/profile_screen.dart';
+import '../../notifiers/language_notifier.dart';
 
 class ProviderBookingsScreen extends StatefulWidget {
   const ProviderBookingsScreen({super.key});
@@ -60,6 +61,13 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
   final _bookingService = BookingService();
   bool _isLoading = true;
   List<BookingListItem> _allBookings = [];
+  late LanguageNotifier _languageNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context);
+  }
 
   List<BookingListItem> get _active => _allBookings
       .where(
@@ -114,19 +122,19 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
     switch (actionType) {
       case 'cancel':
         success = await _bookingService.cancelBooking(id);
-        message = 'Booking cancelled.';
+        message = _languageNotifier.translate('bookingActionCancelled');
         break;
       case 'accept':
         success = await _bookingService.acceptBooking(id);
-        message = 'Booking accepted.';
+        message = _languageNotifier.translate('bookingActionAccepted');
         break;
       case 'reject':
         success = await _bookingService.rejectBooking(id);
-        message = 'Booking rejected.';
+        message = _languageNotifier.translate('bookingActionRejected');
         break;
       case 'complete':
         success = await _bookingService.completeBooking(id);
-        message = 'Booking completed.';
+        message = _languageNotifier.translate('bookingActionCompleted');
         break;
     }
 
@@ -140,8 +148,8 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Action failed. Please try again.'),
+        SnackBar(
+          content: Text(_languageNotifier.translate('actionFailed')),
           backgroundColor: Colors.red,
         ),
       );
@@ -249,7 +257,7 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
             right: 0,
             child: Center(
               child: Text(
-                'Ajeer',
+                _languageNotifier.translate('appName'),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 34,
@@ -292,9 +300,9 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
                 children: [
                   const SizedBox(height: 35),
                   Padding(
-                    padding: const EdgeInsets.only(left: 20),
+                    padding: const EdgeInsets.only(left: 20, right: 20),
                     child: Text(
-                      'Bookings',
+                      _languageNotifier.translate('bookings'),
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             fontSize: 28,
@@ -359,19 +367,19 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        items: const [
+        items: [
           {
-            'label': 'Profile',
+            'label': _languageNotifier.translate('profile'),
             'icon': Icons.person_outline,
             'activeIcon': Icons.person,
           },
           {
-            'label': 'Chat',
+            'label': _languageNotifier.translate('chat'),
             'icon': Icons.chat_bubble_outline,
             'activeIcon': Icons.chat_bubble,
           },
           {
-            'label': 'Bookings',
+            'label': _languageNotifier.translate('bookings'),
             'icon': Icons.book_outlined,
             'activeIcon': Icons.book,
             'notificationCount': 3,
@@ -391,7 +399,7 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
     if (items.isEmpty) {
       return Center(
         child: Text(
-          'No jobs found.',
+          _languageNotifier.translate('noJobs'),
           style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
         ),
       );
@@ -511,21 +519,25 @@ class _BookingCardState extends State<_BookingCard>
   }
 
   void _showMessageDialog(BuildContext context) {
+    final languageNotifier = Provider.of<LanguageNotifier>(
+      context,
+      listen: false,
+    );
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: widget.isDarkMode ? _Consts.subtleDark : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: const Text(
-          'Message Customer',
+        title: Text(
+          languageNotifier.translate('messageCustomer'),
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             color: _Consts.primaryBlue,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
-          'Would you like to message ${widget.booking.otherSideName}?',
+          '${languageNotifier.translate('messageProviderMsg')} ${widget.booking.otherSideName}?',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: widget.isDarkMode ? Colors.grey.shade300 : Colors.black87,
@@ -538,7 +550,7 @@ class _BookingCardState extends State<_BookingCard>
                 child: TextButton(
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
-                    'Cancel',
+                    languageNotifier.translate('cancel'),
                     style: TextStyle(
                       color: widget.isDarkMode
                           ? Colors.grey.shade400
@@ -571,9 +583,9 @@ class _BookingCardState extends State<_BookingCard>
                       ),
                     );
                   },
-                  child: const Text(
-                    'Message',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  child: Text(
+                    languageNotifier.translate('message'),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -591,6 +603,10 @@ class _BookingCardState extends State<_BookingCard>
     String action,
     Color color,
   ) {
+    final languageNotifier = Provider.of<LanguageNotifier>(
+      context,
+      listen: false,
+    );
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -615,7 +631,7 @@ class _BookingCardState extends State<_BookingCard>
                 child: TextButton(
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
-                    'Back',
+                    languageNotifier.translate('back'),
                     style: TextStyle(
                       color: widget.isDarkMode
                           ? Colors.grey.shade400
@@ -637,9 +653,9 @@ class _BookingCardState extends State<_BookingCard>
                     Navigator.pop(ctx);
                     widget.onAction(action);
                   },
-                  child: const Text(
-                    'Confirm',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  child: Text(
+                    languageNotifier.translate('confirm'),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -652,6 +668,7 @@ class _BookingCardState extends State<_BookingCard>
 
   @override
   Widget build(BuildContext context) {
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
     final letter = widget.booking.otherSideName.isNotEmpty
         ? widget.booking.otherSideName[0].toUpperCase()
         : '?';
@@ -698,15 +715,18 @@ class _BookingCardState extends State<_BookingCard>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.booking.otherSideName,
+                    widget.booking.otherSideName, // Name stays untranslated
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: widget.isDarkMode ? Colors.white : Colors.black87,
                     ),
                   ),
+                  // Using translateServices for comma-separated services
                   Text(
-                    widget.booking.serviceName,
+                    languageNotifier.translateServices(
+                      widget.booking.serviceName,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -728,6 +748,7 @@ class _BookingCardState extends State<_BookingCard>
   }
 
   Widget _buildActions(BuildContext context) {
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
     List<Widget> icons = [];
 
     if (widget.listType == _BookingListType.active) {
@@ -776,12 +797,12 @@ class _BookingCardState extends State<_BookingCard>
           Row(
             children: [
               _actionButton(
-                'Cancel',
+                languageNotifier.translate('cancel'),
                 _Consts.primaryRed,
                 () => _showConfirmationDialog(
                   context,
-                  'Cancel Booking',
-                  'Cancel this booking?',
+                  languageNotifier.translate('cancelBooking'),
+                  languageNotifier.translate('cancelBookingMsg'),
                   'cancel',
                   _Consts.primaryRed,
                 ),
@@ -790,12 +811,12 @@ class _BookingCardState extends State<_BookingCard>
               ScaleTransition(
                 scale: _scaleAnimation,
                 child: _actionButton(
-                  'Complete',
+                  languageNotifier.translate('complete'),
                   _Consts.successGreen,
                   () => _showConfirmationDialog(
                     context,
-                    'Complete Job',
-                    'Mark this job as completed?',
+                    languageNotifier.translate('completeJob'),
+                    languageNotifier.translate('completeJobMsg'),
                     'complete',
                     _Consts.successGreen,
                   ),
@@ -813,12 +834,12 @@ class _BookingCardState extends State<_BookingCard>
           Row(
             children: [
               _actionButton(
-                'Reject',
+                languageNotifier.translate('reject'),
                 _Consts.primaryRed,
                 () => _showConfirmationDialog(
                   context,
-                  'Reject Booking',
-                  'Reject this request?',
+                  languageNotifier.translate('rejectBooking'),
+                  languageNotifier.translate('rejectBookingMsg'),
                   'reject',
                   _Consts.primaryRed,
                 ),
@@ -827,7 +848,7 @@ class _BookingCardState extends State<_BookingCard>
               ScaleTransition(
                 scale: _scaleAnimation,
                 child: _actionButton(
-                  'Accept',
+                  languageNotifier.translate('accept'),
                   _Consts.successGreen,
                   () => widget.onAction('accept'),
                 ),
@@ -880,6 +901,7 @@ class _BookingCardState extends State<_BookingCard>
   }
 
   Widget _statusBadge() {
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
     Color bg, txt;
     String text;
     Color getBg(MaterialColor c) => widget.isDarkMode ? c.shade900 : c.shade100;
@@ -890,22 +912,22 @@ class _BookingCardState extends State<_BookingCard>
       case BookingStatus.completed:
         bg = getBg(Colors.green);
         txt = getTxt(Colors.green);
-        text = "Completed";
+        text = languageNotifier.translate('completed');
         break;
       case BookingStatus.cancelled:
         bg = getBg(Colors.red);
         txt = getTxt(Colors.red);
-        text = "Cancelled";
+        text = languageNotifier.translate('cancelled');
         break;
       case BookingStatus.rejected:
         bg = getBg(Colors.red);
         txt = getTxt(Colors.red);
-        text = "Rejected";
+        text = languageNotifier.translate('rejected');
         break;
       default:
         bg = widget.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
         txt = widget.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade800;
-        text = "Closed";
+        text = languageNotifier.translate('closed');
     }
 
     return Container(
@@ -937,6 +959,7 @@ class _ReviewDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
     final bgColor = isDarkMode ? const Color(0xFF2C2C2C) : Colors.white;
     final txtColor = isDarkMode ? Colors.white : Colors.black87;
 
@@ -945,7 +968,7 @@ class _ReviewDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
       title: Center(
         child: Text(
-          'Customer Review',
+          languageNotifier.translate('review'),
           style: TextStyle(fontWeight: FontWeight.bold, color: txtColor),
         ),
       ),
@@ -988,7 +1011,7 @@ class _ReviewDialog extends StatelessWidget {
           child: TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Close',
+              languageNotifier.translate('close'),
               style: TextStyle(
                 color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
               ),
@@ -1011,23 +1034,26 @@ class _CustomTabBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: tabController,
-    builder: (context, _) => Container(
-      padding: const EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        color: isDarkMode ? _Consts.subtleDark : Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(30),
+  Widget build(BuildContext context) {
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
+    return AnimatedBuilder(
+      animation: tabController,
+      builder: (context, _) => Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: isDarkMode ? _Consts.subtleDark : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Row(
+          children: [
+            _tab(languageNotifier.translate('active'), 0, Colors.green),
+            _tab(languageNotifier.translate('pending'), 1, Colors.orange),
+            _tab(languageNotifier.translate('closed'), 2, _Consts.primaryBlue),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          _tab('Active', 0, Colors.green),
-          _tab('Pending', 1, Colors.orange),
-          _tab('Closed', 2, _Consts.primaryBlue),
-        ],
-      ),
-    ),
-  );
+    );
+  }
 
   Widget _tab(String text, int i, Color color) {
     final sel = tabController.index == i;
@@ -1071,18 +1097,25 @@ class _CustomTabBar extends StatelessWidget {
                   top: -8,
                   right: 10,
                   child: Container(
-                    padding: const EdgeInsets.all(7),
+                    padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,
                     ),
-                    child: Text(
-                      '${counts[i]}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Builder(
+                      builder: (context) {
+                        final languageNotifier = Provider.of<LanguageNotifier>(
+                          context,
+                        );
+                        return Text(
+                          languageNotifier.convertNumbers('${counts[i]}'),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -1108,18 +1141,63 @@ class _DetailDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('MMMM d, yyyy');
-    final timeString = DateFormat('h:mm a').format(details.scheduledDate);
-    final cleanEst = details.estimatedTime
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
+
+    // Format Date
+    final dateFormat = languageNotifier.getFormattedDate(details.scheduledDate);
+
+    // Format Time with AM/PM translation
+    String timeString = DateFormat('h:mm a').format(details.scheduledDate);
+    if (languageNotifier.isArabic) {
+      timeString = timeString
+          .replaceAll('AM', languageNotifier.translate('am'))
+          .replaceAll('PM', languageNotifier.translate('pm'));
+      timeString = languageNotifier.convertNumbers(timeString);
+    }
+
+    String cleanEst = details.estimatedTime
         .replaceAll(RegExp(r'Est\. Time:?'), '')
         .trim();
+
+    // Translate units for estimated time if in Arabic
+    if (languageNotifier.isArabic) {
+      cleanEst = cleanEst
+          .replaceAll(
+            RegExp(r'\bhrs\b', caseSensitive: false),
+            languageNotifier.translate('hrs'),
+          )
+          .replaceAll(
+            RegExp(r'\bhr\b', caseSensitive: false),
+            languageNotifier.translate('hr'),
+          )
+          .replaceAll(
+            RegExp(r'\bmins\b', caseSensitive: false),
+            languageNotifier.translate('mins'),
+          )
+          .replaceAll(
+            RegExp(r'\bmin\b', caseSensitive: false),
+            languageNotifier.translate('min'),
+          );
+
+      cleanEst = languageNotifier.convertNumbers(cleanEst);
+    }
+
+    // Format Price "15.00 JOD" -> "١٥.٠٠ دينار"
+    String priceString = details.formattedPrice;
+    if (languageNotifier.isArabic) {
+      // Remove non-numeric/dot chars to get just the number
+      String nums = priceString.replaceAll(RegExp(r'[^0-9.]'), '');
+      // Reformat
+      priceString =
+          '${languageNotifier.convertNumbers(nums)} ${languageNotifier.translate('jod')}';
+    }
 
     return AlertDialog(
       backgroundColor: isDarkMode ? const Color(0xFF2C2C2C) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
       title: Center(
         child: Text(
-          'Details',
+          languageNotifier.translate('details'),
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isDarkMode ? Colors.white : Colors.black,
@@ -1131,24 +1209,62 @@ class _DetailDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _row('Service(s)', details.serviceName),
-            _row('Customer', details.otherSideName),
+            _row(
+              languageNotifier.translate('serviceLabel'),
+              languageNotifier.translateServices(details.serviceName),
+              isDarkMode,
+            ),
+            // Use customerLabel key for translation
+            _row(
+              languageNotifier.translate('customerLabel'),
+              details.otherSideName,
+              isDarkMode,
+            ),
             if (details.otherSidePhone.isNotEmpty)
-              _row('Phone', details.otherSidePhone),
-            _row('Area', details.areaName),
-            _row('Address', details.address),
-            _row('Date', dateFormat.format(details.scheduledDate)),
-            _row('Time', timeString),
-            if (cleanEst.isNotEmpty) _row('Est. Time', cleanEst),
-            _row('Price', details.formattedPrice),
+              _row(
+                languageNotifier.translate('phoneLabel'),
+                languageNotifier.convertNumbers(details.otherSidePhone),
+                isDarkMode,
+              ),
+            _row(
+              languageNotifier.translate('areaLabel'),
+              languageNotifier.translateCityArea(details.areaName),
+              isDarkMode,
+            ),
+            _row(
+              languageNotifier.translate('addressLabel'),
+              languageNotifier.translateAddress(details.address),
+              isDarkMode,
+            ),
+            _row(
+              languageNotifier.translate('dateLabel'),
+              dateFormat,
+              isDarkMode,
+            ),
+            _row(
+              languageNotifier.translate('timeLabel'),
+              timeString,
+              isDarkMode,
+            ),
+            if (cleanEst.isNotEmpty)
+              _row(languageNotifier.translate('estTime'), cleanEst, isDarkMode),
+            _row(
+              languageNotifier.translate('priceLabel'),
+              priceString,
+              isDarkMode,
+            ),
             if (details.notes?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
-              _row('Notes', details.notes!),
+              _row(
+                languageNotifier.translate('notesLabel'),
+                details.notes!,
+                isDarkMode,
+              ),
             ],
             if (details.attachmentUrls.isNotEmpty) ...[
               const SizedBox(height: 16),
               Text(
-                'Attachments:',
+                '${languageNotifier.translate('attachmentsLabel')}:',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: isDarkMode ? Colors.white : Colors.black,
@@ -1176,7 +1292,7 @@ class _DetailDialog extends StatelessWidget {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(
-            'Close',
+            languageNotifier.translate('close'),
             style: TextStyle(
               color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
             ),
@@ -1186,7 +1302,7 @@ class _DetailDialog extends StatelessWidget {
     );
   }
 
-  Widget _row(String label, String value) => Padding(
+  Widget _row(String label, String value, bool isDarkMode) => Padding(
     padding: const EdgeInsets.only(bottom: 6),
     child: RichText(
       text: TextSpan(

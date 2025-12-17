@@ -75,6 +75,20 @@ class LanguageNotifier extends ChangeNotifier {
     return translatedParts.join('، ');
   }
 
+  /// Splits a comma-separated string of services, translates each, and rejoins them.
+  String translateServices(String input) {
+    // Split by comma
+    List<String> parts = input.split(',');
+
+    // Translate each part
+    List<String> translatedParts = parts.map((part) {
+      return translate(part.trim());
+    }).toList();
+
+    // Join with appropriate separator
+    return translatedParts.join(isArabic ? '، ' : ', ');
+  }
+
   String translateAddress(String input) {
     if (!isArabic) return input;
 
@@ -228,7 +242,7 @@ class LanguageNotifier extends ChangeNotifier {
       'Al-Bayader': 'Al-Bayader',
       "Tla' Al-Ali": "Tla' Al-Ali",
 
-      // Bookings Screen
+      // Client Bookings Screen
       'active': 'Active',
       'pending': 'Pending',
       'closed': 'Closed',
@@ -265,6 +279,23 @@ class LanguageNotifier extends ChangeNotifier {
       'loadLocationFailed': 'Could not load location data',
       'am': 'AM',
       'pm': 'PM',
+
+      // Provider Bookings Screen
+      'noJobs': 'No jobs found.',
+      'actionFailed': 'Action failed. Please try again.',
+      'bookingActionCancelled': 'Booking cancelled.',
+      'bookingActionAccepted': 'Booking accepted.',
+      'bookingActionRejected': 'Booking rejected.',
+      'bookingActionCompleted': 'Booking completed.',
+      'accept': 'Accept',
+      'reject': 'Reject',
+      'complete': 'Complete',
+      'rejectBooking': 'Reject Booking',
+      'rejectBookingMsg': 'Reject this request?',
+      'completeJob': 'Complete Job',
+      'completeJobMsg': 'Mark this job as completed?',
+      'messageCustomer': 'Message Customer',
+      'customerLabel': 'Customer',
     },
     'ar': {
       'settings': 'الإعدادات',
@@ -388,7 +419,7 @@ class LanguageNotifier extends ChangeNotifier {
       'Al-Bayader': 'البيادر',
       "Tla' Al-Ali": 'تلاع العلي',
 
-      // Bookings Screen
+      // Client Bookings Screen
       'active': 'نشط',
       'pending': 'معلق',
       'closed': 'مغلق',
@@ -425,6 +456,23 @@ class LanguageNotifier extends ChangeNotifier {
       'loadLocationFailed': 'تعذر تحميل بيانات الموقع',
       'am': 'صباحاً',
       'pm': 'مساءً',
+
+      // Provider Bookings Screen
+      'noJobs': 'لا توجد وظائف.',
+      'actionFailed': 'فشل الإجراء. حاول مرة أخرى.',
+      'bookingActionCancelled': 'تم إلغاء الحجز.',
+      'bookingActionAccepted': 'تم قبول الحجز.',
+      'bookingActionRejected': 'تم رفض الحجز.',
+      'bookingActionCompleted': 'تم إكمال الحجز.',
+      'accept': 'قبول',
+      'reject': 'رفض',
+      'complete': 'إكمال',
+      'rejectBooking': 'رفض الحجز',
+      'rejectBookingMsg': 'هل تود رفض هذا الطلب؟',
+      'completeJob': 'إكمال العمل',
+      'completeJobMsg': 'هل تود تحديد هذا العمل كمكتمل؟',
+      'messageCustomer': 'مراسلة العميل',
+      'customerLabel': 'العميل',
     },
   };
 
