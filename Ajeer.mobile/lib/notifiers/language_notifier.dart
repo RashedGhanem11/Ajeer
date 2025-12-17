@@ -291,6 +291,7 @@ class LanguageNotifier extends ChangeNotifier {
       'saveScheduleFor': 'Save Schedule for',
       'addTimeSlotsToSave': 'Add Time Slots to Save',
       'workDaysHours': 'Work Days & Hours',
+      'scheduleDesc': 'Schedule your work days and hours.',
       'allDaysScheduled': 'All days have been scheduled!',
       'saveChanges': 'Save Changes?',
       'freeTrialMsg':
@@ -548,6 +549,7 @@ class LanguageNotifier extends ChangeNotifier {
       'saveScheduleFor': 'حفظ الجدول لـ',
       'addTimeSlotsToSave': 'أضف فترات زمنية للحفظ',
       'workDaysHours': 'أيام وساعات العمل',
+      'scheduleDesc': 'قم بجدولة أيام وساعات عملك.',
       'allDaysScheduled': 'تم جدولة جميع الأيام!',
       'saveChanges': 'حفظ التغييرات؟',
       'freeTrialMsg':

@@ -554,7 +554,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: Text(
-                        'Schedule your work days and hours.',
+                        _languageNotifier.translate('scheduleDesc'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
@@ -654,7 +654,6 @@ class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
   @override
   Widget build(BuildContext context) {
     final languageNotifier = Provider.of<LanguageNotifier>(context);
-    final isArabic = languageNotifier.isArabic;
     final Color buttonBackgroundColor = widget.isNextEnabled
         ? kSelectedGreen
         : Colors.white.withOpacity(0.2);
@@ -668,10 +667,7 @@ class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
         children: [
           IconButton(
             iconSize: 28.0,
-            icon: RotatedBox(
-              quarterTurns: isArabic ? 2 : 0,
-              child: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            ),
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: widget.onBackTap,
           ),
           Text(
