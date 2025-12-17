@@ -162,6 +162,7 @@ class _LocationScreenState extends State<LocationScreen> {
       List<Placemark> placemarks = await placemarkFromCoordinates(
         location.latitude,
         location.longitude,
+        localeIdentifier: _languageNotifier.appLocale.languageCode,
       );
 
       if (placemarks.isNotEmpty) {
@@ -190,6 +191,9 @@ class _LocationScreenState extends State<LocationScreen> {
           visibleAddress +=
               ', ${_languageNotifier.translate('unnamedLocation')}';
 
+        // Translate city/area part
+        visibleAddress = _languageNotifier.translateCityArea(visibleAddress);
+
         String fullAddress = '';
         if (street != null && street.isNotEmpty) {
           fullAddress = street;
@@ -200,6 +204,9 @@ class _LocationScreenState extends State<LocationScreen> {
           fullAddress += ' $building';
         }
         fullAddress = fullAddress.trim().replaceAll(RegExp(r',\s+'), ', ');
+
+        // Translate "Street" -> "شارع" and convert numbers
+        fullAddress = _languageNotifier.translateAddress(fullAddress);
 
         setState(() {
           _resolvedAddress = visibleAddress;
@@ -281,7 +288,10 @@ class _LocationScreenState extends State<LocationScreen> {
       return;
     }
 
-    final String finalCityArea = '$_selectedCity, $_selectedArea';
+    final String rawCityArea = '$_selectedCity, $_selectedArea';
+    final String finalCityArea = _languageNotifier.translateCityArea(
+      rawCityArea,
+    );
     String finalAddress = _fullResolvedAddress ?? '';
 
     Navigator.push(
@@ -452,10 +462,12 @@ class _LocationScreenState extends State<LocationScreen> {
     final double headerHeight = statusBarHeight + 60;
     final double availableHeight = containerTop - headerHeight;
     final double iconTopPosition = headerHeight + (availableHeight / 2) - 70;
+    final isArabic = _languageNotifier.isArabic;
 
     return Positioned(
       top: iconTopPosition,
-      left: 25.0,
+      right: isArabic ? null : 25.0,
+      left: isArabic ? 25.0 : null,
       child: Container(
         width: 100.0,
         height: 100.0,

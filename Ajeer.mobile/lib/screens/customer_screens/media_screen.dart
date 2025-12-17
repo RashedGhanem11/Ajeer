@@ -11,6 +11,7 @@ import 'confirmation_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
+import '../../notifiers/language_notifier.dart';
 
 class MediaScreen extends StatefulWidget {
   final List<int> serviceIds;
@@ -73,25 +74,13 @@ class _MediaScreenState extends State<MediaScreen> {
   final List<File> _videoFiles = [];
   final List<File> _audioFiles = [];
 
-  final List<Map<String, dynamic>> _navItems = const [
-    {
-      'label': 'Profile',
-      'icon': Icons.person_outline,
-      'activeIcon': Icons.person,
-    },
-    {
-      'label': 'Chat',
-      'icon': Icons.chat_bubble_outline,
-      'activeIcon': Icons.chat_bubble,
-    },
-    {
-      'label': 'Bookings',
-      'icon': Icons.book_outlined,
-      'activeIcon': Icons.book,
-      'notificationCount': 3,
-    },
-    {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
-  ];
+  late LanguageNotifier _languageNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context, listen: false);
+  }
 
   @override
   void initState() {
@@ -221,15 +210,17 @@ class _MediaScreenState extends State<MediaScreen> {
     } else if (_selectedMediaType == 'Audio') {
       if (source == ImageSource.gallery) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Audio from files not implemented in simulation.'),
+          SnackBar(
+            content: Text(_languageNotifier.translate('audioNotImplemented')),
           ),
         );
         Navigator.of(context).pop();
         return;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Audio recording is simulated.')),
+          SnackBar(
+            content: Text(_languageNotifier.translate('audioSimulated')),
+          ),
         );
         Navigator.of(context).pop();
         return;
@@ -263,8 +254,16 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   void _showMediaUploadDialog(BuildContext context, bool isDarkMode) {
-    String mediaType = _selectedMediaType;
-    bool isAudio = mediaType == 'Audio';
+    String mediaTypeKey;
+    if (_selectedMediaType == 'Photo') {
+      mediaTypeKey = 'addPhoto';
+    } else if (_selectedMediaType == 'Video') {
+      mediaTypeKey = 'addVideo';
+    } else {
+      mediaTypeKey = 'addAudio';
+    }
+
+    bool isAudio = _selectedMediaType == 'Audio';
 
     showModalBottomSheet(
       context: context,
@@ -283,7 +282,7 @@ class _MediaScreenState extends State<MediaScreen> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                'Add $mediaType',
+                _languageNotifier.translate(mediaTypeKey),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20.0,
@@ -295,7 +294,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 ListTile(
                   leading: const Icon(Icons.photo_library, color: _primaryBlue),
                   title: Text(
-                    'Select from Gallery',
+                    _languageNotifier.translate('selectFromGallery'),
                     style: TextStyle(
                       color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                     ),
@@ -308,7 +307,9 @@ class _MediaScreenState extends State<MediaScreen> {
                   color: _primaryBlue,
                 ),
                 title: Text(
-                  isAudio ? 'Record Audio' : 'Camera',
+                  isAudio
+                      ? _languageNotifier.translate('recordAudio')
+                      : _languageNotifier.translate('camera'),
                   style: TextStyle(
                     color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                   ),
@@ -326,6 +327,7 @@ class _MediaScreenState extends State<MediaScreen> {
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
     final bool isDarkMode = themeNotifier.isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -345,6 +347,30 @@ class _MediaScreenState extends State<MediaScreen> {
     final double bottomNavClearance =
         _navBarTotalHeight + MediaQuery.of(context).padding.bottom;
 
+    final navItems = [
+      {
+        'label': languageNotifier.translate('profile'),
+        'icon': Icons.person_outline,
+        'activeIcon': Icons.person,
+      },
+      {
+        'label': languageNotifier.translate('chat'),
+        'icon': Icons.chat_bubble_outline,
+        'activeIcon': Icons.chat_bubble,
+      },
+      {
+        'label': languageNotifier.translate('bookings'),
+        'icon': Icons.book_outlined,
+        'activeIcon': Icons.book,
+        'notificationCount': 3,
+      },
+      {
+        'label': languageNotifier.translate('home'),
+        'icon': Icons.home_outlined,
+        'activeIcon': Icons.home,
+      },
+    ];
+
     return Scaffold(
       extendBody: true,
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
@@ -359,13 +385,18 @@ class _MediaScreenState extends State<MediaScreen> {
             containerTop: whiteContainerTop,
             bottomNavClearance: bottomNavClearance,
             isDarkMode: isDarkMode,
+            languageNotifier: languageNotifier,
           ),
           _buildHomeImage(logoTopPosition, isDarkMode),
-          _NavigationHeader(onBackTap: _onBackTap, onNextTap: _onNextTap),
+          _NavigationHeader(
+            onBackTap: _onBackTap,
+            onNextTap: _onNextTap,
+            appName: languageNotifier.translate('appName'),
+          ),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        items: _navItems,
+        items: navItems,
         selectedIndex: _selectedIndex,
         onIndexChanged: _onNavItemTapped,
       ),
@@ -392,9 +423,12 @@ class _MediaScreenState extends State<MediaScreen> {
     final double headerHeight = statusBarHeight + 60;
     final double availableHeight = containerTop - headerHeight;
     final double iconTopPosition = headerHeight + (availableHeight / 2) - 70;
+    final isArabic = _languageNotifier.isArabic;
+
     return Positioned(
       top: iconTopPosition,
-      right: 25.0,
+      right: isArabic ? null : 25.0,
+      left: isArabic ? 25.0 : null,
       child: Container(
         width: 100.0,
         height: 100.0,
@@ -443,6 +477,7 @@ class _MediaScreenState extends State<MediaScreen> {
     required double containerTop,
     required double bottomNavClearance,
     required bool isDarkMode,
+    required LanguageNotifier languageNotifier,
   }) {
     return Positioned(
       top: containerTop,
@@ -470,9 +505,13 @@ class _MediaScreenState extends State<MediaScreen> {
           children: [
             const SizedBox(height: 15.0),
             Padding(
-              padding: const EdgeInsets.only(left: 20.0, top: 20.0),
+              padding: const EdgeInsets.only(
+                left: 20.0,
+                right: 20.0,
+                top: 20.0,
+              ),
               child: Text(
-                'Upload media',
+                languageNotifier.translate('uploadMedia'),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -488,7 +527,7 @@ class _MediaScreenState extends State<MediaScreen> {
                   _horizontalPadding,
                   bottomNavClearance - _horizontalPadding,
                 ),
-                child: _buildMediaContent(isDarkMode),
+                child: _buildMediaContent(isDarkMode, languageNotifier),
               ),
             ),
           ],
@@ -497,12 +536,15 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-  Widget _buildMediaContent(bool isDarkMode) {
+  Widget _buildMediaContent(
+    bool isDarkMode,
+    LanguageNotifier languageNotifier,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Add a photo, video, or audio recording describing your problem',
+          languageNotifier.translate('mediaDescription'),
           textAlign: TextAlign.center,
           style: TextStyle(
             color: isDarkMode ? Colors.grey : Colors.grey.shade600,
@@ -511,39 +553,40 @@ class _MediaScreenState extends State<MediaScreen> {
           ),
         ),
         const SizedBox(height: 25.0),
-        _buildMediaTabs(isDarkMode),
+        _buildMediaTabs(isDarkMode, languageNotifier),
         const SizedBox(height: 25.0),
         _buildUploadRectangle(isDarkMode),
         const SizedBox(height: 15.0),
         _buildDescriptionRectangle(
           isDarkMode,
           isDarkMode ? Colors.white70 : Colors.black87,
+          languageNotifier,
         ),
         const SizedBox(height: 20.0),
       ],
     );
   }
 
-  Widget _buildMediaTabs(bool isDarkMode) {
+  Widget _buildMediaTabs(bool isDarkMode, LanguageNotifier languageNotifier) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         _TabButton(
-          type: 'Photo',
+          type: languageNotifier.translate('photo'),
           icon: Icons.image_outlined,
           onTap: () => setState(() => _selectedMediaType = 'Photo'),
           isSelected: _selectedMediaType == 'Photo',
           isDarkMode: isDarkMode,
         ),
         _TabButton(
-          type: 'Video',
+          type: languageNotifier.translate('video'),
           icon: Icons.videocam_outlined,
           onTap: () => setState(() => _selectedMediaType = 'Video'),
           isSelected: _selectedMediaType == 'Video',
           isDarkMode: isDarkMode,
         ),
         _TabButton(
-          type: 'Audio',
+          type: languageNotifier.translate('audio'),
           icon: Icons.mic_none,
           onTap: () => setState(() => _selectedMediaType = 'Audio'),
           isSelected: _selectedMediaType == 'Audio',
@@ -656,7 +699,11 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-  Widget _buildDescriptionRectangle(bool isDarkMode, Color textColor) {
+  Widget _buildDescriptionRectangle(
+    bool isDarkMode,
+    Color textColor,
+    LanguageNotifier languageNotifier,
+  ) {
     final Color effectiveTextColor = _isDescriptionSaved
         ? (isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600)
         : textColor;
@@ -686,9 +733,9 @@ class _MediaScreenState extends State<MediaScreen> {
             children: [
               Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(
+                  padding: EdgeInsetsDirectional.only(
                     top: 10.0,
-                    right: _isDescriptionSaved ? 10.0 : 30.0,
+                    end: _isDescriptionSaved ? 10.0 : 30.0,
                     bottom: 5.0,
                   ),
                   child: TextField(
@@ -698,8 +745,7 @@ class _MediaScreenState extends State<MediaScreen> {
                     enabled: !_isDescriptionSaved,
                     cursorColor: _primaryBlue,
                     decoration: InputDecoration(
-                      hintText:
-                          'Write a description of your problem (Optional)',
+                      hintText: languageNotifier.translate('descriptionHint'),
                       hintStyle: TextStyle(
                         color: isDarkMode
                             ? Colors.grey.shade500
@@ -732,9 +778,9 @@ class _MediaScreenState extends State<MediaScreen> {
                         vertical: 10,
                       ),
                     ),
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(
+                    child: Text(
+                      languageNotifier.translate('save'),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
@@ -742,13 +788,13 @@ class _MediaScreenState extends State<MediaScreen> {
                   ),
                 ),
               if (_isDescriptionSaved)
-                const Padding(
-                  padding: EdgeInsets.only(right: 10.0, bottom: 5.0),
+                Padding(
+                  padding: const EdgeInsets.only(right: 10.0, bottom: 5.0),
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      'Description Saved',
-                      style: TextStyle(
+                      languageNotifier.translate('descriptionSaved'),
+                      style: const TextStyle(
                         color: _primaryBlue,
                         fontWeight: FontWeight.bold,
                       ),
@@ -875,8 +921,13 @@ class _TabButtonState extends State<_TabButton>
 class _NavigationHeader extends StatefulWidget {
   final VoidCallback onBackTap;
   final VoidCallback onNextTap;
+  final String appName;
 
-  const _NavigationHeader({required this.onBackTap, required this.onNextTap});
+  const _NavigationHeader({
+    required this.onBackTap,
+    required this.onNextTap,
+    required this.appName,
+  });
 
   @override
   State<_NavigationHeader> createState() => _NavigationHeaderState();
@@ -921,9 +972,9 @@ class _NavigationHeaderState extends State<_NavigationHeader>
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: widget.onBackTap,
           ),
-          const Text(
-            'Ajeer',
-            style: TextStyle(
+          Text(
+            widget.appName,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 34,
               fontWeight: FontWeight.w900,

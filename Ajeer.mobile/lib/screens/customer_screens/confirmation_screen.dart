@@ -11,6 +11,7 @@ import '../shared_screens/profile_screen.dart';
 import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
 import '../../services/booking_service.dart';
+import '../../notifiers/language_notifier.dart';
 
 class ConfirmationScreen extends StatefulWidget {
   final List<int> serviceIds;
@@ -81,25 +82,13 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
-  final List<Map<String, dynamic>> _navItems = const [
-    {
-      'label': 'Profile',
-      'icon': Icons.person_outline,
-      'activeIcon': Icons.person,
-    },
-    {
-      'label': 'Chat',
-      'icon': Icons.chat_bubble_outline,
-      'activeIcon': Icons.chat_bubble,
-    },
-    {
-      'label': 'Bookings',
-      'icon': Icons.book_outlined,
-      'activeIcon': Icons.book,
-      'notificationCount': 3,
-    },
-    {'label': 'Home', 'icon': Icons.home_outlined, 'activeIcon': Icons.home},
-  ];
+  late LanguageNotifier _languageNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context, listen: false);
+  }
 
   List<File> get _videoFiles => widget.pickedMediaFiles.where((file) {
     final path = file.path.toLowerCase();
@@ -260,7 +249,9 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = Provider.of<ThemeNotifier>(context).isDarkMode;
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
+    final bool isDarkMode = themeNotifier.isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
@@ -284,6 +275,30 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
     final double bottomNavClearance =
         _ConfirmationConstants.navBarTotalHeight +
         MediaQuery.of(context).padding.bottom;
+
+    final navItems = [
+      {
+        'label': languageNotifier.translate('profile'),
+        'icon': Icons.person_outline,
+        'activeIcon': Icons.person,
+      },
+      {
+        'label': languageNotifier.translate('chat'),
+        'icon': Icons.chat_bubble_outline,
+        'activeIcon': Icons.chat_bubble,
+      },
+      {
+        'label': languageNotifier.translate('bookings'),
+        'icon': Icons.book_outlined,
+        'activeIcon': Icons.book,
+        'notificationCount': 3,
+      },
+      {
+        'label': languageNotifier.translate('home'),
+        'icon': Icons.home_outlined,
+        'activeIcon': Icons.home,
+      },
+    ];
 
     return Scaffold(
       extendBody: true,
@@ -320,11 +335,12 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
                   Padding(
                     padding: const EdgeInsets.only(
                       left: _ConfirmationConstants.horizontalPadding,
+                      right: _ConfirmationConstants.horizontalPadding,
                       top: 20.0,
                       bottom: 10.0,
                     ),
                     child: Text(
-                      'Confirm your booking',
+                      languageNotifier.translate('confirmBooking'),
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             fontSize: 28,
@@ -337,6 +353,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
                     child: _buildConfirmationDetails(
                       bottomNavClearance,
                       isDarkMode,
+                      languageNotifier,
                     ),
                   ),
                 ],
@@ -346,12 +363,12 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
           _buildHomeImage(logoTopPosition, isDarkMode),
           _ConfirmationNavigationHeader(
             onBackTap: () => Navigator.pop(context),
-            onConfirmTap: _onConfirmTap,
+            appName: languageNotifier.translate('appName'),
           ),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        items: _navItems,
+        items: navItems,
         selectedIndex: _selectedIndex,
         onIndexChanged: _onNavItemTapped,
       ),
@@ -386,6 +403,8 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
         _ConfirmationConstants.logoHeight / 2 -
         _ConfirmationConstants.iconPositionAdjustment;
 
+    final isArabic = _languageNotifier.isArabic;
+
     Color primaryColor = _isConfirmButtonPressed
         ? _ConfirmationConstants.confirmGreen
         : _ConfirmationConstants.secondaryBlue;
@@ -398,7 +417,8 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
 
     return Positioned(
       top: iconTopPosition,
-      right: 25.0,
+      right: isArabic ? null : 25.0,
+      left: isArabic ? 25.0 : null,
       child: GestureDetector(
         onTap: _onConfirmTap,
         child: ScaleTransition(
@@ -471,7 +491,11 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
     );
   }
 
-  Widget _buildConfirmationDetails(double bottomNavClearance, bool isDarkMode) {
+  Widget _buildConfirmationDetails(
+    double bottomNavClearance,
+    bool isDarkMode,
+    LanguageNotifier languageNotifier,
+  ) {
     IconData serviceIcon;
     switch (widget.serviceName) {
       case 'Cleaning':
@@ -501,20 +525,23 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
             totalPrice: widget.totalPrice,
             totalTimeMinutes: widget.totalTimeMinutes,
             isDarkMode: isDarkMode,
+            languageNotifier: languageNotifier,
           ),
           const SizedBox(height: 15.0),
           _DetailItem(
             icon: serviceIcon,
-            title: widget.serviceName,
+            title: languageNotifier.translate(widget.serviceName),
             subtitle: widget.unitType,
             isDarkMode: isDarkMode,
           ),
           _DetailItem(
             icon: Icons.calendar_today_outlined,
-            title: DateFormat.yMMMMd().format(widget.selectedDate),
+            title: languageNotifier.getFormattedDate(widget.selectedDate),
             subtitle: widget.selectionMode == 'Custom'
-                ? widget.selectedTime.format(context)
-                : 'Instant Booking',
+                ? languageNotifier.convertNumbers(
+                    widget.selectedTime.format(context),
+                  )
+                : languageNotifier.translate('instantBooking'),
             isDarkMode: isDarkMode,
           ),
           _DetailItem(
@@ -531,22 +558,27 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
             currentView: _currentMediaView,
             onViewChange: (view) => setState(() => _currentMediaView = view),
             isDarkMode: isDarkMode,
+            languageNotifier: languageNotifier,
           ),
           const SizedBox(height: 10.0),
-          _buildMediaContent(isDarkMode),
+          _buildMediaContent(isDarkMode, languageNotifier),
           const SizedBox(height: 20.0),
           if (widget.userDescription != null &&
               widget.userDescription!.trim().isNotEmpty)
             _DescriptionDisplay(
               description: widget.userDescription!,
               isDarkMode: isDarkMode,
+              languageNotifier: languageNotifier,
             ),
         ],
       ),
     );
   }
 
-  Widget _buildMediaContent(bool isDarkMode) {
+  Widget _buildMediaContent(
+    bool isDarkMode,
+    LanguageNotifier languageNotifier,
+  ) {
     List<File> currentFiles = [];
     IconData placeholderIcon = Icons.clear;
     String placeholderText = '';
@@ -554,15 +586,15 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
     if (_currentMediaView == 'Photo') {
       currentFiles = _photoFiles;
       placeholderIcon = Icons.image_not_supported_outlined;
-      placeholderText = 'No images uploaded.';
+      placeholderText = languageNotifier.translate('noImages');
     } else if (_currentMediaView == 'Video') {
       currentFiles = _videoFiles;
       placeholderIcon = Icons.videocam_off_outlined;
-      placeholderText = 'No videos uploaded.';
+      placeholderText = languageNotifier.translate('noVideos');
     } else if (_currentMediaView == 'Audio') {
       currentFiles = [];
       placeholderIcon = Icons.mic_off_outlined;
-      placeholderText = 'No audio uploaded.';
+      placeholderText = languageNotifier.translate('noAudio');
     }
 
     final Color containerColor = isDarkMode
@@ -651,24 +683,37 @@ class _PriceAndDurationDisplay extends StatelessWidget {
   final double totalPrice;
   final int totalTimeMinutes;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _PriceAndDurationDisplay({
     required this.totalPrice,
     required this.totalTimeMinutes,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   String _formatDuration(int totalMinutes) {
-    if (totalMinutes <= 0) return '0 mins';
+    String timeString = '';
+
     int hours = totalMinutes ~/ 60;
     int minutes = totalMinutes % 60;
-    String timeString = '';
-    if (hours > 0) timeString += '$hours hr${hours > 1 ? 's' : ''}';
-    if (hours > 0 && minutes > 0) timeString += ' ';
-    if (minutes > 0 || hours == 0) {
-      timeString += '$minutes min${minutes > 1 ? 's' : ''}';
+
+    final hrStr = languageNotifier.translate('hr');
+    final hrsStr = languageNotifier.translate('hrs');
+    final minStr = languageNotifier.translate('min');
+    final minsStr = languageNotifier.translate('mins');
+
+    if (hours > 0) {
+      timeString += '$hours ${hours > 1 ? hrsStr : hrStr}';
     }
-    return timeString;
+
+    if (hours > 0 && minutes > 0) timeString += ' ';
+
+    if (minutes > 0 || hours == 0) {
+      timeString += '$minutes ${minutes > 1 ? minsStr : minStr}';
+    }
+
+    return languageNotifier.convertNumbers(timeString);
   }
 
   @override
@@ -710,11 +755,11 @@ class _PriceAndDurationDisplay extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'Estimated Cost',
+                        Text(
+                          languageNotifier.translate('estimatedCost'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: labelFontSize,
                             color: labelColor,
                           ),
@@ -724,7 +769,9 @@ class _PriceAndDurationDisplay extends StatelessWidget {
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'JOD ${totalPrice.toStringAsFixed(2)}',
+                            languageNotifier.isArabic
+                                ? '${languageNotifier.convertNumbers(totalPrice.toStringAsFixed(2))} ${languageNotifier.translate('jod')}' // Arabic: 20.00 JOD
+                                : '${languageNotifier.translate('jod')} ${totalPrice.toStringAsFixed(2)}', // English: JOD 20.00
                             style: TextStyle(
                               fontSize: valueFontSize,
                               fontWeight: FontWeight.bold,
@@ -758,11 +805,11 @@ class _PriceAndDurationDisplay extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'Est. Duration',
+                        Text(
+                          languageNotifier.translate('estDuration'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: labelFontSize,
                             color: labelColor,
                           ),
@@ -795,11 +842,11 @@ class _PriceAndDurationDisplay extends StatelessWidget {
 
 class _ConfirmationNavigationHeader extends StatelessWidget {
   final VoidCallback onBackTap;
-  final VoidCallback onConfirmTap;
+  final String appName;
 
   const _ConfirmationNavigationHeader({
     required this.onBackTap,
-    required this.onConfirmTap,
+    required this.appName,
   });
 
   @override
@@ -816,9 +863,9 @@ class _ConfirmationNavigationHeader extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: onBackTap,
           ),
-          const Text(
-            'Ajeer',
-            style: TextStyle(
+          Text(
+            appName,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 34,
               fontWeight: FontWeight.w900,
@@ -872,7 +919,8 @@ class _DetailItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 8.0, right: 15.0),
+            // Correct padding using directional EdgeInsets
+            padding: const EdgeInsetsDirectional.only(top: 8.0, end: 15.0),
             child: Icon(
               icon,
               color: _ConfirmationConstants.primaryBlue,
@@ -931,6 +979,11 @@ class _DetailItem extends StatelessWidget {
   }
 }
 
+// ... _MediaSummary, _BouncingMediaTab, _DescriptionDisplay, _FullScreenImageViewer, _FullScreenVideoPlayer
+// are the same as provided previously in the truncated response.
+// Just ensure they are all present in the file.
+// I am including them here for completeness.
+
 class _MediaSummary extends StatelessWidget {
   final int photoCount;
   final int videoCount;
@@ -938,6 +991,7 @@ class _MediaSummary extends StatelessWidget {
   final String currentView;
   final ValueChanged<String> onViewChange;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _MediaSummary({
     required this.photoCount,
@@ -946,6 +1000,7 @@ class _MediaSummary extends StatelessWidget {
     required this.currentView,
     required this.onViewChange,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -956,7 +1011,7 @@ class _MediaSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Uploaded Media',
+          languageNotifier.translate('uploadedMedia'),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -968,7 +1023,7 @@ class _MediaSummary extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _BouncingMediaTab(
-              label: 'Photo',
+              label: languageNotifier.translate('photo'),
               type: 'Photo',
               icon: Icons.image_outlined,
               count: photoCount,
@@ -977,7 +1032,7 @@ class _MediaSummary extends StatelessWidget {
               onTap: () => onViewChange('Photo'),
             ),
             _BouncingMediaTab(
-              label: 'Video',
+              label: languageNotifier.translate('video'),
               type: 'Video',
               icon: Icons.videocam_outlined,
               count: videoCount,
@@ -986,7 +1041,7 @@ class _MediaSummary extends StatelessWidget {
               onTap: () => onViewChange('Video'),
             ),
             _BouncingMediaTab(
-              label: 'Audio',
+              label: languageNotifier.translate('audio'),
               type: 'Audio',
               icon: Icons.mic_none,
               count: audioCount,
@@ -1113,10 +1168,12 @@ class _BouncingMediaTabState extends State<_BouncingMediaTab>
 class _DescriptionDisplay extends StatelessWidget {
   final String description;
   final bool isDarkMode;
+  final LanguageNotifier languageNotifier;
 
   const _DescriptionDisplay({
     required this.description,
     required this.isDarkMode,
+    required this.languageNotifier,
   });
 
   @override
@@ -1136,7 +1193,7 @@ class _DescriptionDisplay extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Customer Note',
+          languageNotifier.translate('customerNote'),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,

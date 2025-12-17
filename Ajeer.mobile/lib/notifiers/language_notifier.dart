@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LanguageNotifier extends ChangeNotifier {
@@ -49,6 +50,59 @@ class LanguageNotifier extends ChangeNotifier {
     }
     return input;
   }
+
+  String getFormattedDate(DateTime date) {
+    if (!isArabic) {
+      return DateFormat('MMMM d, y').format(date);
+    }
+
+    // Custom Arabic formatting
+    final String day = convertNumbers(date.day.toString());
+    final String year = convertNumbers(date.year.toString());
+    final String month = _arabicMonths[date.month] ?? '';
+
+    return '$month $day، $year';
+  }
+
+  String translateCityArea(String input) {
+    if (!isArabic) return input;
+
+    List<String> parts = input.split(',');
+    List<String> translatedParts = parts.map((part) {
+      return translate(part.trim());
+    }).toList();
+
+    return translatedParts.join('، ');
+  }
+
+  String translateAddress(String input) {
+    if (!isArabic) return input;
+
+    // Replace specific English address terms with Arabic
+    // Note: Geocoding usually returns "Street", "St", etc.
+    String translated = input
+        .replaceAll(RegExp(r'\bStreet\b', caseSensitive: false), 'شارع')
+        .replaceAll(RegExp(r'\bSt\b', caseSensitive: false), 'شارع')
+        .replaceAll(RegExp(r'\bDistrict\b', caseSensitive: false), 'حي');
+
+    // Finally convert any numbers
+    return convertNumbers(translated);
+  }
+
+  static final Map<int, String> _arabicMonths = {
+    1: 'يناير',
+    2: 'فبراير',
+    3: 'مارس',
+    4: 'أبريل',
+    5: 'مايو',
+    6: 'يونيو',
+    7: 'يوليو',
+    8: 'أغسطس',
+    9: 'سبتمبر',
+    10: 'أكتوبر',
+    11: 'نوفمبر',
+    12: 'ديسمبر',
+  };
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
@@ -104,6 +158,34 @@ class LanguageNotifier extends ChangeNotifier {
           'Please select an area and ensure location is picked.',
       'errorValidating': 'Error validating area selection.',
       'unnamedLocation': 'Unnamed location',
+
+      'uploadMedia': 'Upload media',
+      'mediaDescription':
+          'Add a photo, video, or audio recording describing your problem',
+      'photo': 'Photo',
+      'video': 'Video',
+      'audio': 'Audio',
+      'selectFromGallery': 'Select from Gallery',
+      'recordAudio': 'Record Audio',
+      'camera': 'Camera',
+      'addPhoto': 'Add Photo',
+      'addVideo': 'Add Video',
+      'addAudio': 'Add Audio',
+      'descriptionHint': 'Write a description of your problem (Optional)',
+      'save': 'Save',
+      'descriptionSaved': 'Description Saved',
+      'audioNotImplemented': 'Audio from files not implemented in simulation.',
+      'audioSimulated': 'Audio recording is simulated.',
+
+      'confirmBooking': 'Confirm your booking',
+      'estimatedCost': 'Estimated Cost',
+      'estDuration': 'Est. Duration',
+      'customerNote': 'Customer Note',
+      'uploadedMedia': 'Uploaded Media',
+      'noImages': 'No images uploaded.',
+      'noVideos': 'No videos uploaded.',
+      'noAudio': 'No audio uploaded.',
+      'instantBooking': 'Instant Booking',
 
       'Plumbing': 'Plumbing',
       'Electrical': 'Electrical',
@@ -199,6 +281,33 @@ class LanguageNotifier extends ChangeNotifier {
       'selectAreaWarning': 'الرجاء اختيار منطقة والتأكد من تحديد الموقع.',
       'errorValidating': 'خطأ في التحقق من اختيار المنطقة.',
       'unnamedLocation': 'موقع غير مسمى',
+
+      'uploadMedia': 'تحميل الوسائط',
+      'mediaDescription': 'أضف صورة أو فيديو أو تسجيل صوتي يصف مشكلتك',
+      'photo': 'صورة',
+      'video': 'فيديو',
+      'audio': 'صوت',
+      'selectFromGallery': 'اختر من المعرض',
+      'recordAudio': 'تسجيل صوت',
+      'camera': 'الكاميرا',
+      'addPhoto': 'إضافة صورة',
+      'addVideo': 'إضافة فيديو',
+      'addAudio': 'إضافة صوت',
+      'descriptionHint': 'اكتب وصفاً لمشكلتك (اختياري)',
+      'save': 'حفظ',
+      'descriptionSaved': 'تم حفظ الوصف',
+      'audioNotImplemented': 'الصوت من الملفات غير متاح في المحاكاة.',
+      'audioSimulated': 'تسجيل الصوت محاكى.',
+
+      'confirmBooking': 'تأكيد الحجز',
+      'estimatedCost': 'التكلفة التقديرية',
+      'estDuration': 'الوقت المقدر',
+      'customerNote': 'ملاحظات العميل',
+      'uploadedMedia': 'الوسائط المرفوعة',
+      'noImages': 'لا يوجد صور مرفوعة.',
+      'noVideos': 'لا يوجد فيديو مرفوع.',
+      'noAudio': 'لا يوجد صوت مرفوع.',
+      'instantBooking': 'حجز فوري',
 
       'Plumbing': 'سباكة',
       'Electrical': 'كهرباء',
