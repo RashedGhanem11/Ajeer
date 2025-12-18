@@ -563,9 +563,9 @@ class _BookingCardState extends State<_BookingCard>
                     ),
                   ),
                   Text(
-                    languageNotifier.translate(
+                    languageNotifier.translateServices(
                       widget.booking.serviceName,
-                    ), // Translate service name
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -1142,7 +1142,7 @@ class _DetailDialog extends StatelessWidget {
             _row(
               context,
               languageNotifier.translate('serviceLabel'),
-              languageNotifier.translate(details.serviceName),
+              languageNotifier.translateServices(details.serviceName),
               isDarkMode,
             ),
             _row(
