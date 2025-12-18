@@ -131,6 +131,7 @@ class LanguageNotifier extends ChangeNotifier {
     if (lowerInput == 'just now') return translate('justNow');
     if (lowerInput == 'yesterday') return translate('yesterday');
 
+    // Regex for relative times
     final daysRegex = RegExp(r'(\d+)\s+days?\s+ago', caseSensitive: false);
     final hoursRegex = RegExp(
       r'(\d+)\s+(hours?|hrs?)\s+ago',
@@ -157,7 +158,29 @@ class LanguageNotifier extends ChangeNotifier {
       return 'منذ ${convertNumbers(count!)} ${translate('minutes')}';
     }
 
-    return translateTimeRange(input);
+    // NEW: Handle Month translation for strings like "Dec 8, 2025"
+    String translated = input;
+    final monthMap = {
+      'Jan': 'يناير',
+      'Feb': 'فبراير',
+      'Mar': 'مارس',
+      'Apr': 'أبريل',
+      'May': 'مايو',
+      'Jun': 'يونيو',
+      'Jul': 'يوليو',
+      'Aug': 'أغسطس',
+      'Sep': 'سبتمبر',
+      'Oct': 'أكتوبر',
+      'Nov': 'نوفمبر',
+      'Dec': 'ديسمبر',
+    };
+
+    monthMap.forEach((en, ar) {
+      translated = translated.replaceAll(en, ar);
+    });
+
+    // Finally translate AM/PM and convert numbers
+    return convertNumbers(translateTimeRange(translated));
   }
 
   static final Map<int, String> _arabicMonths = {
