@@ -42,11 +42,28 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer2<ThemeNotifier, LanguageNotifier>(
       builder: (context, themeNotifier, languageNotifier, child) {
+        final String? currentFont = languageNotifier.currentFontFamily;
+
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Ajeer App',
-          theme: lightTheme,
-          darkTheme: darkTheme,
+          theme: lightTheme.copyWith(
+            // We use apply on textTheme instead of a direct fontFamily parameter
+            textTheme: currentFont != null
+                ? lightTheme.textTheme.apply(fontFamily: currentFont)
+                : lightTheme.textTheme,
+            primaryTextTheme: currentFont != null
+                ? lightTheme.primaryTextTheme.apply(fontFamily: currentFont)
+                : lightTheme.primaryTextTheme,
+          ),
+          darkTheme: darkTheme.copyWith(
+            textTheme: currentFont != null
+                ? darkTheme.textTheme.apply(fontFamily: currentFont)
+                : darkTheme.textTheme,
+            primaryTextTheme: currentFont != null
+                ? darkTheme.primaryTextTheme.apply(fontFamily: currentFont)
+                : darkTheme.primaryTextTheme,
+          ),
           themeMode: themeNotifier.themeMode,
           locale: languageNotifier.appLocale,
           supportedLocales: const [

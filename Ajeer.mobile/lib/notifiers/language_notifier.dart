@@ -9,6 +9,13 @@ class LanguageNotifier extends ChangeNotifier {
 
   bool get isArabic => _appLocale.languageCode == 'ar';
 
+  String? get currentFontFamily {
+    if (isArabic) {
+      return 'font';
+    }
+    return null;
+  }
+
   LanguageNotifier() {
     _loadLanguage();
   }
@@ -73,10 +80,18 @@ class LanguageNotifier extends ChangeNotifier {
   }
 
   String translateServices(String input) {
+    if (input.isEmpty) return input;
+
+    // 1. Split by comma and handle any extra whitespace
     List<String> parts = input.split(',');
+
     List<String> translatedParts = parts.map((part) {
-      return translate(part.trim());
+      // 2. Trim every part to ensure it matches your map keys exactly
+      String serviceKey = part.trim();
+      return translate(serviceKey);
     }).toList();
+
+    // 3. Join with the specific Arabic comma if language is Arabic
     return translatedParts.join(isArabic ? '، ' : ', ');
   }
 
@@ -162,7 +177,6 @@ class LanguageNotifier extends ChangeNotifier {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
-      // General
       'settings': 'Settings',
       'language': 'Language',
       'darkMode': 'Enable Dark Mode',
@@ -191,8 +205,6 @@ class LanguageNotifier extends ChangeNotifier {
       'save': 'Save',
       'error': 'Error: ',
       'retry': 'Retry',
-
-      // Login Screen
       'loginTitle': 'Login',
       'emailOrPhoneHint': 'Email or phone number',
       'passwordHint': 'Password',
@@ -205,8 +217,6 @@ class LanguageNotifier extends ChangeNotifier {
       'emailOrPhoneTooLong': 'Email Or Phone cannot exceed 100 characters.',
       'passwordRequired': 'Password is required.',
       'passwordTooShort': 'Password must be at least 8 characters.',
-
-      // Sign Up Screen
       'createAccount': 'Create Account',
       'firstName': 'First Name',
       'lastName': 'Last Name',
@@ -225,8 +235,6 @@ class LanguageNotifier extends ChangeNotifier {
       'logIn': 'Log in',
       'fullNameTooLong': 'Full name cannot exceed 100 characters.',
       'accountCreated': 'Account created successfully! Please login.',
-
-      // Forgot Password Screen
       'resetPasswordTitle': 'Reset Password',
       'resetMethodDesc': 'How would you like to reset your password?',
       'resetUsingEmail': 'Reset using Email',
@@ -243,8 +251,6 @@ class LanguageNotifier extends ChangeNotifier {
       'passwordTooShortReset': 'Password must be at least 6 characters long.',
       'confirmYourPassword': 'Please confirm your password.',
       'continueBtn': 'Continue',
-
-      // Chat Screen
       'conversations': 'Conversations',
       'searchChats': 'Search chats...',
       'errorLoadingChats': 'Error loading chats',
@@ -258,8 +264,6 @@ class LanguageNotifier extends ChangeNotifier {
       'days': 'days',
       'hours': 'hours',
       'minutes': 'minutes',
-
-      // Services & Units
       'Plumbing': 'Plumbing',
       'Electrical': 'Electrical',
       'Cleaning': 'Cleaning',
@@ -306,8 +310,6 @@ class LanguageNotifier extends ChangeNotifier {
       'Full Service': 'Full Service',
       'Basic': 'Basic',
       'Premium': 'Premium',
-
-      // Profile Screen
       'myProfile': 'My Profile',
       'fullName': 'Full Name',
       'mobileNumber': 'Mobile Number',
@@ -333,8 +335,6 @@ class LanguageNotifier extends ChangeNotifier {
       'profileUpdated': 'Profile updated successfully!',
       'updateFailed': 'Update failed: ',
       'passwordChanged': 'Password changed successfully!',
-
-      // Booking & Location (Customer)
       'selectService': 'Select a service',
       'searchHint': 'Search for a service',
       'fetchingError': 'Error fetching services: ',
@@ -342,7 +342,10 @@ class LanguageNotifier extends ChangeNotifier {
       'selectAtLeastOne': 'Please select at least one unit type first.',
       'noUnitsAvailable': 'No unit types available for this service.',
       'estTime': 'Est. Time',
-      'hr': 'hr', 'hrs': 'hrs', 'min': 'min', 'mins': 'mins',
+      'hr': 'hr',
+      'hrs': 'hrs',
+      'min': 'min',
+      'mins': 'mins',
       'selectDateTime': 'Select date & time',
       'custom': 'Custom',
       'instant': 'Instant',
@@ -361,12 +364,15 @@ class LanguageNotifier extends ChangeNotifier {
           'Please select an area and ensure location is picked.',
       'errorValidating': 'Error validating area selection.',
       'unnamedLocation': 'Unnamed location',
-      'Amman': 'Amman', 'Abdoun': 'Abdoun',
-      'Jabal Al-Weibdeh': 'Jabal Al-Weibdeh', 'Shmeisani': 'Shmeisani',
-      'Al-Rabieh': 'Al-Rabieh', 'Dabouq': 'Dabouq', 'Al-Jubeiha': 'Al-Jubeiha',
-      'Al-Bayader': 'Al-Bayader', "Tla' Al-Ali": "Tla' Al-Ali",
-
-      // Provider Location & Services
+      'Amman': 'Amman',
+      'Abdoun': 'Abdoun',
+      'Jabal Al-Weibdeh': 'Jabal Al-Weibdeh',
+      'Shmeisani': 'Shmeisani',
+      'Al-Rabieh': 'Al-Rabieh',
+      'Dabouq': 'Dabouq',
+      'Al-Jubeiha': 'Al-Jubeiha',
+      'Al-Bayader': 'Al-Bayader',
+      "Tla' Al-Ali": "Tla' Al-Ali",
       'pickLocationPlural': 'Pick location(s)',
       'locationSelectionDesc':
           'Select the cities and areas where you will be providing your services.',
@@ -383,8 +389,6 @@ class LanguageNotifier extends ChangeNotifier {
       'loadServicesFailed':
           'Failed to load services. Please check your connection.',
       'selectUnitTypesFor': 'Select unit type(s) for',
-
-      // Work Schedule Screen
       'timeSlotsFor': 'Time Slots for',
       'selectDayToSchedule': 'Select a Day to Schedule Time',
       'startTime': 'Start Time',
@@ -401,8 +405,6 @@ class LanguageNotifier extends ChangeNotifier {
       'freeTrialMsg':
           'Start providing your services to customers and using the Ajeer App for free for 30 days. After this period, you will need to subscribe to continue.',
       'unexpectedError': 'An unexpected error occurred.',
-
-      // Confirmation
       'confirmBooking': 'Confirm your booking',
       'estimatedCost': 'Estimated Cost',
       'estDuration': 'Est. Duration',
@@ -414,7 +416,9 @@ class LanguageNotifier extends ChangeNotifier {
       'uploadMedia': 'Upload media',
       'mediaDescription':
           'Add a photo, video, or audio recording describing your problem',
-      'photo': 'Photo', 'video': 'Video', 'audio': 'Audio',
+      'photo': 'Photo',
+      'video': 'Video',
+      'audio': 'Audio',
       'selectFromGallery': 'Select from Gallery',
       'recordAudio': 'Record Audio',
       'camera': 'Camera',
@@ -425,8 +429,6 @@ class LanguageNotifier extends ChangeNotifier {
       'descriptionSaved': 'Description Saved',
       'audioNotImplemented': 'Audio from files not implemented in simulation.',
       'audioSimulated': 'Audio recording is simulated.',
-
-      // Bookings List (Client/Provider)
       'active': 'Active',
       'pending': 'Pending',
       'closed': 'Closed',
@@ -473,8 +475,6 @@ class LanguageNotifier extends ChangeNotifier {
       'completeJob': 'Complete Job',
       'completeJobMsg': 'Mark this job as completed?',
       'messageCustomer': 'Message Customer',
-
-      // Days
       'Monday': 'Monday',
       'Tuesday': 'Tuesday',
       'Wednesday': 'Wednesday',
@@ -482,8 +482,6 @@ class LanguageNotifier extends ChangeNotifier {
       'Friday': 'Friday',
       'Saturday': 'Saturday',
       'Sunday': 'Sunday',
-
-      // Notifications (Mock)
       'newBookingConf': 'New Booking Confirmation',
       'bookingConfMsg': 'Your booking #1023 is confirmed.',
       'providerAssigned': 'Provider Assigned',
@@ -492,7 +490,6 @@ class LanguageNotifier extends ChangeNotifier {
       'paymentReminderMsg': 'Service fee due tomorrow.',
     },
     'ar': {
-      // General
       'settings': 'الإعدادات',
       'language': 'اللغة',
       'darkMode': 'الوضع الليلي',
@@ -520,8 +517,6 @@ class LanguageNotifier extends ChangeNotifier {
       'save': 'حفظ',
       'error': 'خطأ: ',
       'retry': 'إعادة المحاولة',
-
-      // Login Screen
       'loginTitle': 'تسجيل الدخول',
       'emailOrPhoneHint': 'البريد الإلكتروني أو رقم الهاتف',
       'passwordHint': 'كلمة المرور',
@@ -535,8 +530,6 @@ class LanguageNotifier extends ChangeNotifier {
           'البريد الإلكتروني أو الهاتف لا يمكن أن يتجاوز 100 حرف.',
       'passwordRequired': 'كلمة المرور مطلوبة.',
       'passwordTooShort': 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.',
-
-      // Sign Up Screen
       'createAccount': 'إنشاء حساب',
       'firstName': 'الاسم الأول',
       'lastName': 'اسم العائلة',
@@ -555,8 +548,6 @@ class LanguageNotifier extends ChangeNotifier {
       'logIn': 'تسجيل الدخول',
       'fullNameTooLong': 'الاسم الكامل لا يمكن أن يتجاوز 100 حرف.',
       'accountCreated': 'تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول.',
-
-      // Forgot Password Screen
       'resetPasswordTitle': 'إعادة تعيين كلمة المرور',
       'resetMethodDesc': 'كيف تود إعادة تعيين كلمة المرور؟',
       'resetUsingEmail': 'إعادة تعيين عبر البريد',
@@ -573,8 +564,6 @@ class LanguageNotifier extends ChangeNotifier {
       'passwordTooShortReset': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
       'confirmYourPassword': 'الرجاء تأكيد كلمة المرور.',
       'continueBtn': 'متابعة',
-
-      // Chat Screen
       'conversations': 'المحادثات',
       'searchChats': 'البحث في المحادثات...',
       'errorLoadingChats': 'خطأ في تحميل المحادثات',
@@ -588,8 +577,6 @@ class LanguageNotifier extends ChangeNotifier {
       'days': 'أيام',
       'hours': 'ساعات',
       'minutes': 'دقائق',
-
-      // Services & Units
       'Plumbing': 'سباكة',
       'Electrical': 'كهرباء',
       'Cleaning': 'تنظيف',
@@ -622,7 +609,6 @@ class LanguageNotifier extends ChangeNotifier {
       'Home Moving': 'نقل أثاث منزلي',
       'Office Relocation': 'نقل مكاتب',
       'Furniture Delivery': 'توصيل أثاث',
-
       'Studio': 'استوديو',
       '1 Bedroom': 'غرفة وصالة',
       '2 Bedrooms': 'غرفتين وصالة',
@@ -637,8 +623,6 @@ class LanguageNotifier extends ChangeNotifier {
       'Full Service': 'خدمة شاملة',
       'Basic': 'أساسي',
       'Premium': 'مميز',
-
-      // Profile Screen
       'myProfile': 'ملفي الشخصي',
       'fullName': 'الاسم الكامل',
       'mobileNumber': 'رقم الهاتف',
@@ -664,8 +648,6 @@ class LanguageNotifier extends ChangeNotifier {
       'profileUpdated': 'تم تحديث الملف الشخصي بنجاح!',
       'updateFailed': 'فشل التحديث: ',
       'passwordChanged': 'تم تغيير كلمة المرور بنجاح!',
-
-      // Booking & Location (Customer)
       'selectService': 'اختر خدمة',
       'searchHint': 'ابحث عن خدمة',
       'fetchingError': 'خطأ في جلب الخدمات: ',
@@ -673,7 +655,10 @@ class LanguageNotifier extends ChangeNotifier {
       'selectAtLeastOne': 'الرجاء اختيار نوع وحدة واحد على الأقل.',
       'noUnitsAvailable': 'لا توجد أنواع وحدات متاحة لهذه الخدمة.',
       'estTime': 'الوقت المقدر',
-      'hr': 'ساعة', 'hrs': 'ساعة', 'min': 'دقيقة', 'mins': 'دقيقة',
+      'hr': 'ساعة',
+      'hrs': 'ساعة',
+      'min': 'دقيقة',
+      'mins': 'دقيقة',
       'selectDateTime': 'اختر التاريخ والوقت',
       'custom': 'مخصص',
       'instant': 'فوري',
@@ -690,12 +675,15 @@ class LanguageNotifier extends ChangeNotifier {
       'selectAreaWarning': 'الرجاء اختيار منطقة والتأكد من تحديد الموقع.',
       'errorValidating': 'خطأ في التحقق من اختيار المنطقة.',
       'unnamedLocation': 'موقع غير مسمى',
-      'Amman': 'عمان', 'Abdoun': 'عبدون',
-      'Jabal Al-Weibdeh': 'جبل اللويبدة', 'Shmeisani': 'الشميساني',
-      'Al-Rabieh': 'الرابية', 'Dabouq': 'دابوق', 'Al-Jubeiha': 'الجبيهة',
-      'Al-Bayader': 'البيادر', "Tla' Al-Ali": 'تلاع العلي',
-
-      // Provider Location & Services
+      'Amman': 'عمان',
+      'Abdoun': 'عبدون',
+      'Jabal Al-Weibdeh': 'جبل اللويبدة',
+      'Shmeisani': 'الشميساني',
+      'Al-Rabieh': 'الرابية',
+      'Dabouq': 'دابوق',
+      'Al-Jubeiha': 'الجبيهة',
+      'Al-Bayader': 'البيادر',
+      "Tla' Al-Ali": 'تلاع العلي',
       'pickLocationPlural': 'اختر الموقع/المواقع',
       'locationSelectionDesc': 'حدد المدن والمناطق التي ستقدم خدماتك فيها.',
       'selectedLocations': 'المواقع المحددة',
@@ -710,8 +698,6 @@ class LanguageNotifier extends ChangeNotifier {
       'searchService': 'ابحث عن خدمة',
       'loadServicesFailed': 'فشل تحميل الخدمات. يرجى التحقق من الاتصال.',
       'selectUnitTypesFor': 'اختر أنواع الوحدات لـ',
-
-      // Work Schedule Screen
       'timeSlotsFor': 'فترات العمل لـ',
       'selectDayToSchedule': 'اختر يوماً لجدولة الوقت',
       'startTime': 'وقت البدء',
@@ -727,8 +713,6 @@ class LanguageNotifier extends ChangeNotifier {
       'freeTrialMsg':
           'ابدأ بتقديم خدماتك للعملاء واستخدم تطبيق أجير مجانًا لمدة 30 يومًا. بعد هذه الفترة، ستحتاج إلى الاشتراك للمتابعة.',
       'unexpectedError': 'حدث خطأ غير متوقع.',
-
-      // Confirmation
       'confirmBooking': 'تأكيد الحجز',
       'estimatedCost': 'التكلفة التقديرية',
       'estDuration': 'الوقت المقدر',
@@ -740,7 +724,9 @@ class LanguageNotifier extends ChangeNotifier {
       'instantBooking': 'حجز فوري',
       'uploadMedia': 'تحميل الوسائط',
       'mediaDescription': 'أضف صورة أو فيديو أو تسجيل صوتي يصف مشكلتك',
-      'photo': 'صورة', 'video': 'فيديو', 'audio': 'صوت',
+      'photo': 'صورة',
+      'video': 'فيديو',
+      'audio': 'صوت',
       'selectFromGallery': 'اختر من المعرض',
       'recordAudio': 'تسجيل صوت',
       'camera': 'الكاميرا',
@@ -751,8 +737,6 @@ class LanguageNotifier extends ChangeNotifier {
       'descriptionSaved': 'تم حفظ الوصف',
       'audioNotImplemented': 'الصوت من الملفات غير متاح في المحاكاة.',
       'audioSimulated': 'تسجيل الصوت محاكى.',
-
-      // Bookings List
       'active': 'نشط',
       'pending': 'معلق',
       'closed': 'مغلق',
@@ -799,8 +783,6 @@ class LanguageNotifier extends ChangeNotifier {
       'completeJob': 'إكمال العمل',
       'completeJobMsg': 'هل تود تحديد هذا العمل كمكتمل؟',
       'messageCustomer': 'مراسلة العميل',
-
-      // Days
       'Monday': 'الاثنين',
       'Tuesday': 'الثلاثاء',
       'Wednesday': 'الأربعاء',
@@ -808,8 +790,6 @@ class LanguageNotifier extends ChangeNotifier {
       'Friday': 'الجمعة',
       'Saturday': 'السبت',
       'Sunday': 'الأحد',
-
-      // Notifications (Mock)
       'newBookingConf': 'تأكيد حجز جديد',
       'bookingConfMsg': 'تم تأكيد حجزك #1023.',
       'providerAssigned': 'تم تعيين مزود',

@@ -1139,14 +1139,49 @@ class _DetailDialog extends StatelessWidget {
     '.mkv',
   ].any((ext) => url.toLowerCase().endsWith(ext));
 
+  Widget _row(
+    BuildContext context,
+    String label,
+    String value,
+    bool isDarkMode,
+  ) {
+    final languageNotifier = Provider.of<LanguageNotifier>(
+      context,
+      listen: false,
+    );
+    final String? customFont = languageNotifier.currentFontFamily;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: RichText(
+        text: TextSpan(
+          style: TextStyle(
+            color: isDarkMode ? Colors.white70 : Colors.black87,
+            fontSize: 14,
+            // Force font on the whole span
+            fontFamily: customFont,
+          ),
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(
+              text: value,
+              // Explicitly repeat font for the translated value string
+              style: TextStyle(fontFamily: customFont),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final languageNotifier = Provider.of<LanguageNotifier>(context);
-
-    // Format Date
     final dateFormat = languageNotifier.getFormattedDate(details.scheduledDate);
 
-    // Format Time with AM/PM translation
     String timeString = DateFormat('h:mm a').format(details.scheduledDate);
     if (languageNotifier.isArabic) {
       timeString = timeString
@@ -1159,7 +1194,6 @@ class _DetailDialog extends StatelessWidget {
         .replaceAll(RegExp(r'Est\. Time:?'), '')
         .trim();
 
-    // Translate units for estimated time if in Arabic
     if (languageNotifier.isArabic) {
       cleanEst = cleanEst
           .replaceAll(
@@ -1178,16 +1212,12 @@ class _DetailDialog extends StatelessWidget {
             RegExp(r'\bmin\b', caseSensitive: false),
             languageNotifier.translate('min'),
           );
-
       cleanEst = languageNotifier.convertNumbers(cleanEst);
     }
 
-    // Format Price "15.00 JOD" -> "١٥.٠٠ دينار"
     String priceString = details.formattedPrice;
     if (languageNotifier.isArabic) {
-      // Remove non-numeric/dot chars to get just the number
       String nums = priceString.replaceAll(RegExp(r'[^0-9.]'), '');
-      // Reformat
       priceString =
           '${languageNotifier.convertNumbers(nums)} ${languageNotifier.translate('jod')}';
     }
@@ -1201,6 +1231,7 @@ class _DetailDialog extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isDarkMode ? Colors.white : Colors.black,
+            fontFamily: languageNotifier.currentFontFamily,
           ),
         ),
       ),
@@ -1210,45 +1241,58 @@ class _DetailDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             _row(
+              context,
               languageNotifier.translate('serviceLabel'),
+              // Ensure this method is called here
               languageNotifier.translateServices(details.serviceName),
               isDarkMode,
             ),
-            // Use customerLabel key for translation
             _row(
+              context,
               languageNotifier.translate('customerLabel'),
               details.otherSideName,
               isDarkMode,
             ),
             if (details.otherSidePhone.isNotEmpty)
               _row(
+                context,
                 languageNotifier.translate('phoneLabel'),
                 languageNotifier.convertNumbers(details.otherSidePhone),
                 isDarkMode,
               ),
             _row(
+              context,
               languageNotifier.translate('areaLabel'),
               languageNotifier.translateCityArea(details.areaName),
               isDarkMode,
             ),
             _row(
+              context,
               languageNotifier.translate('addressLabel'),
               languageNotifier.translateAddress(details.address),
               isDarkMode,
             ),
             _row(
+              context,
               languageNotifier.translate('dateLabel'),
               dateFormat,
               isDarkMode,
             ),
             _row(
+              context,
               languageNotifier.translate('timeLabel'),
               timeString,
               isDarkMode,
             ),
             if (cleanEst.isNotEmpty)
-              _row(languageNotifier.translate('estTime'), cleanEst, isDarkMode),
+              _row(
+                context,
+                languageNotifier.translate('estTime'),
+                cleanEst,
+                isDarkMode,
+              ),
             _row(
+              context,
               languageNotifier.translate('priceLabel'),
               priceString,
               isDarkMode,
@@ -1256,6 +1300,7 @@ class _DetailDialog extends StatelessWidget {
             if (details.notes?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
               _row(
+                context,
                 languageNotifier.translate('notesLabel'),
                 details.notes!,
                 isDarkMode,
@@ -1268,6 +1313,7 @@ class _DetailDialog extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: isDarkMode ? Colors.white : Colors.black,
+                  fontFamily: languageNotifier.currentFontFamily,
                   fontSize: 14,
                 ),
               ),
@@ -1295,32 +1341,13 @@ class _DetailDialog extends StatelessWidget {
             languageNotifier.translate('close'),
             style: TextStyle(
               color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+              fontFamily: languageNotifier.currentFontFamily,
             ),
           ),
         ),
       ],
     );
   }
-
-  Widget _row(String label, String value, bool isDarkMode) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
-    child: RichText(
-      text: TextSpan(
-        style: TextStyle(
-          color: isDarkMode ? Colors.white70 : Colors.black87,
-          fontFamily: 'Segoe UI',
-          fontSize: 14,
-        ),
-        children: [
-          TextSpan(
-            text: '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          TextSpan(text: value),
-        ],
-      ),
-    ),
-  );
 
   Widget _buildAttachment(BuildContext context, String fullUrl) {
     final isVid = _isVideo(fullUrl);
