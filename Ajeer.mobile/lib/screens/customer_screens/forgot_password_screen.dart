@@ -13,11 +13,9 @@ class ForgotPasswordScreen extends StatefulWidget {
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-// --- Constants Class for Cleanliness ---
 class _ForgotPasswordConstants {
   static const Color primaryBlue = Color(0xFF1976D2);
   static const Color lightBlue = Color(0xFF8CCBFF);
-  // Dark mode specific colors
   static const Color darkScaffoldBackground = Color(0xFF121212);
   static const Color darkCardColor = Color(0xFF1E1E1E);
 }
@@ -47,7 +45,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     _languageNotifier = Provider.of<LanguageNotifier>(context);
   }
 
-  // Helper method to determine if dark mode is active
   bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
 
   @override
@@ -58,7 +55,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  // --- Input Decoration Builder ---
   InputDecoration _buildInputDecoration(
     String hint,
     IconData icon, [
@@ -68,7 +64,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     const BorderRadius borderRadius = BorderRadius.all(Radius.circular(12.0));
     const Color primaryColor = _ForgotPasswordConstants.primaryBlue;
 
-    // Theme-aware colors
     final Color inputFillColor = _isDarkMode
         ? Colors.grey[800]!
         : Colors.grey[100]!;
@@ -111,7 +106,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // --- Validation and Navigation Handlers (Unchanged) ---
   void _validateAndReset() {
     setState(() {
       _newPasswordError = null;
@@ -139,10 +133,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         return;
       }
 
-      if (newPassword == confirmPassword) {
-        debugPrint('Passwords match! Resetting password...');
-      } else {
-        debugPrint('Passwords do not match.');
+      if (newPassword != confirmPassword) {
         _confirmPasswordError = _languageNotifier.translate(
           'passwordsDoNotMatch',
         );
@@ -167,7 +158,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         return;
       }
 
-      debugPrint('Sending reset code to: $input');
       _currentStep = ResetStep.resetPassword;
     });
   }
@@ -202,8 +192,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _confirmPasswordError = null;
     });
   }
-
-  // --- Step Widgets ---
 
   Widget _buildSelectMethod() {
     const Color primaryColor = _ForgotPasswordConstants.primaryBlue;
@@ -245,8 +233,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               foregroundColor: primaryColor,
-              // FIX: Removed 'const' from BorderSide
-              side: BorderSide(color: primaryColor, width: 2),
+              side: const BorderSide(color: primaryColor, width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12.0),
               ),
@@ -268,8 +255,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               foregroundColor: primaryColor,
-              // FIX: Removed 'const' from BorderSide
-              side: BorderSide(color: primaryColor, width: 2),
+              side: const BorderSide(color: primaryColor, width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12.0),
               ),
@@ -360,7 +346,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 30),
-        // New Password Field
         TextField(
           controller: _newPasswordController,
           obscureText: _isNewPasswordObscured,
@@ -385,7 +370,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        // Confirm Password Field
         TextField(
           controller: _confirmPasswordController,
           obscureText: _isConfirmPasswordObscured,
@@ -490,7 +474,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  // --- Main Build Method ---
   @override
   Widget build(BuildContext context) {
     final Color cardColor = _isDarkMode
@@ -518,7 +501,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         child: SafeArea(
           child: Stack(
             children: [
-              // Back Button
               Align(
                 alignment: Alignment.topLeft,
                 child: Padding(
@@ -536,7 +518,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 ),
               ),
-              // Main Content
               Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -550,7 +531,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         alignment: Alignment.topCenter,
                         clipBehavior: Clip.none,
                         children: [
-                          // Card (Theme-aware)
                           Card(
                             elevation: 8,
                             color: cardColor,
@@ -571,7 +551,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                             ),
                           ),
-                          // Key Icon (Solid Blue)
                           Positioned(
                             top: -35,
                             child: Container(

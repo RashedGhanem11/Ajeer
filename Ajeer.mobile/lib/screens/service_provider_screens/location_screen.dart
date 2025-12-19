@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../themes/theme_notifier.dart';
 import '../../notifiers/language_notifier.dart';
 import 'work_schedule_screen.dart';
@@ -133,14 +132,8 @@ class _LocationScreenState extends State<LocationScreen> {
       _finalLocations = List<LocationSelection>.from(
         widget.initialData!.selectedLocations,
       );
-      _selectedCity = _availableCities.isNotEmpty
-          ? _availableCities.first
-          : null;
-    } else {
-      _selectedCity = _availableCities.isNotEmpty
-          ? _availableCities.first
-          : null;
     }
+    _selectedCity = _availableCities.isNotEmpty ? _availableCities.first : null;
   }
 
   List<String> get _allApiCityNames => _apiData.map((c) => c.cityName).toList();
@@ -223,12 +216,11 @@ class _LocationScreenState extends State<LocationScreen> {
             areas: Set.from(_currentAreaSelection),
           ),
         );
+        _currentAreaSelection = {};
+        _selectedCity = _availableCities.isNotEmpty
+            ? _availableCities.first
+            : null;
       });
-
-      _currentAreaSelection = {};
-      _selectedCity = _availableCities.isNotEmpty
-          ? _availableCities.first
-          : null;
     }
   }
 
@@ -288,16 +280,14 @@ class _LocationScreenState extends State<LocationScreen> {
   }
 
   Widget _buildBackgroundGradient() {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
-      width: MediaQuery.of(context).size.width,
-      child: const DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [kLightBlue, kPrimaryBlue],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+    return Container(
+      height: double.infinity,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [kLightBlue, kPrimaryBlue],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
       ),
     );
@@ -560,7 +550,7 @@ class _LocationSelectionContent extends StatelessWidget {
 
     return [
       Padding(
-        padding: const EdgeInsets.only(left: 10.0, bottom: 0.0),
+        padding: const EdgeInsets.only(left: 10.0),
         child: Text(
           '${languageNotifier.translate('selectedLocations')} (${languageNotifier.convertNumbers(finalLocations.length.toString())})',
           style: TextStyle(
@@ -605,18 +595,8 @@ class _LocationSelectionContent extends StatelessWidget {
               color: itemBgColor,
               borderRadius: BorderRadius.circular(20.0),
               border: Border.all(color: itemBorderColor, width: 2.0),
-              boxShadow: isDarkMode
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.grey.shade200,
-                        spreadRadius: 1,
-                        blurRadius: 3,
-                      ),
-                    ],
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: Column(
@@ -640,45 +620,38 @@ class _LocationSelectionContent extends StatelessWidget {
                     ],
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    InkWell(
-                      onTap: () => onEdit(loc),
-                      customBorder: const CircleBorder(),
-                      child: Container(
-                        width: 35,
-                        height: 35,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: kPrimaryBlue,
-                        ),
-                        child: const Icon(
-                          Icons.edit,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
+                InkWell(
+                  onTap: () => onEdit(loc),
+                  child: Container(
+                    width: 35,
+                    height: 35,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: kPrimaryBlue,
                     ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () => onDelete(loc.city),
-                      customBorder: const CircleBorder(),
-                      child: Container(
-                        width: 35,
-                        height: 35,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: kDeleteRed,
-                        ),
-                        child: const Icon(
-                          Icons.delete_forever,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
+                    child: const Icon(
+                      Icons.edit,
+                      color: Colors.white,
+                      size: 20,
                     ),
-                  ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => onDelete(loc.city),
+                  child: Container(
+                    width: 35,
+                    height: 35,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: kDeleteRed,
+                    ),
+                    child: const Icon(
+                      Icons.delete_forever,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -712,8 +685,10 @@ class _LocationSelectionContent extends StatelessWidget {
             isDarkMode: isDarkMode,
             languageNotifier: languageNotifier,
           ),
-          if (finalLocations.isNotEmpty) const SizedBox(height: 10.0),
-          if (finalLocations.isNotEmpty) ..._buildSelectedLocationsList(),
+          if (finalLocations.isNotEmpty) ...[
+            const SizedBox(height: 10.0),
+            ..._buildSelectedLocationsList(),
+          ],
           const SizedBox(height: 15.0),
         ],
       ),
@@ -846,8 +821,6 @@ class _LocationBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color headerBgColor = kPrimaryBlue;
-    const Color headerTextColor = Colors.white;
     final Color listBgColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
     final Color borderColor = isDarkMode
         ? Colors.grey.shade700
@@ -864,9 +837,9 @@ class _LocationBox extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(8.0),
-            decoration: BoxDecoration(
-              color: headerBgColor,
-              borderRadius: const BorderRadius.vertical(
+            decoration: const BoxDecoration(
+              color: kPrimaryBlue,
+              borderRadius: BorderRadius.vertical(
                 top: Radius.circular(kHeaderRadius),
               ),
             ),
@@ -876,7 +849,7 @@ class _LocationBox extends StatelessWidget {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: headerTextColor,
+                color: Colors.white,
               ),
             ),
           ),
@@ -933,13 +906,9 @@ class _CityList extends StatelessWidget {
 
         return ListTile(
           onTap: () => onCitySelected(city),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 8.0,
-            vertical: 0,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
           visualDensity: const VisualDensity(vertical: -4),
           dense: true,
-          minVerticalPadding: 0,
           title: Text(
             languageNotifier.translate(city),
             style: TextStyle(
@@ -1015,18 +984,10 @@ class _AreaList extends StatelessWidget {
       );
     }
 
-    final bool isCityAlreadyAdded = finalLocations.any(
-      (loc) => loc.city == selectedCity,
-    );
-
-    final List<String> availableAreas = isCityAlreadyAdded
-        ? []
-        : _getAreasForCity(selectedCity!);
-
-    String normalizedQuery = _normalizeString(areaSearchQuery);
+    final List<String> availableAreas = _getAreasForCity(selectedCity!);
+    final String normalizedQuery = _normalizeString(areaSearchQuery);
 
     final List<String> filteredAreas = availableAreas.where((area) {
-      // Filter based on translated name to allow searching in Arabic
       final translatedArea = languageNotifier.translate(area);
       if (normalizedQuery.isEmpty) return true;
       return _normalizeString(translatedArea).contains(normalizedQuery);
@@ -1141,13 +1102,9 @@ class _AreaListItemState extends State<_AreaListItem>
       scale: _scaleAnimation,
       child: ListTile(
         onTap: _handleTap,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 8.0,
-          vertical: 0,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
         visualDensity: const VisualDensity(vertical: -4),
         dense: true,
-        minVerticalPadding: 0,
         title: Text(
           widget.areaName,
           style: TextStyle(
@@ -1207,16 +1164,9 @@ class _AreaSearchBar extends StatelessWidget {
           hintText: languageNotifier.translate('search'),
           hintStyle: TextStyle(color: searchHintColor, fontSize: 14.0),
           prefixIcon: Icon(Icons.search, color: iconColor, size: 20),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 0,
-            horizontal: 10,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10),
           filled: true,
           fillColor: searchFillColor,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20.0),
-            borderSide: BorderSide(color: borderColor, width: 1),
-          ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20.0),
             borderSide: BorderSide(color: borderColor, width: 1),
@@ -1225,6 +1175,7 @@ class _AreaSearchBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(20.0),
             borderSide: const BorderSide(color: kPrimaryBlue, width: 2),
           ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
         ),
       ),
     );

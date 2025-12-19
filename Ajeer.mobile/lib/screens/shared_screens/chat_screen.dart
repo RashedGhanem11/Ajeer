@@ -52,7 +52,6 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<List<ChatConversation>>? _conversationsFuture;
   final int _selectedIndex = 1;
   String _searchQuery = '';
-  List<ChatConversation>? _allConversations;
 
   @override
   void initState() {
@@ -63,10 +62,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _loadConversations() {
     setState(() {
-      _conversationsFuture = _chatService.getConversations().then((data) {
-        _allConversations = data;
-        return data;
-      });
+      _conversationsFuture = _chatService.getConversations();
     });
   }
 
@@ -74,11 +70,10 @@ class _ChatScreenState extends State<ChatScreen> {
     List<ChatConversation> conversations,
   ) {
     if (_searchQuery.isEmpty) return conversations;
+    final String query = _searchQuery.toLowerCase();
     return conversations.where((chat) {
-      return chat.otherSideName.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          ) ||
-          chat.lastMessage.toLowerCase().contains(_searchQuery.toLowerCase());
+      return chat.otherSideName.toLowerCase().contains(query) ||
+          chat.lastMessage.toLowerCase().contains(query);
     }).toList();
   }
 
@@ -86,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
     UserNotifier userNotifier,
     LanguageNotifier languageNotifier,
   ) {
-    final baseItems = [
+    final List<Map<String, dynamic>> baseItems = [
       {
         'label': languageNotifier.translate('profile'),
         'icon': Icons.person_outline,
@@ -130,8 +125,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final navItems = _getNavItems(userNotifier, languageNotifier);
 
     if (index >= navItems.length) return;
-    // Use the internal key to switch, not the translated label
-    final key = navItems[index]['key'];
+    final String key = navItems[index]['key'];
 
     Widget? nextScreen;
 
@@ -250,7 +244,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   const SizedBox(height: 35.0),
                   Padding(
-                    padding: const EdgeInsets.only(left: 20.0, right: 20.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
                     child: Text(
                       languageNotifier.translate('conversations'),
                       style: Theme.of(context).textTheme.headlineSmall
@@ -290,9 +284,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           return Center(
                             child: Text(
                               languageNotifier.translate('noConversations'),
-                              style: TextStyle(
-                                color: isDarkMode ? Colors.grey : Colors.grey,
-                              ),
+                              style: const TextStyle(color: Colors.grey),
                             ),
                           );
                         }
@@ -306,7 +298,6 @@ class _ChatScreenState extends State<ChatScreen> {
                           itemCount: conversations.length,
                           itemBuilder: (context, index) {
                             final chat = conversations[index];
-
                             return _ChatListItem(
                               chat: chat,
                               isDarkMode: isDarkMode,
@@ -420,7 +411,6 @@ class _ChatListItem extends StatelessWidget {
         : Colors.grey.shade700;
     final bool isUnread = chat.unreadCount > 0;
 
-    // Use consistent, theme-independent color
     final Color avatarColor = imageUrl == null
         ? _getAvatarColor(chat.otherSideName)
         : lightColor.withOpacity(0.3);
@@ -657,9 +647,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         _scrollToBottom();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_languageNotifier.translate('sendFailed'))),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_languageNotifier.translate('sendFailed'))),
+        );
+      }
     }
   }
 
@@ -673,9 +665,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_languageNotifier.translate('deleteFailed'))),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_languageNotifier.translate('deleteFailed'))),
+        );
+      }
     }
   }
 

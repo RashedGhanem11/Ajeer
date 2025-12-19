@@ -4,8 +4,7 @@ import '../../themes/theme_notifier.dart';
 import '../../notifiers/language_notifier.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
-import 'home_screen.dart';
-import '../../services/auth_service.dart'; // Import your new Auth Service
+import '../../services/auth_service.dart';
 import '../shared_screens/profile_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -16,14 +15,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Logic Variables
   bool _isPasswordVisible = false;
-  bool _isLoading = false; // New state for API loading
+  bool _isLoading = false;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // UI Error messages
   String? _emailError;
   String? _passwordError;
 
@@ -35,14 +32,11 @@ class _LoginScreenState extends State<LoginScreen> {
     _languageNotifier = Provider.of<LanguageNotifier>(context);
   }
 
-  // Primary Colors (from app_themes.dart)
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _lightBlue = Color(0xFF8CCBFF);
-  // Dark mode specific colors (from app_themes.dart)
   static const Color _darkScaffoldBackground = Color(0xFF121212);
   static const Color _darkCardColor = Color(0xFF1E1E1E);
 
-  // Helper method to determine if dark mode is active
   bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
 
   @override
@@ -52,9 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // REFACTORED: Now connects to Backend via AuthService
   void _validateAndLogin() async {
-    // Reset errors
     setState(() {
       _emailError = null;
       _passwordError = null;
@@ -64,7 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
     bool isValid = true;
 
-    // 1. Identifier (Email or Phone) Validation
     if (input.isEmpty) {
       _emailError = _languageNotifier.translate('emailOrPhoneRequired');
       isValid = false;
@@ -73,7 +64,6 @@ class _LoginScreenState extends State<LoginScreen> {
       isValid = false;
     }
 
-    // 2. Password Validation
     if (password.isEmpty) {
       _passwordError = _languageNotifier.translate('passwordRequired');
       isValid = false;
@@ -82,13 +72,11 @@ class _LoginScreenState extends State<LoginScreen> {
       isValid = false;
     }
 
-    // Stop and update UI errors if not valid
     if (!isValid) {
       setState(() {});
       return;
     }
 
-    // --- Continue with API Call only if validation passes ---
     setState(() {
       _isLoading = true;
     });
@@ -101,7 +89,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
-      // ✅ CHANGE THIS BLOCK: Navigate to ProfileScreen instead of HomeScreen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -247,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 10.0),
                 _buildForgotButton(),
                 const SizedBox(height: 30.0),
-                _buildLoginButton(), // Updated to handle loading
+                _buildLoginButton(),
                 const SizedBox(height: 30.0),
                 _buildSignUpLink(),
                 const SizedBox(height: 25.0),
@@ -394,13 +381,11 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            // Disable click when loading
             onTap: _isLoading ? null : _validateAndLogin,
             borderRadius: BorderRadius.circular(30.0),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 14.0),
               child: Center(
-                // Show Spinner when loading, Text otherwise
                 child: _isLoading
                     ? const SizedBox(
                         height: 20,
@@ -474,9 +459,7 @@ class _LoginScreenState extends State<LoginScreen> {
         : Colors.black54;
 
     return OutlinedButton.icon(
-      onPressed: () {
-        // TODO: Implement Google Sign-In logic here later
-      },
+      onPressed: () {},
       style: OutlinedButton.styleFrom(
         backgroundColor: buttonBackgroundColor,
         minimumSize: const Size(double.infinity, 56),

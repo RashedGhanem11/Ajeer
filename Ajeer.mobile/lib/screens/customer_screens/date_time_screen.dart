@@ -154,7 +154,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                 backgroundColor: isDarkMode ? _subtleDark : Colors.white,
               ),
             ),
-            // Integrated BackdropFilter here
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
               child: child!,
@@ -218,15 +217,13 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                 dialHandColor: _primaryBlue,
                 entryModeIconColor: _primaryBlue,
                 dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
+                  if (states.contains(WidgetState.selected))
                     return Colors.white;
-                  }
                   return isDarkMode ? Colors.white70 : Colors.black87;
                 }),
                 dayPeriodColor: WidgetStateColor.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
+                  if (states.contains(WidgetState.selected))
                     return _primaryBlue;
-                  }
                   return Colors.transparent;
                 }),
                 dayPeriodBorderSide: const BorderSide(color: _primaryBlue),
@@ -236,7 +233,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                     : Colors.grey.shade200,
               ),
             ),
-            // Integrated BackdropFilter here
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
               child: child!,
@@ -510,7 +506,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
 
   Widget _buildTopControls(bool isDarkMode, LanguageNotifier lang) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         _buildModeChip('Custom', _selectionMode == 'Custom', isDarkMode, lang),
         const SizedBox(width: 8),
@@ -784,9 +779,7 @@ class _BounceableDayItemState extends State<_BounceableDayItem>
   }
 
   void _handleTap() {
-    _controller.forward().then((_) {
-      _controller.reverse();
-    });
+    _controller.forward().then((_) => _controller.reverse());
     widget.onTap();
   }
 
@@ -815,9 +808,7 @@ class _BounceableDayItemState extends State<_BounceableDayItem>
                   : null,
               color: widget.isSelected
                   ? null
-                  : widget.isDarkMode
-                  ? subtleDark
-                  : Colors.grey[100],
+                  : (widget.isDarkMode ? subtleDark : Colors.grey[100]),
               borderRadius: BorderRadius.circular(15),
               border: widget.isSelected
                   ? null
@@ -847,9 +838,7 @@ class _BounceableDayItemState extends State<_BounceableDayItem>
                   style: TextStyle(
                     color: widget.isSelected
                         ? Colors.white.withOpacity(0.9)
-                        : widget.isDarkMode
-                        ? Colors.grey
-                        : Colors.grey[600],
+                        : (widget.isDarkMode ? Colors.grey : Colors.grey[600]),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -860,9 +849,7 @@ class _BounceableDayItemState extends State<_BounceableDayItem>
                   style: TextStyle(
                     color: widget.isSelected
                         ? Colors.white
-                        : widget.isDarkMode
-                        ? Colors.white
-                        : Colors.black87,
+                        : (widget.isDarkMode ? Colors.white : Colors.black87),
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                   ),
@@ -875,9 +862,7 @@ class _BounceableDayItemState extends State<_BounceableDayItem>
                   style: TextStyle(
                     color: widget.isSelected
                         ? Colors.white.withOpacity(0.9)
-                        : widget.isDarkMode
-                        ? Colors.grey
-                        : Colors.grey[600],
+                        : (widget.isDarkMode ? Colors.grey : Colors.grey[600]),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -918,7 +903,6 @@ class _NavigationHeaderState extends State<_NavigationHeader>
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 1.25,

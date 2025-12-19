@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Helper: Safely convert anything to int
 int _toInt(dynamic value) {
   if (value == null) return 0;
   if (value is int) return value;
@@ -158,10 +157,8 @@ class ProviderData {
         .toList(),
   );
 
-  // ✅ UPDATED: Robust Parsing Logic
   factory ProviderData.fromApi(Map<String, dynamic> json) {
     try {
-      // --- 1. Services Parsing ---
       Map<String, Set<String>> servicesMap = {};
       List<int> sIds = [];
       if (json['serviceCategory'] != null) {
@@ -176,8 +173,6 @@ class ProviderData {
         }
         servicesMap[catName] = types;
       }
-
-      // --- 2. Locations Parsing ---
       List<LocationSelection> locs = [];
       List<int> aIds = [];
       var citiesList = json['cities'] as List?;
@@ -199,15 +194,11 @@ class ProviderData {
           );
         }
       }
-
-      // --- 3. Schedule Parsing (The Fix) ---
       List<WorkSchedule> schedules = [];
       var schedList = json['schedules'] as List?;
 
       if (schedList != null) {
         Map<int, List<WorkTime>> grouped = {};
-
-        // Define days for String matching
         const days = [
           'Sunday',
           'Monday',
@@ -219,10 +210,6 @@ class ProviderData {
         ];
 
         for (var s in schedList) {
-          // DEBUG: Uncomment this line if it still fails to see exactly what keys you have!
-          // print('DEBUG SCHEDULE ITEM: $s');
-
-          // A. Try to find the day value using multiple common keys
           var dayVal =
               s['dayOfWeek'] ??
               s['DayOfWeek'] ??
@@ -232,20 +219,16 @@ class ProviderData {
 
           if (dayVal == null) {
             print('Warning: No day key found in schedule item: $s');
-            continue; // Skip if we really can't find a day
+            continue;
           }
-
-          // B. Convert dayVal to an integer index (0-6)
           int dayIndex = 0;
           if (dayVal is int) {
             dayIndex = dayVal;
           } else if (dayVal is String) {
-            // Check if it's a number string like "1"
             int? parsed = int.tryParse(dayVal);
             if (parsed != null) {
               dayIndex = parsed;
             } else {
-              // Check if it's a name string like "Monday"
               int nameIndex = days.indexWhere(
                 (d) => d.toLowerCase() == dayVal.toLowerCase(),
               );
@@ -254,8 +237,6 @@ class ProviderData {
               }
             }
           }
-
-          // C. Parse Times (checking both camelCase and PascalCase)
           TimeOfDay parseTime(String? t) {
             if (t == null || !t.contains(':'))
               return const TimeOfDay(hour: 0, minute: 0);
@@ -283,8 +264,6 @@ class ProviderData {
           }
           grouped[dayIndex]!.add(slot);
         }
-
-        // D. Build Final List
         grouped.forEach((dayIndex, slots) {
           if (dayIndex >= 0 && dayIndex < days.length) {
             schedules.add(WorkSchedule(day: days[dayIndex], timeSlots: slots));

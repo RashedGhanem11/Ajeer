@@ -48,7 +48,6 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Ajeer App',
           theme: lightTheme.copyWith(
-            // We use apply on textTheme instead of a direct fontFamily parameter
             textTheme: currentFont != null
                 ? lightTheme.textTheme.apply(fontFamily: currentFont)
                 : lightTheme.textTheme,

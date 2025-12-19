@@ -14,7 +14,6 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -22,12 +21,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // State Variables
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-  bool _isLoading = false; // New loading state
+  bool _isLoading = false;
 
-  // Primary Colors
   static const Color _primaryBlue = Color(0xFF1976D2);
   static const Color _lightBlue = Color(0xFF8CCBFF);
   static const Color _darkScaffoldBackground = Color(0xFF121212);
@@ -54,14 +51,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  // REFACTORED: Connects to Backend via AuthService and includes combined Name validation
   void _handleSignUp() async {
     if (_formKey.currentState!.validate()) {
       final String firstName = _firstNameController.text.trim();
       final String lastName = _lastNameController.text.trim();
       final String fullName = "$firstName $lastName";
 
-      // --- 1. Check Name Maximum Length (Client-Side Check) ---
       if (fullName.length > 100) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -73,12 +68,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
         return;
       }
 
-      // 2. Start Loading
       setState(() {
         _isLoading = true;
       });
 
-      // 3. Prepare Data
       final request = UserRegisterRequest(
         name: fullName,
         email: _emailController.text.trim(),
@@ -87,13 +80,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
 
       try {
-        // 4. Call API
         final authService = AuthService();
         await authService.register(request);
 
         if (!mounted) return;
 
-        // 5. Success Feedback
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_languageNotifier.translate('accountCreated')),
@@ -101,10 +92,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         );
 
-        // 6. Navigate back to Login
         Navigator.pop(context);
       } catch (e) {
-        // 7. Error Handling
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -113,7 +102,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         );
       } finally {
-        // 8. Stop Loading
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -349,7 +337,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
               icon: Icons.person_outline,
               fillColor: Colors.white,
             ),
-            // VALIDATION: Name is required.
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return _languageNotifier.translate('nameRequired');
@@ -368,7 +355,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
               icon: Icons.person_outline,
               fillColor: Colors.white,
             ),
-            // VALIDATION: Name is required.
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return _languageNotifier.translate('nameRequired');
@@ -391,7 +377,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         hint: _languageNotifier.translate('phoneNumber'),
         icon: Icons.phone_outlined,
       ),
-      // VALIDATION: Phone NotEmpty and MaxLength(20)
       validator: (value) {
         if (value == null || value.isEmpty) {
           return _languageNotifier.translate('phoneRequired');
@@ -406,7 +391,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Widget _buildEmailField() {
     final Color fieldTextColor = _isDarkMode ? Colors.white : Colors.black87;
-    // Basic email regex for front-end validation
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
 
     return TextFormField(
@@ -417,7 +401,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         hint: _languageNotifier.translate('email'),
         icon: Icons.email_outlined,
       ),
-      // VALIDATION: Email NotEmpty, EmailAddress, and MaxLength(100)
       validator: (value) {
         if (value == null || value.isEmpty) {
           return _languageNotifier.translate('emailRequired');
@@ -456,7 +439,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           },
         ),
       ),
-      // VALIDATION: Password NotEmpty and MinLength(8)
       validator: (value) {
         if (value == null || value.isEmpty) {
           return _languageNotifier.translate('passwordRequired');
@@ -493,7 +475,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           },
         ),
       ),
-      // VALIDATION: Match Password
       validator: (value) {
         if (value == null || value.isEmpty) {
           return _languageNotifier.translate('passwordRequired');
@@ -533,9 +514,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: _isLoading
-                ? null
-                : _handleSignUp, // Disable tap when loading
+            onTap: _isLoading ? null : _handleSignUp,
             borderRadius: BorderRadius.circular(30.0),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 14.0),

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
-
 import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
@@ -63,7 +62,7 @@ class _MediaScreenState extends State<MediaScreen> {
   static const double _borderRadiusLarge = 20.0;
   static const double _containerHeight = 150.0;
 
-  int _selectedIndex = 3;
+  final int _selectedIndex = 3;
   String _selectedMediaType = 'Photo';
   String _userDescription = '';
   bool _isDescriptionSaved = false;
@@ -98,13 +97,9 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   List<File> get _currentMediaFiles {
-    if (_selectedMediaType == 'Photo') {
-      return _photoFiles;
-    } else if (_selectedMediaType == 'Video') {
-      return _videoFiles;
-    } else if (_selectedMediaType == 'Audio') {
-      return _audioFiles;
-    }
+    if (_selectedMediaType == 'Photo') return _photoFiles;
+    if (_selectedMediaType == 'Video') return _videoFiles;
+    if (_selectedMediaType == 'Audio') return _audioFiles;
     return [];
   }
 
@@ -119,7 +114,6 @@ class _MediaScreenState extends State<MediaScreen> {
 
   void _onNavItemTapped(int index) {
     if (index == _selectedIndex) return;
-
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
     switch (index) {
@@ -154,13 +148,9 @@ class _MediaScreenState extends State<MediaScreen> {
     }
   }
 
-  void _onBackTap() {
-    Navigator.pop(context);
-  }
+  void _onBackTap() => Navigator.pop(context);
 
-  void _onNextTap() {
-    _navigateToConfirmation();
-  }
+  void _onNextTap() => _navigateToConfirmation();
 
   void _navigateToConfirmation() {
     Navigator.push(
@@ -188,16 +178,12 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   void _onSaveDescription() {
-    setState(() {
-      _isDescriptionSaved = true;
-    });
+    setState(() => _isDescriptionSaved = true);
     FocusScope.of(context).unfocus();
   }
 
   void _onEditDescription() {
-    setState(() {
-      _isDescriptionSaved = false;
-    });
+    setState(() => _isDescriptionSaved = false);
     FocusScope.of(context).requestFocus();
   }
 
@@ -209,23 +195,19 @@ class _MediaScreenState extends State<MediaScreen> {
       final XFile? videoFile = await _picker.pickVideo(source: source);
       if (videoFile != null) pickedFiles.add(videoFile);
     } else if (_selectedMediaType == 'Audio') {
-      if (source == ImageSource.gallery) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_languageNotifier.translate('audioNotImplemented')),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _languageNotifier.translate(
+              source == ImageSource.gallery
+                  ? 'audioNotImplemented'
+                  : 'audioSimulated',
+            ),
           ),
-        );
-        Navigator.of(context).pop();
-        return;
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_languageNotifier.translate('audioSimulated')),
-          ),
-        );
-        Navigator.of(context).pop();
-        return;
-      }
+        ),
+      );
+      Navigator.of(context).pop();
+      return;
     }
 
     if (pickedFiles.isNotEmpty) {
@@ -255,14 +237,9 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   void _showMediaUploadDialog(BuildContext context, bool isDarkMode) {
-    String mediaTypeKey;
-    if (_selectedMediaType == 'Photo') {
-      mediaTypeKey = 'addPhoto';
-    } else if (_selectedMediaType == 'Video') {
-      mediaTypeKey = 'addVideo';
-    } else {
-      mediaTypeKey = 'addAudio';
-    }
+    String mediaTypeKey = _selectedMediaType == 'Photo'
+        ? 'addPhoto'
+        : (_selectedMediaType == 'Video' ? 'addVideo' : 'addAudio');
 
     bool isAudio = _selectedMediaType == 'Audio';
 
@@ -515,10 +492,9 @@ class _MediaScreenState extends State<MediaScreen> {
           children: [
             const SizedBox(height: 15.0),
             Padding(
-              padding: const EdgeInsets.only(
-                left: 20.0,
-                right: 20.0,
-                top: 20.0,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 20.0,
               ),
               child: Text(
                 languageNotifier.translate('uploadMedia'),
@@ -955,7 +931,6 @@ class _NavigationHeaderState extends State<_NavigationHeader>
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 1.25,

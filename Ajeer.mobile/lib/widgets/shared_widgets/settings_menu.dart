@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../themes/theme_notifier.dart';
 import '../../notifiers/user_notifier.dart';
 import '../../notifiers/language_notifier.dart';
@@ -10,7 +9,6 @@ import '../../screens/customer_screens/login_screen.dart';
 
 class SettingsMenu extends StatefulWidget {
   final ThemeNotifier themeNotifier;
-
   const SettingsMenu({super.key, required this.themeNotifier});
 
   @override
@@ -111,12 +109,12 @@ class _SettingsMenuState extends State<SettingsMenu>
           Center(
             child: FadeTransition(
               opacity: _opacityAnimation,
-              child: Column(
+              child: const Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.language, size: 60, color: Colors.blue),
-                  const SizedBox(height: 20),
-                  const CircularProgressIndicator(),
+                  Icon(Icons.language, size: 60, color: Colors.blue),
+                  SizedBox(height: 20),
+                  CircularProgressIndicator(),
                 ],
               ),
             ),
@@ -124,7 +122,6 @@ class _SettingsMenuState extends State<SettingsMenu>
         ],
       ),
     );
-
     overlayState.insert(_overlayEntry!);
   }
 
@@ -181,7 +178,6 @@ class _SettingsMenuState extends State<SettingsMenu>
         ],
       ),
     );
-
     overlayState.insert(_overlayEntry!);
   }
 
@@ -296,11 +292,9 @@ class _SettingsMenuState extends State<SettingsMenu>
     final Color primaryBlue = isProvider
         ? const Color(0xFF2f6cfa)
         : const Color(0xFF1976D2);
-
     final Color lightBlue = isProvider
         ? const Color(0xFFa2bdfc)
         : const Color(0xFF8CCBFF);
-
     final Color textColor = isDarkMode ? Colors.white70 : Colors.black87;
     final Color containerColor = isDarkMode
         ? Colors.grey.shade800
@@ -439,7 +433,6 @@ class _SettingsMenuState extends State<SettingsMenu>
                     top: 15.0,
                     left: 15.0,
                     right: 15.0,
-                    bottom: 0,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -505,9 +498,8 @@ class _SettingsMenuState extends State<SettingsMenu>
                                     onLongPress: () =>
                                         _toggleNotificationSelection(index),
                                     onTap: () {
-                                      if (_isDeleting) {
+                                      if (_isDeleting)
                                         _toggleNotificationSelection(index);
-                                      }
                                     },
                                     child: Container(
                                       margin: const EdgeInsets.only(

@@ -21,7 +21,6 @@ class ReviewResult {
   ReviewResult({required this.success, required this.message});
 }
 
-// Added to handle fetching existing reviews
 class ReviewResponse {
   final int rating;
   final String comment;
@@ -30,8 +29,8 @@ class ReviewResponse {
 
   factory ReviewResponse.fromJson(Map<String, dynamic> json) {
     return ReviewResponse(
-      rating: json['rating'] ?? 5, // Default to 5 if missing
-      comment: json['comment'] ?? '', // Default to empty string
+      rating: json['rating'] ?? 5,
+      comment: json['comment'] ?? '',
     );
   }
 }

@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-
 import '../../config/app_config.dart';
 import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
@@ -57,7 +56,7 @@ Color _getAvatarColor(String name) {
 
 class _BookingsScreenState extends State<BookingsScreen>
     with SingleTickerProviderStateMixin {
-  int _selectedIndex = 2;
+  final int _selectedIndex = 2;
   late TabController _tabController;
   final _bookingService = BookingService();
   bool _isLoading = true;
@@ -345,7 +344,7 @@ class _BookingsScreenState extends State<BookingsScreen>
           children: [
             const SizedBox(height: 35),
             Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 _languageNotifier.translate('bookings'),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -388,13 +387,14 @@ class _BookingsScreenState extends State<BookingsScreen>
     _BookingListType type,
     bool isDark,
   ) {
-    if (items.isEmpty)
+    if (items.isEmpty) {
       return Center(
         child: Text(
           _languageNotifier.translate('noBookings'),
           style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
         ),
       );
+    }
     final padding =
         _Consts.navBarHeight + MediaQuery.of(context).padding.bottom;
     return ListView.builder(
@@ -423,6 +423,7 @@ class _BookingCard extends StatefulWidget {
   final VoidCallback onInfoTap;
   final VoidCallback onLocationTap;
   final VoidCallback onRefresh;
+
   const _BookingCard({
     required this.booking,
     required this.listType,
@@ -432,6 +433,7 @@ class _BookingCard extends StatefulWidget {
     required this.onLocationTap,
     required this.onRefresh,
   });
+
   @override
   State<_BookingCard> createState() => _BookingCardState();
 }
@@ -452,8 +454,10 @@ class _BookingCardState extends State<_BookingCard>
         Tween<Offset>(begin: Offset.zero, end: const Offset(0, -0.2)).animate(
           CurvedAnimation(parent: _jumpController, curve: Curves.easeInOut),
         );
-    if (widget.listType == _BookingListType.closed && widget.booking.hasReview)
+    if (widget.listType == _BookingListType.closed &&
+        widget.booking.hasReview) {
       _jumpController.repeat(reverse: true);
+    }
   }
 
   @override
@@ -479,8 +483,8 @@ class _BookingCardState extends State<_BookingCard>
         builder: (_) => const Center(child: CircularProgressIndicator()),
       );
       final review = await ReviewService().getReview(widget.booking.id);
-      if (context.mounted) Navigator.pop(context);
-      if (context.mounted && review != null)
+      if (mounted) Navigator.pop(context);
+      if (mounted && review != null) {
         showDialog(
           context: context,
           builder: (_) => _ReviewDialog(
@@ -489,6 +493,7 @@ class _BookingCardState extends State<_BookingCard>
             existingReview: review,
           ),
         );
+      }
     }
   }
 
@@ -573,7 +578,6 @@ class _BookingCardState extends State<_BookingCard>
   }
 
   Widget _buildActions(BuildContext context) {
-    final languageNotifier = Provider.of<LanguageNotifier>(context);
     final iconButtons = <Widget>[];
 
     if (widget.listType == _BookingListType.active) {
@@ -595,8 +599,9 @@ class _BookingCardState extends State<_BookingCard>
         24,
         () => _handleReviewTap(context),
       );
-      if (widget.booking.hasReview)
+      if (widget.booking.hasReview) {
         starBtn = SlideTransition(position: _jumpAnimation, child: starBtn);
+      }
       iconButtons.add(starBtn);
     }
 
@@ -625,7 +630,7 @@ class _BookingCardState extends State<_BookingCard>
               ),
               onPressed: () => _showCancelDialog(context),
               child: Text(
-                languageNotifier.translate('cancel'),
+                Provider.of<LanguageNotifier>(context).translate('cancel'),
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -837,11 +842,13 @@ class _ReviewDialog extends StatefulWidget {
   final int bookingId;
   final bool isDarkMode;
   final ReviewResponse? existingReview;
+
   const _ReviewDialog({
     required this.bookingId,
     required this.isDarkMode,
     this.existingReview,
   });
+
   @override
   State<_ReviewDialog> createState() => _ReviewDialogState();
 }
@@ -1023,6 +1030,7 @@ class _ReviewDialogState extends State<_ReviewDialog> {
 class _DetailDialog extends StatelessWidget {
   final BookingDetail details;
   final bool isDarkMode;
+
   const _DetailDialog({required this.details, required this.isDarkMode});
 
   bool _isVideo(String url) => [
@@ -1274,6 +1282,7 @@ class _CustomTabBar extends StatelessWidget {
   final TabController tabController;
   final List<int> counts;
   final bool isDarkMode;
+
   const _CustomTabBar({
     required this.tabController,
     required this.counts,
@@ -1391,11 +1400,13 @@ class _BookingMapScreen extends StatefulWidget {
   final double latitude;
   final double longitude;
   final bool isDarkMode;
+
   const _BookingMapScreen({
     required this.latitude,
     required this.longitude,
     required this.isDarkMode,
   });
+
   @override
   State<_BookingMapScreen> createState() => _BookingMapScreenState();
 }
@@ -1403,6 +1414,7 @@ class _BookingMapScreen extends StatefulWidget {
 class _BookingMapScreenState extends State<_BookingMapScreen> {
   late MapController _mapController;
   double _currentZoom = 15.0;
+
   @override
   void initState() {
     super.initState();
@@ -1499,6 +1511,7 @@ class _BookingMapScreenState extends State<_BookingMapScreen> {
 class _FullScreenNetworkImageViewer extends StatelessWidget {
   final String imageUrl;
   const _FullScreenNetworkImageViewer({required this.imageUrl});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1522,6 +1535,7 @@ class _FullScreenNetworkImageViewer extends StatelessWidget {
 class _FullScreenNetworkVideoPlayer extends StatefulWidget {
   final String videoUrl;
   const _FullScreenNetworkVideoPlayer({required this.videoUrl});
+
   @override
   State<_FullScreenNetworkVideoPlayer> createState() =>
       _FullScreenNetworkVideoPlayerState();
@@ -1531,6 +1545,7 @@ class _FullScreenNetworkVideoPlayerState
     extends State<_FullScreenNetworkVideoPlayer> {
   late VideoPlayerController _controller;
   bool _initialized = false;
+
   @override
   void initState() {
     super.initState();
@@ -1566,13 +1581,11 @@ class _FullScreenNetworkVideoPlayerState
                   children: [
                     VideoPlayer(_controller),
                     GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _controller.value.isPlaying
-                              ? _controller.pause()
-                              : _controller.play();
-                        });
-                      },
+                      onTap: () => setState(
+                        () => _controller.value.isPlaying
+                            ? _controller.pause()
+                            : _controller.play(),
+                      ),
                       child: Container(
                         color: Colors.transparent,
                         child: Center(

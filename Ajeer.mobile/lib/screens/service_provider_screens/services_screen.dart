@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart'; // Added missing import
+import 'package:provider/provider.dart';
 import '../../models/service_models.dart';
 import '../../services/service_category_service.dart';
 import '../shared_screens/profile_screen.dart';
@@ -423,7 +423,6 @@ class _ProviderNavigationHeaderState extends State<_ProviderNavigationHeader>
   @override
   Widget build(BuildContext context) {
     final languageNotifier = Provider.of<LanguageNotifier>(context);
-    final isArabic = languageNotifier.isArabic;
     return Positioned(
       top: MediaQuery.of(context).padding.top + 5,
       left: 10,
@@ -623,17 +622,17 @@ class _ProviderServiceGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color _selectionBlue = const Color(0xFF1976D2);
-    final Color _highlightGreen = Colors.green.shade600;
+    const Color selectionBlue = Color(0xFF1976D2);
+    final Color highlightGreen = Colors.green.shade600;
 
     Color activeColor;
     bool applyBoxStyle = false;
 
     if (isSelected) {
-      activeColor = _selectionBlue;
+      activeColor = selectionBlue;
       applyBoxStyle = true;
     } else if (isHighlightedBySearch) {
-      activeColor = _highlightGreen;
+      activeColor = highlightGreen;
       applyBoxStyle = true;
     } else {
       activeColor = isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400;
@@ -804,7 +803,6 @@ class _UnitTypeSelectionDialogState extends State<_UnitTypeSelectionDialog> {
   String _formattedTime(int estimatedTime) {
     final hrStr = widget.languageNotifier.translate('hr');
     final hrsStr = widget.languageNotifier.translate('hrs');
-    final minStr = widget.languageNotifier.translate('min');
     final minsStr = widget.languageNotifier.translate('mins');
 
     String result;

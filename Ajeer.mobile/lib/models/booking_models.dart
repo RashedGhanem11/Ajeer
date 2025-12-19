@@ -1,6 +1,3 @@
-import '../config/app_config.dart';
-
-// Enum matching BookingStatus in C#
 enum BookingStatus {
   pending,
   accepted,
@@ -111,23 +108,16 @@ class BookingDetail {
   });
 
   factory BookingDetail.fromJson(Map<String, dynamic> json) {
-    // Helper to combine separate Date and Time strings from backend if needed
     DateTime parseDateTime() {
       try {
-        // If backend sends full DateTime in 'scheduledDate'
         if (json['scheduledDate'] != null &&
             json['scheduledDate'].contains('T')) {
           return DateTime.parse(json['scheduledDate']);
         }
 
-        // If backend sends separate DateOnly and TimeOnly (e.g., "2023-10-20" and "14:30:00")
         String dateStr =
             json['scheduledDate'] ?? DateTime.now().toIso8601String();
         String timeStr = json['scheduledTime'] ?? '00:00:00';
-
-        // Ensure strictly "yyyy-MM-dd" and "HH:mm:ss" format for parsing
-        // or just rely on standard ISO parsing if the backend provides it.
-        // Simple fallback combination:
         return DateTime.parse('${dateStr.split('T')[0]}T$timeStr');
       } catch (e) {
         return DateTime.now();
@@ -149,7 +139,6 @@ class BookingDetail {
       formattedPrice: json['formattedPrice'] ?? '',
       estimatedTime: json['estimatedTime'] ?? '',
       areaName: json['areaName'] ?? '',
-      // Map the list of attachment objects to a list of URL strings
       attachmentUrls:
           (json['attachments'] as List<dynamic>?)
               ?.map((a) => a['url'] as String)

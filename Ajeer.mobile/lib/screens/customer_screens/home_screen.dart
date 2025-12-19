@@ -204,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           extendBody: true,
           body: Stack(
             children: [
-              _buildBackgroundGradient(whiteContainerTop, isDarkMode),
+              _buildBackgroundGradient(whiteContainerTop),
               _buildWhiteContainer(
                 containerTop: whiteContainerTop,
                 bottomNavClearance: bottomNavClearance,
@@ -278,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildBackgroundGradient(double containerTop, bool isDarkMode) {
+  Widget _buildBackgroundGradient(double containerTop) {
     return Align(
       alignment: Alignment.topCenter,
       child: Container(
@@ -427,7 +427,7 @@ class SearchHeader extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black26,
                       spreadRadius: 1,
                       blurRadius: 5,
                       offset: const Offset(0, 3),
@@ -444,10 +444,7 @@ class SearchHeader extends StatelessWidget {
                       color: Colors.white,
                       fontSize: 16.0,
                     ),
-                    prefixIcon: IconButton(
-                      icon: const Icon(Icons.search, color: Colors.white),
-                      onPressed: () {},
-                    ),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white),
                     border: InputBorder.none,
                     filled: false,
                     contentPadding: const EdgeInsets.symmetric(
@@ -487,21 +484,12 @@ class ServiceGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String normalizedQuery = searchQuery.trim().toLowerCase();
-
-    String getTranslatedName(String backendName) {
-      return lang.translate(backendName);
-    }
+    final String normalizedQuery = searchQuery.trim().toLowerCase();
 
     final filteredServices = services.where((service) {
-      final translatedName = getTranslatedName(service.name);
+      final translatedName = lang.translate(service.name);
       return translatedName.toLowerCase().contains(normalizedQuery);
     }).toList();
-
-    bool shouldHighlight(String translatedName) {
-      return normalizedQuery.isNotEmpty &&
-          translatedName.toLowerCase().contains(normalizedQuery);
-    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 15.0),
@@ -516,12 +504,11 @@ class ServiceGridView extends StatelessWidget {
         itemCount: filteredServices.length,
         itemBuilder: (context, index) {
           final service = filteredServices[index];
-          final translatedServiceName = getTranslatedName(service.name);
-          final serviceIconUrl = service.iconUrl;
+          final translatedName = lang.translate(service.name);
 
           final double start =
               (index /
-                  (filteredServices.length > 0 ? filteredServices.length : 1)) *
+                  (filteredServices.isEmpty ? 1 : filteredServices.length)) *
               0.5;
           final double end = (start + 0.5).clamp(0.0, 1.0);
 
@@ -538,13 +525,13 @@ class ServiceGridView extends StatelessWidget {
                 end: Offset.zero,
               ).animate(animation),
               child: ServiceGridItem(
-                iconUrl: serviceIconUrl,
-                name: translatedServiceName,
-                isHighlighted: shouldHighlight(translatedServiceName),
+                iconUrl: service.iconUrl,
+                name: translatedName,
+                isHighlighted:
+                    normalizedQuery.isNotEmpty &&
+                    translatedName.toLowerCase().contains(normalizedQuery),
                 isDarkMode: isDarkMode,
-                onTap: () {
-                  onCategorySelected(service);
-                },
+                onTap: () => onCategorySelected(service),
               ),
             ),
           );
@@ -572,14 +559,9 @@ class ServiceGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color highlightGreen = Colors.green.shade600;
-
-    Color activeColor;
-    if (isHighlighted) {
-      activeColor = highlightGreen;
-    } else {
-      activeColor = isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400;
-    }
+    final Color activeColor = isHighlighted
+        ? Colors.green.shade600
+        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400);
 
     final Color itemBackgroundColor = isHighlighted
         ? activeColor.withOpacity(0.1)
@@ -589,17 +571,14 @@ class ServiceGridItem extends StatelessWidget {
         ? activeColor.withOpacity(0.5)
         : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
 
-    const double iconContainerSize = 80.0;
-    const double iconSize = 40.0;
-
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: iconContainerSize,
-            height: iconContainerSize,
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
               color: itemBackgroundColor,
               shape: BoxShape.circle,
@@ -607,16 +586,16 @@ class ServiceGridItem extends StatelessWidget {
             ),
             child: Center(
               child: SizedBox(
-                width: iconSize,
-                height: iconSize,
+                width: 40,
+                height: 40,
                 child: FadeInImage.assetNetwork(
                   placeholder: 'assets/image/placeholder.png',
                   image: AppConfig.getFullImageUrl(iconUrl),
                   fit: BoxFit.contain,
                   imageErrorBuilder: (context, error, stackTrace) {
-                    return Icon(
+                    return const Icon(
                       Icons.broken_image,
-                      size: iconSize,
+                      size: 40,
                       color: Colors.red,
                     );
                   },

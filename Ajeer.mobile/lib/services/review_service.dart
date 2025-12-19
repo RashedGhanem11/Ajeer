@@ -34,9 +34,7 @@ class ReviewService {
     }
   }
 
-  // Added method to fetch review details
   Future<ReviewResponse?> getReview(int bookingId) async {
-    // Endpoint based on ReviewsController [HttpGet("booking/{bookingId}")]
     final uri = Uri.parse('${AppConfig.apiUrl}/Reviews/booking/$bookingId');
 
     try {
@@ -50,13 +48,9 @@ class ReviewService {
           'Authorization': 'Bearer $token',
         },
       );
-
-      // Handle 204 No Content (No review exists)
       if (response.statusCode == 204) {
         return null;
-      }
-      // Handle 200 OK (Review exists)
-      else if (response.statusCode == 200) {
+      } else if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return ReviewResponse.fromJson(data);
       }

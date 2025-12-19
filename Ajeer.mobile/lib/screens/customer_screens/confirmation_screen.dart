@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import '../../themes/theme_notifier.dart';
@@ -67,21 +66,17 @@ class _ConfirmationConstants {
   static const double horizontalPadding = 20.0;
   static const double iconPositionAdjustment = 18.0;
   static const double detailItemBottomPadding = 10.0;
-  static const double detailItemVerticalPadding = 8.0;
-  static const double detailItemHorizontalPadding = 12.0;
-  static const double detailItemBorderRadius = 10.0;
   static const Color subtleDark = Color(0xFF1E1E1E);
 }
 
 class _ConfirmationScreenState extends State<ConfirmationScreen>
     with SingleTickerProviderStateMixin {
-  int _selectedIndex = 3;
+  final int _selectedIndex = 3;
   String _currentMediaView = 'Photo';
   bool _isConfirmButtonPressed = false;
   bool _isLoading = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-
   late LanguageNotifier _languageNotifier;
 
   @override
@@ -93,14 +88,6 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
   List<File> get _videoFiles => widget.pickedMediaFiles.where((file) {
     final path = file.path.toLowerCase();
     return path.endsWith('.mp4') || path.endsWith('.mov');
-  }).toList();
-
-  List<File> get _audioFiles => widget.pickedMediaFiles.where((file) {
-    final path = file.path.toLowerCase();
-    return path.endsWith('.mp3') ||
-        path.endsWith('.m4a') ||
-        path.endsWith('.wav') ||
-        path.endsWith('.aac');
   }).toList();
 
   List<File> get _photoFiles => widget.pickedMediaFiles.where((file) {
@@ -194,7 +181,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
       widget.selectedTime.minute,
     );
 
-    final BookingResult result = await BookingService().createBooking(
+    final result = await BookingService().createBooking(
       serviceIds: widget.serviceIds,
       serviceAreaId: widget.serviceAreaId,
       scheduledDate: combinedDateTime,
@@ -257,11 +244,9 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
       isDarkMode
           ? SystemUiOverlayStyle.light.copyWith(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
             )
           : SystemUiOverlayStyle.dark.copyWith(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.dark,
             ),
     );
 
@@ -591,8 +576,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
       currentFiles = _videoFiles;
       placeholderIcon = Icons.videocam_off_outlined;
       placeholderText = languageNotifier.translate('noVideos');
-    } else if (_currentMediaView == 'Audio') {
-      currentFiles = [];
+    } else {
       placeholderIcon = Icons.mic_off_outlined;
       placeholderText = languageNotifier.translate('noAudio');
     }
@@ -693,25 +677,19 @@ class _PriceAndDurationDisplay extends StatelessWidget {
   });
 
   String _formatDuration(int totalMinutes) {
-    String timeString = '';
-
     int hours = totalMinutes ~/ 60;
     int minutes = totalMinutes % 60;
+    String timeString = '';
 
     final hrStr = languageNotifier.translate('hr');
     final hrsStr = languageNotifier.translate('hrs');
     final minStr = languageNotifier.translate('min');
     final minsStr = languageNotifier.translate('mins');
 
-    if (hours > 0) {
-      timeString += '$hours ${hours > 1 ? hrsStr : hrStr}';
-    }
-
+    if (hours > 0) timeString += '$hours ${hours > 1 ? hrsStr : hrStr}';
     if (hours > 0 && minutes > 0) timeString += ' ';
-
-    if (minutes > 0 || hours == 0) {
+    if (minutes > 0 || hours == 0)
       timeString += '$minutes ${minutes > 1 ? minsStr : minStr}';
-    }
 
     return languageNotifier.convertNumbers(timeString);
   }
@@ -719,12 +697,8 @@ class _PriceAndDurationDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color textColor = isDarkMode ? Colors.white : Colors.black87;
-    const double labelFontSize = 13.0;
-    const double valueFontSize = 18.0;
-    const Color labelColor = Color.fromARGB(255, 70, 162, 255);
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 15.0),
+      padding: const EdgeInsets.all(15.0),
       decoration: BoxDecoration(
         color: isDarkMode
             ? const Color(0xFF2C2C2C)
@@ -742,7 +716,6 @@ class _PriceAndDurationDisplay extends StatelessWidget {
           children: [
             Expanded(
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Icon(
                     Icons.monetization_on_outlined,
@@ -757,23 +730,19 @@ class _PriceAndDurationDisplay extends StatelessWidget {
                       children: [
                         Text(
                           languageNotifier.translate('estimatedCost'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: labelFontSize,
-                            color: labelColor,
+                            fontSize: 13,
+                            color: Color(0xFF46A2FF),
                           ),
                         ),
                         const SizedBox(height: 2),
                         FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
                           child: Text(
                             languageNotifier.isArabic
-                                ? '${languageNotifier.convertNumbers(totalPrice.toStringAsFixed(2))} ${languageNotifier.translate('jod')}' // Arabic: 20.00 JOD
-                                : '${languageNotifier.translate('jod')} ${totalPrice.toStringAsFixed(2)}', // English: JOD 20.00
+                                ? '${languageNotifier.convertNumbers(totalPrice.toStringAsFixed(2))} ${languageNotifier.translate('jod')}'
+                                : '${languageNotifier.translate('jod')} ${totalPrice.toStringAsFixed(2)}',
                             style: TextStyle(
-                              fontSize: valueFontSize,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: textColor,
                             ),
@@ -785,14 +754,9 @@ class _PriceAndDurationDisplay extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              width: 1.5,
-              margin: const EdgeInsets.symmetric(horizontal: 8.0),
-              color: const Color(0xFF1976D2).withOpacity(0.3),
-            ),
+            VerticalDivider(color: const Color(0xFF1976D2).withOpacity(0.3)),
             Expanded(
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Icon(
                     Icons.access_time,
@@ -807,21 +771,17 @@ class _PriceAndDurationDisplay extends StatelessWidget {
                       children: [
                         Text(
                           languageNotifier.translate('estDuration'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: labelFontSize,
-                            color: labelColor,
+                            fontSize: 13,
+                            color: Color(0xFF46A2FF),
                           ),
                         ),
                         const SizedBox(height: 2),
                         FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
                           child: Text(
                             _formatDuration(totalTimeMinutes),
                             style: TextStyle(
-                              fontSize: valueFontSize,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: textColor,
                             ),
@@ -906,10 +866,6 @@ class _DetailItem extends StatelessWidget {
     final Color borderColor = isDarkMode
         ? _ConfirmationConstants.darkBorder
         : Colors.grey[300]!;
-    final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
-    final Color subtitleColor = isDarkMode
-        ? Colors.grey.shade400
-        : Colors.grey.shade700;
 
     return Padding(
       padding: const EdgeInsets.only(
@@ -919,7 +875,6 @@ class _DetailItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            // Correct padding using directional EdgeInsets
             padding: const EdgeInsetsDirectional.only(top: 8.0, end: 15.0),
             child: Icon(
               icon,
@@ -929,15 +884,10 @@ class _DetailItem extends StatelessWidget {
           ),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: _ConfirmationConstants.detailItemHorizontalPadding,
-                vertical: _ConfirmationConstants.detailItemVerticalPadding,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: containerColor,
-                borderRadius: BorderRadius.circular(
-                  _ConfirmationConstants.detailItemBorderRadius,
-                ),
+                borderRadius: BorderRadius.circular(10.0),
                 border: Border.all(color: borderColor, width: 2.0),
                 boxShadow: [
                   BoxShadow(
@@ -957,7 +907,7 @@ class _DetailItem extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
-                      color: titleColor,
+                      color: isDarkMode ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -965,8 +915,7 @@ class _DetailItem extends StatelessWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.normal,
-                      color: subtitleColor,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
                     ),
                   ),
                 ],
@@ -978,11 +927,6 @@ class _DetailItem extends StatelessWidget {
     );
   }
 }
-
-// ... _MediaSummary, _BouncingMediaTab, _DescriptionDisplay, _FullScreenImageViewer, _FullScreenVideoPlayer
-// are the same as provided previously in the truncated response.
-// Just ensure they are all present in the file.
-// I am including them here for completeness.
 
 class _MediaSummary extends StatelessWidget {
   final int photoCount;
@@ -1005,8 +949,6 @@ class _MediaSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1015,7 +957,7 @@ class _MediaSummary extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: titleColor,
+            color: isDarkMode ? Colors.white : Colors.black87,
           ),
         ),
         const SizedBox(height: 10.0),
@@ -1103,11 +1045,6 @@ class _BouncingMediaTabState extends State<_BouncingMediaTab>
     super.dispose();
   }
 
-  void _handleTap() {
-    _controller.forward().then((_) => _controller.reverse());
-    widget.onTap();
-  }
-
   @override
   Widget build(BuildContext context) {
     final Color containerColor = widget.isSelected
@@ -1115,19 +1052,12 @@ class _BouncingMediaTabState extends State<_BouncingMediaTab>
         : widget.isDarkMode
         ? _ConfirmationConstants.subtleLighterDark
         : Colors.white;
-    final Color textColor = widget.isSelected
-        ? Colors.white
-        : widget.isDarkMode
-        ? Colors.grey.shade400
-        : Colors.grey.shade700;
-    final Color borderColor = widget.isSelected
-        ? _ConfirmationConstants.primaryBlue
-        : widget.isDarkMode
-        ? _ConfirmationConstants.darkBorder
-        : Colors.grey[300]!;
 
     return GestureDetector(
-      onTap: _handleTap,
+      onTap: () {
+        _controller.forward().then((_) => _controller.reverse());
+        widget.onTap();
+      },
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
@@ -1136,7 +1066,14 @@ class _BouncingMediaTabState extends State<_BouncingMediaTab>
           decoration: BoxDecoration(
             color: containerColor,
             borderRadius: BorderRadius.circular(20.0),
-            border: Border.all(color: borderColor, width: 1.5),
+            border: Border.all(
+              color: widget.isSelected
+                  ? _ConfirmationConstants.primaryBlue
+                  : (widget.isDarkMode
+                        ? _ConfirmationConstants.darkBorder
+                        : Colors.grey[300]!),
+              width: 1.5,
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1152,8 +1089,11 @@ class _BouncingMediaTabState extends State<_BouncingMediaTab>
               Text(
                 widget.label,
                 style: TextStyle(
-                  color: textColor,
-                  fontWeight: FontWeight.w500,
+                  color: widget.isSelected
+                      ? Colors.white
+                      : (widget.isDarkMode
+                            ? Colors.grey[400]
+                            : Colors.grey[700]),
                   fontSize: 13,
                 ),
               ),
@@ -1178,17 +1118,6 @@ class _DescriptionDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color titleColor = isDarkMode ? Colors.white : Colors.black87;
-    final Color containerColor = isDarkMode
-        ? _ConfirmationConstants.subtleLighterDark
-        : Colors.white;
-    final Color borderColor = isDarkMode
-        ? _ConfirmationConstants.darkBorder
-        : Colors.grey[300]!;
-    final Color descriptionColor = isDarkMode
-        ? Colors.grey.shade300
-        : Colors.black87;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1197,37 +1126,31 @@ class _DescriptionDisplay extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: titleColor,
+            color: isDarkMode ? Colors.white : Colors.black87,
           ),
         ),
         const SizedBox(height: 10.0),
         Container(
           width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 50.0),
           padding: const EdgeInsets.all(15.0),
           decoration: BoxDecoration(
-            color: containerColor,
+            color: isDarkMode
+                ? _ConfirmationConstants.subtleLighterDark
+                : Colors.white,
             borderRadius: BorderRadius.circular(15.0),
-            border: Border.all(color: borderColor, width: 2.0),
-            boxShadow: [
-              BoxShadow(
-                color: isDarkMode
-                    ? Colors.black.withOpacity(0.5)
-                    : Colors.black.withOpacity(0.05),
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
+            border: Border.all(
+              color: isDarkMode
+                  ? _ConfirmationConstants.darkBorder
+                  : Colors.grey[300]!,
+              width: 2.0,
+            ),
           ),
-          child: Align(
-            alignment: Alignment.topLeft,
-            child: Text(
-              description,
-              style: TextStyle(
-                fontSize: 16,
-                color: descriptionColor,
-                height: 1.4,
-              ),
+          child: Text(
+            description,
+            style: TextStyle(
+              fontSize: 16,
+              color: isDarkMode ? Colors.grey[300] : Colors.black87,
+              height: 1.4,
             ),
           ),
         ),
@@ -1238,7 +1161,6 @@ class _DescriptionDisplay extends StatelessWidget {
 
 class _FullScreenImageViewer extends StatelessWidget {
   final File imageFile;
-
   const _FullScreenImageViewer({required this.imageFile});
 
   @override
@@ -1249,21 +1171,13 @@ class _FullScreenImageViewer extends StatelessWidget {
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Center(
-        child: InteractiveViewer(
-          panEnabled: true,
-          minScale: 0.5,
-          maxScale: 4.0,
-          child: Image.file(imageFile),
-        ),
-      ),
+      body: Center(child: InteractiveViewer(child: Image.file(imageFile))),
     );
   }
 }
 
 class _FullScreenVideoPlayer extends StatefulWidget {
   final File videoFile;
-
   const _FullScreenVideoPlayer({required this.videoFile});
 
   @override
@@ -1309,13 +1223,11 @@ class _FullScreenVideoPlayerState extends State<_FullScreenVideoPlayer> {
                   children: [
                     VideoPlayer(_controller),
                     GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _controller.value.isPlaying
-                              ? _controller.pause()
-                              : _controller.play();
-                        });
-                      },
+                      onTap: () => setState(
+                        () => _controller.value.isPlaying
+                            ? _controller.pause()
+                            : _controller.play(),
+                      ),
                       child: Container(
                         color: Colors.transparent,
                         child: Center(

@@ -1,4 +1,3 @@
-// lib/models/auth_models.dart
 class LoginRequest {
   final String identifier;
   final String password;
@@ -16,7 +15,7 @@ class AuthResponse {
   final String name;
   final String email;
   final String phone;
-  final String role; // Assuming enum is serialized to string
+  final String role;
   final String? profilePictureUrl;
 
   AuthResponse({
@@ -36,7 +35,7 @@ class AuthResponse {
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'] ?? '',
-      role: json['role'].toString(), // Safely convert enum/int to string
+      role: json['role'].toString(),
       profilePictureUrl: json['profilePictureUrl'],
     );
   }

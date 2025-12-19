@@ -1,4 +1,3 @@
-// lib/services/auth_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,7 +5,6 @@ import '../models/auth_models.dart';
 import '../config/app_config.dart';
 
 class AuthService {
-  // Base URL for Auth Controller (Login, Register)
   static const String authUrl = '${AppConfig.apiUrl}/auth';
 
   Future<AuthResponse?> login(String identifier, String password) async {
@@ -34,8 +32,6 @@ class AuthService {
       throw Exception(e.toString());
     }
   }
-
-  // ❌ REMOVED: updateProfile (Moved to UserService)
 
   Future<void> _saveUserSession(AuthResponse user) async {
     final prefs = await SharedPreferences.getInstance();

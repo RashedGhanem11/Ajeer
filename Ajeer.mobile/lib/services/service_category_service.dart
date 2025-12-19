@@ -7,7 +7,7 @@ import '../config/app_config.dart';
 class ServiceCategoryService {
   static const String apiUrl = AppConfig.apiUrl;
   static const String baseUrl = '$apiUrl/servicecategories';
-  static const String servicesUrl = '$apiUrl/services'; // Added endpoint
+  static const String servicesUrl = '$apiUrl/services';
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -40,8 +40,6 @@ class ServiceCategoryService {
     }
   }
 
-  // ✅ NEW METHOD: Fetches the unit types (items) for a specific category
-  // Assumes your API supports filtering services by categoryId
   Future<List<ServiceItem>> fetchServicesForCategory(int categoryId) async {
     final token = await _getToken();
     final url = Uri.parse('$servicesUrl?categoryId=$categoryId');

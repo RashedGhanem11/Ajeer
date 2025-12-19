@@ -117,7 +117,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
 
   void _showConfirmationDialog() {
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
-    // This is the color used for the title "Save Changes" or "Become Ajeer"
     final Color titleTextColor = isDarkMode ? Colors.white : Colors.black87;
     final Color bodyTextColor = isDarkMode
         ? Colors.grey.shade400
@@ -128,7 +127,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return BackdropFilter(
-          // 1. Added the same blur effect as the clock and services dialogs
           filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
           child: AlertDialog(
             shape: RoundedRectangleBorder(
@@ -179,7 +177,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                           Navigator.pop(context);
                         },
                         style: TextButton.styleFrom(
-                          // 2. Cancel button color matches the Title Text color
                           foregroundColor: titleTextColor,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                           shape: RoundedRectangleBorder(
@@ -267,7 +264,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          // 3. Confirm button color changed to green to match the checkmark
                           backgroundColor: kSelectedGreen,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -370,7 +366,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                   : Colors.grey.shade200,
             ),
           ),
-          // Adding the Blur Filter here
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
             child: child!,
@@ -445,17 +440,15 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
             timeSlots: List.from(_currentDayTimeSlots),
           ),
         );
+        _currentDayTimeSlots = [];
+        _selectedDay = _availableDays.isNotEmpty ? _availableDays.first : null;
       });
-
-      _currentDayTimeSlots = [];
-      _selectedDay = _availableDays.isNotEmpty ? _availableDays.first : null;
     }
   }
 
   void _onEditSchedule(WorkSchedule schedule) {
     setState(() {
       _finalSchedule.removeWhere((s) => s.day == schedule.day);
-
       _selectedDay = schedule.day;
       _currentDayTimeSlots = List.from(schedule.timeSlots);
     });
@@ -509,16 +502,14 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
   }
 
   Widget _buildBackgroundGradient() {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
-      width: MediaQuery.of(context).size.width,
-      child: const DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [kLightBlue, kPrimaryBlue],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+    return Container(
+      height: double.infinity,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [kLightBlue, kPrimaryBlue],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
       ),
     );
@@ -927,9 +918,7 @@ class _DayItemState extends State<_DayItem>
 
   @override
   Widget build(BuildContext context) {
-    // Translate the day name
     final translatedDay = widget.languageNotifier.translateDay(widget.day);
-    // Determine display text: substring if not Arabic (e.g. Mon), full if Arabic (e.g. الاثنين)
     final displayText = widget.languageNotifier.isArabic
         ? translatedDay
         : (translatedDay.length > 3
@@ -976,7 +965,6 @@ class _DayItemState extends State<_DayItem>
 }
 
 class _TimePickerButton extends StatelessWidget {
-  final String label;
   final TimeOfDay time;
   final VoidCallback? onTap;
   final bool isDarkMode;
@@ -984,7 +972,6 @@ class _TimePickerButton extends StatelessWidget {
   final LanguageNotifier languageNotifier;
 
   const _TimePickerButton({
-    required this.label,
     required this.time,
     required this.onTap,
     required this.isDarkMode,
@@ -1003,7 +990,6 @@ class _TimePickerButton extends StatelessWidget {
         : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade400);
     final Color bgColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
 
-    // Use translateTimeRange logic to format single TimeOfDay
     final timeString = languageNotifier.translateTimeRange(
       time.format(context),
     );
@@ -1099,7 +1085,6 @@ class _TimeSlotCreator extends StatelessWidget {
             children: [
               Expanded(
                 child: _TimePickerButton(
-                  label: languageNotifier.translate('startTime'),
                   time: startTime,
                   onTap: isEnabled ? () => onPickTime(context, true) : null,
                   isDarkMode: isDarkMode,
@@ -1110,7 +1095,6 @@ class _TimeSlotCreator extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _TimePickerButton(
-                  label: languageNotifier.translate('endTime'),
                   time: endTime,
                   onTap: isEnabled ? () => onPickTime(context, false) : null,
                   isDarkMode: isDarkMode,
@@ -1274,15 +1258,6 @@ class _WorkScheduleList extends StatelessWidget {
                   color: itemBgColor,
                   borderRadius: BorderRadius.circular(20.0),
                   border: Border.all(color: itemBorderColor, width: 2.0),
-                  boxShadow: isDarkMode
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: Colors.grey.shade200,
-                            spreadRadius: 1,
-                            blurRadius: 3,
-                          ),
-                        ],
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -1317,7 +1292,6 @@ class _WorkScheduleList extends StatelessWidget {
                       children: [
                         InkWell(
                           onTap: () => onEditSchedule(schedule),
-                          customBorder: const CircleBorder(),
                           child: Container(
                             width: 35,
                             height: 35,
@@ -1335,7 +1309,6 @@ class _WorkScheduleList extends StatelessWidget {
                         const SizedBox(width: 8),
                         InkWell(
                           onTap: () => onDeleteSchedule(schedule.day),
-                          customBorder: const CircleBorder(),
                           child: Container(
                             width: 35,
                             height: 35,

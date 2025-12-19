@@ -9,7 +9,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/app_config.dart';
-
 import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import 'bookings_screen.dart';
@@ -46,12 +45,11 @@ class LocationScreen extends StatefulWidget {
 }
 
 class _LocationScreenState extends State<LocationScreen> {
-  int _selectedIndex = 3;
+  final int _selectedIndex = 3;
   LatLng? _customerLocation;
-  String? _resolvedAddress;
   String? _fullResolvedAddress;
   bool _isEditingLocation = false;
-  MapController _mapController = MapController();
+  final MapController _mapController = MapController();
   LatLng? _mapCenterDuringEdit;
   String? _selectedCity;
   String? _selectedArea;
@@ -93,8 +91,6 @@ class _LocationScreenState extends State<LocationScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? token = prefs.getString('authToken');
-
-      if (token == null) {}
 
       final response = await http
           .get(
@@ -167,32 +163,8 @@ class _LocationScreenState extends State<LocationScreen> {
 
       if (placemarks.isNotEmpty) {
         final Placemark place = placemarks.first;
-        final city = place.locality?.trim();
-        String? area = place.subLocality?.trim();
-
-        if (area == null || area.isEmpty) {
-          area = place.subAdministrativeArea?.trim();
-        }
-
-        String finalCity = city ?? '';
-        String finalArea = area ?? '';
-        String finalGovernorate = place.administrativeArea ?? '';
-
         final street = place.street?.trim();
         final building = place.name?.trim();
-
-        String visibleAddress = '';
-        if (finalCity.isNotEmpty) visibleAddress += finalCity;
-        if (finalArea.isNotEmpty)
-          visibleAddress += ', $finalArea';
-        else if (finalGovernorate.isNotEmpty)
-          visibleAddress += ', $finalGovernorate';
-        else
-          visibleAddress +=
-              ', ${_languageNotifier.translate('unnamedLocation')}';
-
-        // Translate city/area part
-        visibleAddress = _languageNotifier.translateCityArea(visibleAddress);
 
         String fullAddress = '';
         if (street != null && street.isNotEmpty) {
@@ -205,11 +177,9 @@ class _LocationScreenState extends State<LocationScreen> {
         }
         fullAddress = fullAddress.trim().replaceAll(RegExp(r',\s+'), ', ');
 
-        // Translate "Street" -> "شارع" and convert numbers
         fullAddress = _languageNotifier.translateAddress(fullAddress);
 
         setState(() {
-          _resolvedAddress = visibleAddress;
           _fullResolvedAddress = fullAddress;
         });
       }
@@ -219,7 +189,6 @@ class _LocationScreenState extends State<LocationScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    if (index == _selectedIndex) return;
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
     switch (index) {
@@ -1350,32 +1319,29 @@ class _BounceableAreaItemState extends State<_BounceableAreaItem>
       onTap: _handleTap,
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: Container(
-          color: Colors.transparent,
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
-            visualDensity: const VisualDensity(vertical: -4),
-            dense: true,
-            title: Text(
-              widget.languageNotifier.translate(widget.area),
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: widget.isSelected
-                    ? FontWeight.bold
-                    : FontWeight.normal,
-                color: itemTextColor,
-              ),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
+          visualDensity: const VisualDensity(vertical: -4),
+          dense: true,
+          title: Text(
+            widget.languageNotifier.translate(widget.area),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: widget.isSelected
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+              color: itemTextColor,
             ),
-            trailing: widget.isSelected
-                ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
-                : Icon(
-                    Icons.radio_button_unchecked,
-                    color: widget.isDarkMode
-                        ? Colors.grey.shade600
-                        : Colors.grey.shade400,
-                    size: 20,
-                  ),
           ),
+          trailing: widget.isSelected
+              ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+              : Icon(
+                  Icons.radio_button_unchecked,
+                  color: widget.isDarkMode
+                      ? Colors.grey.shade600
+                      : Colors.grey.shade400,
+                  size: 20,
+                ),
         ),
       ),
     );

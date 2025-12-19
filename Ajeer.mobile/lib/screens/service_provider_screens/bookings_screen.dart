@@ -6,7 +6,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
-
 import '../../config/app_config.dart';
 import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
@@ -57,7 +56,7 @@ Color _getAvatarColor(String name) {
 
 class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
     with SingleTickerProviderStateMixin {
-  int _selectedIndex = 2;
+  final int _selectedIndex = 2;
   late TabController _tabController;
   final _bookingService = BookingService();
   bool _isLoading = true;
@@ -300,7 +299,7 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
                 children: [
                   const SizedBox(height: 35),
                   Padding(
-                    padding: const EdgeInsets.only(left: 20, right: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
                       _languageNotifier.translate('bookings'),
                       style: Theme.of(context).textTheme.headlineSmall
@@ -396,13 +395,14 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
     _BookingListType type,
     bool isDark,
   ) {
-    if (items.isEmpty)
+    if (items.isEmpty) {
       return Center(
         child: Text(
           _languageNotifier.translate('noJobs'),
           style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
         ),
       );
+    }
     final padding =
         _Consts.navBarHeight + MediaQuery.of(context).padding.bottom;
     return ListView.builder(
@@ -429,6 +429,7 @@ class _BookingCard extends StatefulWidget {
   final Function(String) onAction;
   final VoidCallback onInfoTap;
   final VoidCallback onLocationTap;
+
   const _BookingCard({
     required this.booking,
     required this.listType,
@@ -437,6 +438,7 @@ class _BookingCard extends StatefulWidget {
     required this.onInfoTap,
     required this.onLocationTap,
   });
+
   @override
   State<_BookingCard> createState() => _BookingCardState();
 }
@@ -466,11 +468,15 @@ class _BookingCardState extends State<_BookingCard>
         Tween<Offset>(begin: Offset.zero, end: const Offset(0, -0.2)).animate(
           CurvedAnimation(parent: _jumpController, curve: Curves.easeInOut),
         );
+
     if (widget.listType == _BookingListType.active ||
-        widget.listType == _BookingListType.pending)
+        widget.listType == _BookingListType.pending) {
       _bounceController.repeat(reverse: true);
-    if (widget.listType == _BookingListType.closed && widget.booking.hasReview)
+    }
+    if (widget.listType == _BookingListType.closed &&
+        widget.booking.hasReview) {
       _jumpController.repeat(reverse: true);
+    }
   }
 
   @override
@@ -488,8 +494,9 @@ class _BookingCardState extends State<_BookingCard>
     );
     final service = ReviewService();
     final review = await service.getReview(widget.booking.id);
-    if (context.mounted) Navigator.pop(context);
-    if (context.mounted && review != null) {
+    if (!mounted) return;
+    Navigator.pop(context);
+    if (review != null) {
       showDialog(
         context: context,
         builder: (_) => _ReviewDialog(
@@ -498,7 +505,7 @@ class _BookingCardState extends State<_BookingCard>
           existingReview: review,
         ),
       );
-    } else if (context.mounted) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No review found for this booking.')),
       );
@@ -749,7 +756,7 @@ class _BookingCardState extends State<_BookingCard>
   Widget _buildActions(BuildContext context) {
     final languageNotifier = Provider.of<LanguageNotifier>(context);
     List<Widget> icons = [];
-    if (widget.listType == _BookingListType.active)
+    if (widget.listType == _BookingListType.active) {
       icons.add(
         _iconBtn(
           Icons.chat_bubble_outline,
@@ -758,8 +765,9 @@ class _BookingCardState extends State<_BookingCard>
           () => _showMessageDialog(context),
         ),
       );
+    }
     if (widget.booking.status == BookingStatus.completed &&
-        widget.booking.hasReview)
+        widget.booking.hasReview) {
       icons.add(
         SlideTransition(
           position: _jumpAnimation,
@@ -771,6 +779,7 @@ class _BookingCardState extends State<_BookingCard>
           ),
         ),
       );
+    }
     icons.addAll([
       _iconBtn(
         Icons.location_on_outlined,
@@ -901,6 +910,7 @@ class _BookingCardState extends State<_BookingCard>
     Color getBg(MaterialColor c) => widget.isDarkMode ? c.shade900 : c.shade100;
     Color getTxt(MaterialColor c) =>
         widget.isDarkMode ? c.shade100 : c.shade800;
+
     switch (widget.booking.status) {
       case BookingStatus.completed:
         bg = getBg(Colors.green);
@@ -942,6 +952,7 @@ class _ReviewDialog extends StatelessWidget {
   final int bookingId;
   final bool isDarkMode;
   final ReviewResponse existingReview;
+
   const _ReviewDialog({
     required this.bookingId,
     required this.isDarkMode,
@@ -1025,6 +1036,7 @@ class _CustomTabBar extends StatelessWidget {
   final TabController tabController;
   final List<int> counts;
   final bool isDarkMode;
+
   const _CustomTabBar({
     required this.tabController,
     required this.counts,
@@ -1044,17 +1056,33 @@ class _CustomTabBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _tab(languageNotifier.translate('active'), 0, Colors.green),
-            _tab(languageNotifier.translate('pending'), 1, Colors.orange),
-            _tab(languageNotifier.translate('closed'), 2, _Consts.primaryBlue),
+            _tab(
+              context,
+              languageNotifier.translate('active'),
+              0,
+              Colors.green,
+            ),
+            _tab(
+              context,
+              languageNotifier.translate('pending'),
+              1,
+              Colors.orange,
+            ),
+            _tab(
+              context,
+              languageNotifier.translate('closed'),
+              2,
+              _Consts.primaryBlue,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _tab(String text, int i, Color color) {
+  Widget _tab(BuildContext context, String text, int i, Color color) {
     final sel = tabController.index == i;
+    final languageNotifier = Provider.of<LanguageNotifier>(context);
     return Expanded(
       child: GestureDetector(
         onTap: () => tabController.animateTo(i),
@@ -1100,20 +1128,13 @@ class _CustomTabBar extends StatelessWidget {
                       color: color,
                       shape: BoxShape.circle,
                     ),
-                    child: Builder(
-                      builder: (context) {
-                        final languageNotifier = Provider.of<LanguageNotifier>(
-                          context,
-                        );
-                        return Text(
-                          languageNotifier.convertNumbers('${counts[i]}'),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        );
-                      },
+                    child: Text(
+                      languageNotifier.convertNumbers('${counts[i]}'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -1128,6 +1149,7 @@ class _CustomTabBar extends StatelessWidget {
 class _DetailDialog extends StatelessWidget {
   final BookingDetail details;
   final bool isDarkMode;
+
   const _DetailDialog({required this.details, required this.isDarkMode});
 
   bool _isVideo(String url) => [
@@ -1176,12 +1198,14 @@ class _DetailDialog extends StatelessWidget {
     final languageNotifier = Provider.of<LanguageNotifier>(context);
     final dateFormat = languageNotifier.getFormattedDate(details.scheduledDate);
     String timeString = DateFormat('h:mm a').format(details.scheduledDate);
+
     if (languageNotifier.isArabic) {
       timeString = timeString
           .replaceAll('AM', languageNotifier.translate('am'))
           .replaceAll('PM', languageNotifier.translate('pm'));
       timeString = languageNotifier.convertNumbers(timeString);
     }
+
     String cleanEst = details.estimatedTime
         .replaceAll(RegExp(r'Est\. Time:?'), '')
         .trim();
@@ -1205,6 +1229,7 @@ class _DetailDialog extends StatelessWidget {
           );
       cleanEst = languageNotifier.convertNumbers(cleanEst);
     }
+
     String priceString = details.formattedPrice;
     if (languageNotifier.isArabic) {
       String nums = priceString.replaceAll(RegExp(r'[^0-9.]'), '');
@@ -1384,11 +1409,13 @@ class _BookingMapScreen extends StatefulWidget {
   final double latitude;
   final double longitude;
   final bool isDarkMode;
+
   const _BookingMapScreen({
     required this.latitude,
     required this.longitude,
     required this.isDarkMode,
   });
+
   @override
   State<_BookingMapScreen> createState() => _BookingMapScreenState();
 }
@@ -1396,6 +1423,7 @@ class _BookingMapScreen extends StatefulWidget {
 class _BookingMapScreenState extends State<_BookingMapScreen> {
   late MapController _mapController;
   double _currentZoom = 15.0;
+
   @override
   void initState() {
     super.initState();
@@ -1492,6 +1520,7 @@ class _BookingMapScreenState extends State<_BookingMapScreen> {
 class _FullScreenNetworkImageViewer extends StatelessWidget {
   final String imageUrl;
   const _FullScreenNetworkImageViewer({required this.imageUrl});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1515,6 +1544,7 @@ class _FullScreenNetworkImageViewer extends StatelessWidget {
 class _FullScreenNetworkVideoPlayer extends StatefulWidget {
   final String videoUrl;
   const _FullScreenNetworkVideoPlayer({required this.videoUrl});
+
   @override
   State<_FullScreenNetworkVideoPlayer> createState() =>
       _FullScreenNetworkVideoPlayerState();
@@ -1524,6 +1554,7 @@ class _FullScreenNetworkVideoPlayerState
     extends State<_FullScreenNetworkVideoPlayer> {
   late VideoPlayerController _controller;
   bool _initialized = false;
+
   @override
   void initState() {
     super.initState();

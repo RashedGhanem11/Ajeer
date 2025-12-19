@@ -122,9 +122,7 @@ class BookingService {
       if (response.statusCode == 200) {
         return BookingDetail.fromJson(jsonDecode(response.body));
       }
-    } catch (e) {
-      // Handle exception
-    }
+    } catch (e) {}
     return null;
   }
 

@@ -1,5 +1,3 @@
-// service_area_models.dart
-
 class AreaResponse {
   final int id;
   final String name;

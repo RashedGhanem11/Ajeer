@@ -651,14 +651,11 @@ class _SelectableUnitItemState extends State<_SelectableUnitItem>
   }
 
   static const Color _primaryBlue = Color(0xFF1976D2);
-  static const double _borderRadius = 15.0;
-  static const double _borderWidth = 2.0;
-  static const Color _subtleLighterDarkGrey = Color(0xFF242424);
 
   @override
   Widget build(BuildContext context) {
     final Color fillColor = widget.isDarkMode
-        ? _subtleLighterDarkGrey
+        ? const Color(0xFF242424)
         : Colors.grey[100]!;
     final Color unselectedBorderColor = widget.isDarkMode
         ? Colors.grey[600]!
@@ -679,10 +676,10 @@ class _SelectableUnitItemState extends State<_SelectableUnitItem>
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
           decoration: BoxDecoration(
             color: fillColor,
-            borderRadius: BorderRadius.circular(_borderRadius),
+            borderRadius: BorderRadius.circular(15.0),
             border: Border.all(
               color: widget.isSelected ? _primaryBlue : unselectedBorderColor,
-              width: _borderWidth,
+              width: 2.0,
             ),
             boxShadow: widget.isSelected
                 ? [

@@ -5,7 +5,6 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import '../../widgets/shared_widgets/settings_menu.dart';
 import '../../themes/theme_notifier.dart';
@@ -13,7 +12,6 @@ import '../../notifiers/user_notifier.dart';
 import '../../notifiers/language_notifier.dart';
 import '../../models/provider_data.dart';
 import '../../config/app_config.dart';
-
 import '../customer_screens/bookings_screen.dart';
 import '../customer_screens/home_screen.dart';
 import 'chat_screen.dart';
@@ -72,13 +70,11 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Color get _primaryBlue =>
       _isProviderMode ? _providerPrimaryBlue : _customerPrimaryBlue;
-
   Color get _lightBlue =>
       _isProviderMode ? _providerLightBlue : _customerLightBlue;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  int _selectedIndex = 0;
+  final int _selectedIndex = 0;
   bool _isEditing = false;
   bool _dataHasChanged = false;
 
@@ -209,7 +205,6 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     try {
       final userService = Provider.of<UserService>(context, listen: false);
-
       final updatedUser = await userService.updateProfile(
         name: _fullNameController.text,
         email: _emailController.text,
@@ -219,16 +214,13 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       if (mounted) {
         Navigator.pop(context);
-
         setState(() {
           _fullName = _fullNameController.text;
           _mobileNumber = _mobileController.text;
           _email = _emailController.text;
-
           if (updatedUser?.profilePictureUrl != null) {
             _profileImageUrl = updatedUser!.profilePictureUrl;
           }
-
           _originalProfileImage = _profileImage;
           _profileImage = null;
           _dataHasChanged = false;
@@ -275,7 +267,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     showDialog(
       context: context,
       builder: (ctx) {
-        // Added BackdropFilter to create the blur effect
         return BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
           child: StatefulBuilder(
@@ -373,7 +364,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     newPassword: newPassController.text,
                                   ),
                                 );
-
                                 if (context.mounted) {
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -464,7 +454,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       final IconData targetIcon = userNotifier.isProvider
           ? Icons.person
           : Icons.handyman;
-
       final Color targetColor = userNotifier.isProvider
           ? _customerPrimaryBlue
           : _providerPrimaryBlue;
@@ -523,17 +512,12 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     Widget? nextScreen;
     if (index == 1) {
-      // Chat
       nextScreen = const ChatScreen();
     } else if (index == 2) {
-      // Bookings
-      if (userNotifier.isProvider) {
-        nextScreen = const provider_screens.ProviderBookingsScreen();
-      } else {
-        nextScreen = const BookingsScreen();
-      }
+      nextScreen = userNotifier.isProvider
+          ? const provider_screens.ProviderBookingsScreen()
+          : const BookingsScreen();
     } else if (index == 3) {
-      // Home
       nextScreen = HomeScreen(themeNotifier: widget.themeNotifier);
     }
 
@@ -567,7 +551,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           key: _scaffoldKey,
           extendBody: true,
           backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          // Updated to remove arguments
           drawer: SettingsMenu(themeNotifier: widget.themeNotifier),
           body: Stack(
             children: [
@@ -736,7 +719,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     final String initial = _fullName.isNotEmpty
         ? _fullName[0].toUpperCase()
         : '?';
-
     ImageProvider? backgroundImage;
     if (_profileImage != null) {
       backgroundImage = FileImage(_profileImage!);
@@ -821,7 +803,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         : (isDarkMode ? _subtleDark : Colors.grey.shade100);
     final Color fieldBorderColor = _isEditing
         ? (isDarkMode ? _editableBorderColorDark : Colors.grey.shade400)
-        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
+        : (isDarkMode ? _subtleDark : Colors.grey.shade300);
 
     return Positioned(
       top: top,
@@ -1025,7 +1007,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
               color: Colors.black26,
               blurRadius: 4,
@@ -1058,7 +1040,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         : (isDarkMode ? _subtleDark : Colors.grey.shade100);
     final Color borderColor = _isEditing
         ? (isDarkMode ? _editableBorderColorDark : Colors.grey.shade400)
-        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
+        : (isDarkMode ? _subtleDark : Colors.grey.shade300);
 
     return _Bounceable(
       child: Padding(

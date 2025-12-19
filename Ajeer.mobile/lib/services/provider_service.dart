@@ -12,7 +12,6 @@ class ProviderService {
     return prefs.getString('authToken');
   }
 
-  // GET: Fetch the provider profile
   Future<ProviderData?> getProviderProfile() async {
     final token = await _getToken();
     final url = Uri.parse('$_baseUrl/serviceproviders/my-profile');
@@ -30,7 +29,6 @@ class ProviderService {
         final data = jsonDecode(response.body);
         return ProviderData.fromApi(data);
       } else {
-        // Returns null if 404 (Not Found) or 403 (Not a Provider)
         return null;
       }
     } catch (e) {
@@ -38,8 +36,6 @@ class ProviderService {
     }
   }
 
-  // ✅ NEW: Explicit Register Method (POST)
-  // Calls 'api/serviceproviders/register'
   Future<void> registerProvider(ProviderData data) async {
     final token = await _getToken();
     final url = Uri.parse('$_baseUrl/serviceproviders/register');
@@ -65,8 +61,6 @@ class ProviderService {
     }
   }
 
-  // ✅ NEW: Explicit Update Method (PUT)
-  // Calls 'api/serviceproviders/profile'
   Future<void> updateProviderProfile(ProviderData data) async {
     final token = await _getToken();
     final url = Uri.parse('$_baseUrl/serviceproviders/profile');
@@ -92,11 +86,9 @@ class ProviderService {
     }
   }
 
-  // Helper to read backend errors safely
   String _parseError(String body) {
     try {
       final decoded = jsonDecode(body);
-      // Check for common error fields
       return decoded['message'] ?? decoded['title'] ?? body;
     } catch (_) {
       return body;
