@@ -12,6 +12,7 @@ import '../shared_screens/profile_screen.dart';
 import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
 import '../../notifiers/language_notifier.dart';
+import 'dart:ui';
 
 class MediaScreen extends StatefulWidget {
   final List<int> serviceIds;
@@ -268,56 +269,65 @@ class _MediaScreenState extends State<MediaScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.2),
       builder: (context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(25.0),
-              topRight: Radius.circular(25.0),
-            ),
-          ),
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                _languageNotifier.translate(mediaTypeKey),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20.0,
-                  color: isDarkMode ? Colors.white : Colors.black87,
-                ),
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(40.0),
+                topRight: Radius.circular(40.0),
               ),
-              const SizedBox(height: 15.0),
-              if (!isAudio)
+            ),
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  _languageNotifier.translate(mediaTypeKey),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20.0,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 15.0),
+                if (!isAudio)
+                  ListTile(
+                    leading: const Icon(
+                      Icons.photo_library,
+                      color: _primaryBlue,
+                    ),
+                    title: Text(
+                      _languageNotifier.translate('selectFromGallery'),
+                      style: TextStyle(
+                        color: isDarkMode
+                            ? Colors.white70
+                            : Colors.grey.shade700,
+                      ),
+                    ),
+                    onTap: () => _pickMedia(ImageSource.gallery),
+                  ),
                 ListTile(
-                  leading: const Icon(Icons.photo_library, color: _primaryBlue),
+                  leading: Icon(
+                    isAudio ? Icons.mic : Icons.camera_alt,
+                    color: _primaryBlue,
+                  ),
                   title: Text(
-                    _languageNotifier.translate('selectFromGallery'),
+                    isAudio
+                        ? _languageNotifier.translate('recordAudio')
+                        : _languageNotifier.translate('camera'),
                     style: TextStyle(
                       color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                     ),
                   ),
-                  onTap: () => _pickMedia(ImageSource.gallery),
+                  onTap: () => _pickMedia(ImageSource.camera),
                 ),
-              ListTile(
-                leading: Icon(
-                  isAudio ? Icons.mic : Icons.camera_alt,
-                  color: _primaryBlue,
-                ),
-                title: Text(
-                  isAudio
-                      ? _languageNotifier.translate('recordAudio')
-                      : _languageNotifier.translate('camera'),
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
-                  ),
-                ),
-                onTap: () => _pickMedia(ImageSource.camera),
-              ),
-              const SizedBox(height: 10.0),
-            ],
+                const SizedBox(height: 10.0),
+              ],
+            ),
           ),
         );
       },

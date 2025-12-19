@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -182,7 +183,6 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
     final details = await _bookingService.getBookingDetails(id);
     if (!mounted) return;
     Navigator.pop(context);
-
     if (details != null) {
       Navigator.push(
         context,
@@ -286,12 +286,12 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(_Consts.borderRadius),
                 ),
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
                     color: Colors.black26,
                     spreadRadius: 1,
                     blurRadius: 10,
-                    offset: const Offset(0, -3),
+                    offset: Offset(0, -3),
                   ),
                 ],
               ),
@@ -396,14 +396,13 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
     _BookingListType type,
     bool isDark,
   ) {
-    if (items.isEmpty) {
+    if (items.isEmpty)
       return Center(
         child: Text(
           _languageNotifier.translate('noJobs'),
           style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
         ),
       );
-    }
     final padding =
         _Consts.navBarHeight + MediaQuery.of(context).padding.bottom;
     return ListView.builder(
@@ -430,7 +429,6 @@ class _BookingCard extends StatefulWidget {
   final Function(String) onAction;
   final VoidCallback onInfoTap;
   final VoidCallback onLocationTap;
-
   const _BookingCard({
     required this.booking,
     required this.listType,
@@ -439,7 +437,6 @@ class _BookingCard extends StatefulWidget {
     required this.onInfoTap,
     required this.onLocationTap,
   });
-
   @override
   State<_BookingCard> createState() => _BookingCardState();
 }
@@ -448,7 +445,6 @@ class _BookingCardState extends State<_BookingCard>
     with TickerProviderStateMixin {
   late AnimationController _bounceController;
   late Animation<double> _scaleAnimation;
-
   late AnimationController _jumpController;
   late Animation<Offset> _jumpAnimation;
 
@@ -462,7 +458,6 @@ class _BookingCardState extends State<_BookingCard>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
     );
-
     _jumpController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -471,16 +466,11 @@ class _BookingCardState extends State<_BookingCard>
         Tween<Offset>(begin: Offset.zero, end: const Offset(0, -0.2)).animate(
           CurvedAnimation(parent: _jumpController, curve: Curves.easeInOut),
         );
-
     if (widget.listType == _BookingListType.active ||
-        widget.listType == _BookingListType.pending) {
+        widget.listType == _BookingListType.pending)
       _bounceController.repeat(reverse: true);
-    }
-
-    if (widget.listType == _BookingListType.closed &&
-        widget.booking.hasReview) {
+    if (widget.listType == _BookingListType.closed && widget.booking.hasReview)
       _jumpController.repeat(reverse: true);
-    }
   }
 
   @override
@@ -496,12 +486,9 @@ class _BookingCardState extends State<_BookingCard>
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
-
     final service = ReviewService();
     final review = await service.getReview(widget.booking.id);
-
     if (context.mounted) Navigator.pop(context);
-
     if (context.mounted && review != null) {
       showDialog(
         context: context,
@@ -525,73 +512,80 @@ class _BookingCardState extends State<_BookingCard>
     );
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: widget.isDarkMode ? _Consts.subtleDark : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: Text(
-          languageNotifier.translate('messageCustomer'),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: _Consts.primaryBlue,
-            fontWeight: FontWeight.bold,
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+        child: AlertDialog(
+          backgroundColor: widget.isDarkMode
+              ? _Consts.subtleDark
+              : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
           ),
-        ),
-        content: Text(
-          '${languageNotifier.translate('messageProviderMsg')} ${widget.booking.otherSideName}?',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: widget.isDarkMode ? Colors.grey.shade300 : Colors.black87,
+          title: Text(
+            languageNotifier.translate('messageCustomer'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: _Consts.primaryBlue,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(
-                    languageNotifier.translate('cancel'),
-                    style: TextStyle(
-                      color: widget.isDarkMode
-                          ? Colors.grey.shade400
-                          : Colors.grey.shade600,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _Consts.primaryBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChatDetailScreen(
-                          bookingId: widget.booking.id,
-                          otherSideName: widget.booking.otherSideName,
-                          chatService: ChatService(),
-                          isDarkMode: widget.isDarkMode,
-                          primaryColor: _Consts.primaryBlue,
-                        ),
+          content: Text(
+            '${languageNotifier.translate('messageProviderMsg')} ${widget.booking.otherSideName}?',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: widget.isDarkMode ? Colors.grey.shade300 : Colors.black87,
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(
+                      languageNotifier.translate('cancel'),
+                      style: TextStyle(
+                        color: widget.isDarkMode
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
                       ),
-                    );
-                  },
-                  child: Text(
-                    languageNotifier.translate('message'),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _Consts.primaryBlue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatDetailScreen(
+                            bookingId: widget.booking.id,
+                            otherSideName: widget.booking.otherSideName,
+                            chatService: ChatService(),
+                            isDarkMode: widget.isDarkMode,
+                            primaryColor: _Consts.primaryBlue,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      languageNotifier.translate('message'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -609,59 +603,66 @@ class _BookingCardState extends State<_BookingCard>
     );
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: widget.isDarkMode ? _Consts.subtleDark : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: Text(
-          title,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: color, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          content,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: widget.isDarkMode ? Colors.grey.shade300 : Colors.black87,
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+        child: AlertDialog(
+          backgroundColor: widget.isDarkMode
+              ? _Consts.subtleDark
+              : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
           ),
-        ),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(
-                    languageNotifier.translate('back'),
-                    style: TextStyle(
-                      color: widget.isDarkMode
-                          ? Colors.grey.shade400
-                          : Colors.grey.shade600,
+          title: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            content,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: widget.isDarkMode ? Colors.grey.shade300 : Colors.black87,
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(
+                      languageNotifier.translate('back'),
+                      style: TextStyle(
+                        color: widget.isDarkMode
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: color,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      widget.onAction(action);
+                    },
+                    child: Text(
+                      languageNotifier.translate('confirm'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    widget.onAction(action);
-                  },
-                  child: Text(
-                    languageNotifier.translate('confirm'),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -669,9 +670,6 @@ class _BookingCardState extends State<_BookingCard>
   @override
   Widget build(BuildContext context) {
     final languageNotifier = Provider.of<LanguageNotifier>(context);
-    final letter = widget.booking.otherSideName.isNotEmpty
-        ? widget.booking.otherSideName[0].toUpperCase()
-        : '?';
     final avatarColor = _getAvatarColor(widget.booking.otherSideName);
     final fullImageUrl = AppConfig.getFullImageUrl(
       widget.booking.otherSideImageUrl,
@@ -700,7 +698,9 @@ class _BookingCardState extends State<_BookingCard>
                   : null,
               child: fullImageUrl.isEmpty
                   ? Text(
-                      letter,
+                      widget.booking.otherSideName.isNotEmpty
+                          ? widget.booking.otherSideName[0].toUpperCase()
+                          : '?',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -715,14 +715,13 @@ class _BookingCardState extends State<_BookingCard>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.booking.otherSideName, // Name stays untranslated
+                    widget.booking.otherSideName,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: widget.isDarkMode ? Colors.white : Colors.black87,
                     ),
                   ),
-                  // Using translateServices for comma-separated services
                   Text(
                     languageNotifier.translateServices(
                       widget.booking.serviceName,
@@ -750,8 +749,7 @@ class _BookingCardState extends State<_BookingCard>
   Widget _buildActions(BuildContext context) {
     final languageNotifier = Provider.of<LanguageNotifier>(context);
     List<Widget> icons = [];
-
-    if (widget.listType == _BookingListType.active) {
+    if (widget.listType == _BookingListType.active)
       icons.add(
         _iconBtn(
           Icons.chat_bubble_outline,
@@ -760,10 +758,8 @@ class _BookingCardState extends State<_BookingCard>
           () => _showMessageDialog(context),
         ),
       );
-    }
-
     if (widget.booking.status == BookingStatus.completed &&
-        widget.booking.hasReview) {
+        widget.booking.hasReview)
       icons.add(
         SlideTransition(
           position: _jumpAnimation,
@@ -775,19 +771,15 @@ class _BookingCardState extends State<_BookingCard>
           ),
         ),
       );
-    }
-
-    icons.add(
+    icons.addAll([
       _iconBtn(
         Icons.location_on_outlined,
         _Consts.primaryBlue,
         24,
         widget.onLocationTap,
       ),
-    );
-    icons.add(
       _iconBtn(Icons.info_outline, _Consts.primaryBlue, 24, widget.onInfoTap),
-    );
+    ]);
 
     if (widget.listType == _BookingListType.active) {
       return Column(
@@ -869,36 +861,38 @@ class _BookingCardState extends State<_BookingCard>
     }
   }
 
-  Widget _actionButton(String label, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
+  Widget _actionButton(String label, Color color, VoidCallback onTap) =>
+      InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
 
-  Widget _iconBtn(IconData icon, Color color, double size, VoidCallback onTap) {
-    return IconButton(
-      icon: Icon(icon, color: color, size: size),
-      onPressed: onTap,
-      constraints: const BoxConstraints(),
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      visualDensity: VisualDensity.compact,
-    );
-  }
+  Widget _iconBtn(
+    IconData icon,
+    Color color,
+    double size,
+    VoidCallback onTap,
+  ) => IconButton(
+    icon: Icon(icon, color: color, size: size),
+    onPressed: onTap,
+    constraints: const BoxConstraints(),
+    padding: const EdgeInsets.symmetric(horizontal: 4),
+    visualDensity: VisualDensity.compact,
+  );
 
   Widget _statusBadge() {
     final languageNotifier = Provider.of<LanguageNotifier>(context);
@@ -907,7 +901,6 @@ class _BookingCardState extends State<_BookingCard>
     Color getBg(MaterialColor c) => widget.isDarkMode ? c.shade900 : c.shade100;
     Color getTxt(MaterialColor c) =>
         widget.isDarkMode ? c.shade100 : c.shade800;
-
     switch (widget.booking.status) {
       case BookingStatus.completed:
         bg = getBg(Colors.green);
@@ -929,7 +922,6 @@ class _BookingCardState extends State<_BookingCard>
         txt = widget.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade800;
         text = languageNotifier.translate('closed');
     }
-
     return Container(
       width: 80,
       alignment: Alignment.center,
@@ -950,7 +942,6 @@ class _ReviewDialog extends StatelessWidget {
   final int bookingId;
   final bool isDarkMode;
   final ReviewResponse existingReview;
-
   const _ReviewDialog({
     required this.bookingId,
     required this.isDarkMode,
@@ -963,62 +954,69 @@ class _ReviewDialog extends StatelessWidget {
     final bgColor = isDarkMode ? const Color(0xFF2C2C2C) : Colors.white;
     final txtColor = isDarkMode ? Colors.white : Colors.black87;
 
-    return AlertDialog(
-      backgroundColor: bgColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-      title: Center(
-        child: Text(
-          languageNotifier.translate('review'),
-          style: TextStyle(fontWeight: FontWeight.bold, color: txtColor),
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+      child: AlertDialog(
+        backgroundColor: bgColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        title: Center(
+          child: Text(
+            languageNotifier.translate('review'),
+            style: TextStyle(fontWeight: FontWeight.bold, color: txtColor),
+          ),
         ),
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                5,
-                (i) => Icon(
-                  i < existingReview.rating
-                      ? Icons.star_rounded
-                      : Icons.star_border_rounded,
-                  color: Colors.amber,
-                  size: 32,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  5,
+                  (i) => Icon(
+                    i < existingReview.rating
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: Colors.amber,
+                    size: 32,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? Colors.grey.shade900
+                      : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Text(
+                  existingReview.comment.isEmpty
+                      ? "No comment provided."
+                      : existingReview.comment,
+                  style: TextStyle(color: txtColor),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          Center(
+            child: TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                languageNotifier.translate('close'),
+                style: TextStyle(
+                  color: isDarkMode
+                      ? Colors.grey.shade400
+                      : Colors.grey.shade600,
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Text(
-                existingReview.comment.isEmpty
-                    ? "No comment provided."
-                    : existingReview.comment,
-                style: TextStyle(color: txtColor),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        Center(
-          child: TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              languageNotifier.translate('close'),
-              style: TextStyle(
-                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-              ),
-            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1149,8 +1147,6 @@ class _DetailDialog extends StatelessWidget {
       context,
       listen: false,
     );
-    final String? customFont = languageNotifier.currentFontFamily;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: RichText(
@@ -1158,8 +1154,7 @@ class _DetailDialog extends StatelessWidget {
           style: TextStyle(
             color: isDarkMode ? Colors.white70 : Colors.black87,
             fontSize: 14,
-            // Force font on the whole span
-            fontFamily: customFont,
+            fontFamily: languageNotifier.currentFontFamily,
           ),
           children: [
             TextSpan(
@@ -1168,8 +1163,7 @@ class _DetailDialog extends StatelessWidget {
             ),
             TextSpan(
               text: value,
-              // Explicitly repeat font for the translated value string
-              style: TextStyle(fontFamily: customFont),
+              style: TextStyle(fontFamily: languageNotifier.currentFontFamily),
             ),
           ],
         ),
@@ -1181,7 +1175,6 @@ class _DetailDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final languageNotifier = Provider.of<LanguageNotifier>(context);
     final dateFormat = languageNotifier.getFormattedDate(details.scheduledDate);
-
     String timeString = DateFormat('h:mm a').format(details.scheduledDate);
     if (languageNotifier.isArabic) {
       timeString = timeString
@@ -1189,11 +1182,9 @@ class _DetailDialog extends StatelessWidget {
           .replaceAll('PM', languageNotifier.translate('pm'));
       timeString = languageNotifier.convertNumbers(timeString);
     }
-
     String cleanEst = details.estimatedTime
         .replaceAll(RegExp(r'Est\. Time:?'), '')
         .trim();
-
     if (languageNotifier.isArabic) {
       cleanEst = cleanEst
           .replaceAll(
@@ -1214,7 +1205,6 @@ class _DetailDialog extends StatelessWidget {
           );
       cleanEst = languageNotifier.convertNumbers(cleanEst);
     }
-
     String priceString = details.formattedPrice;
     if (languageNotifier.isArabic) {
       String nums = priceString.replaceAll(RegExp(r'[^0-9.]'), '');
@@ -1222,130 +1212,132 @@ class _DetailDialog extends StatelessWidget {
           '${languageNotifier.convertNumbers(nums)} ${languageNotifier.translate('jod')}';
     }
 
-    return AlertDialog(
-      backgroundColor: isDarkMode ? const Color(0xFF2C2C2C) : Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
-      title: Center(
-        child: Text(
-          languageNotifier.translate('details'),
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.black,
-            fontFamily: languageNotifier.currentFontFamily,
-          ),
-        ),
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _row(
-              context,
-              languageNotifier.translate('serviceLabel'),
-              // Ensure this method is called here
-              languageNotifier.translateServices(details.serviceName),
-              isDarkMode,
-            ),
-            _row(
-              context,
-              languageNotifier.translate('customerLabel'),
-              details.otherSideName,
-              isDarkMode,
-            ),
-            if (details.otherSidePhone.isNotEmpty)
-              _row(
-                context,
-                languageNotifier.translate('phoneLabel'),
-                languageNotifier.convertNumbers(details.otherSidePhone),
-                isDarkMode,
-              ),
-            _row(
-              context,
-              languageNotifier.translate('areaLabel'),
-              languageNotifier.translateCityArea(details.areaName),
-              isDarkMode,
-            ),
-            _row(
-              context,
-              languageNotifier.translate('addressLabel'),
-              languageNotifier.translateAddress(details.address),
-              isDarkMode,
-            ),
-            _row(
-              context,
-              languageNotifier.translate('dateLabel'),
-              dateFormat,
-              isDarkMode,
-            ),
-            _row(
-              context,
-              languageNotifier.translate('timeLabel'),
-              timeString,
-              isDarkMode,
-            ),
-            if (cleanEst.isNotEmpty)
-              _row(
-                context,
-                languageNotifier.translate('estTime'),
-                cleanEst,
-                isDarkMode,
-              ),
-            _row(
-              context,
-              languageNotifier.translate('priceLabel'),
-              priceString,
-              isDarkMode,
-            ),
-            if (details.notes?.isNotEmpty == true) ...[
-              const SizedBox(height: 8),
-              _row(
-                context,
-                languageNotifier.translate('notesLabel'),
-                details.notes!,
-                isDarkMode,
-              ),
-            ],
-            if (details.attachmentUrls.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(
-                '${languageNotifier.translate('attachmentsLabel')}:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black,
-                  fontFamily: languageNotifier.currentFontFamily,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: details.attachmentUrls
-                    .map(
-                      (url) => _buildAttachment(
-                        context,
-                        AppConfig.getFullImageUrl(url),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+      child: AlertDialog(
+        backgroundColor: isDarkMode ? const Color(0xFF2C2C2C) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
+        title: Center(
           child: Text(
-            languageNotifier.translate('close'),
+            languageNotifier.translate('details'),
             style: TextStyle(
-              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+              fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white : Colors.black,
               fontFamily: languageNotifier.currentFontFamily,
             ),
           ),
         ),
-      ],
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _row(
+                context,
+                languageNotifier.translate('serviceLabel'),
+                languageNotifier.translateServices(details.serviceName),
+                isDarkMode,
+              ),
+              _row(
+                context,
+                languageNotifier.translate('customerLabel'),
+                details.otherSideName,
+                isDarkMode,
+              ),
+              if (details.otherSidePhone.isNotEmpty)
+                _row(
+                  context,
+                  languageNotifier.translate('phoneLabel'),
+                  languageNotifier.convertNumbers(details.otherSidePhone),
+                  isDarkMode,
+                ),
+              _row(
+                context,
+                languageNotifier.translate('areaLabel'),
+                languageNotifier.translateCityArea(details.areaName),
+                isDarkMode,
+              ),
+              _row(
+                context,
+                languageNotifier.translate('addressLabel'),
+                languageNotifier.translateAddress(details.address),
+                isDarkMode,
+              ),
+              _row(
+                context,
+                languageNotifier.translate('dateLabel'),
+                dateFormat,
+                isDarkMode,
+              ),
+              _row(
+                context,
+                languageNotifier.translate('timeLabel'),
+                timeString,
+                isDarkMode,
+              ),
+              if (cleanEst.isNotEmpty)
+                _row(
+                  context,
+                  languageNotifier.translate('estTime'),
+                  cleanEst,
+                  isDarkMode,
+                ),
+              _row(
+                context,
+                languageNotifier.translate('priceLabel'),
+                priceString,
+                isDarkMode,
+              ),
+              if (details.notes?.isNotEmpty == true) ...[
+                const SizedBox(height: 8),
+                _row(
+                  context,
+                  languageNotifier.translate('notesLabel'),
+                  details.notes!,
+                  isDarkMode,
+                ),
+              ],
+              if (details.attachmentUrls.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  '${languageNotifier.translate('attachmentsLabel')}:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black,
+                    fontFamily: languageNotifier.currentFontFamily,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: details.attachmentUrls
+                      .map(
+                        (url) => _buildAttachment(
+                          context,
+                          AppConfig.getFullImageUrl(url),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              languageNotifier.translate('close'),
+              style: TextStyle(
+                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                fontFamily: languageNotifier.currentFontFamily,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1392,13 +1384,11 @@ class _BookingMapScreen extends StatefulWidget {
   final double latitude;
   final double longitude;
   final bool isDarkMode;
-
   const _BookingMapScreen({
     required this.latitude,
     required this.longitude,
     required this.isDarkMode,
   });
-
   @override
   State<_BookingMapScreen> createState() => _BookingMapScreenState();
 }
@@ -1406,7 +1396,6 @@ class _BookingMapScreen extends StatefulWidget {
 class _BookingMapScreenState extends State<_BookingMapScreen> {
   late MapController _mapController;
   double _currentZoom = 15.0;
-
   @override
   void initState() {
     super.initState();
@@ -1502,9 +1491,7 @@ class _BookingMapScreenState extends State<_BookingMapScreen> {
 
 class _FullScreenNetworkImageViewer extends StatelessWidget {
   final String imageUrl;
-
   const _FullScreenNetworkImageViewer({required this.imageUrl});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1527,9 +1514,7 @@ class _FullScreenNetworkImageViewer extends StatelessWidget {
 
 class _FullScreenNetworkVideoPlayer extends StatefulWidget {
   final String videoUrl;
-
   const _FullScreenNetworkVideoPlayer({required this.videoUrl});
-
   @override
   State<_FullScreenNetworkVideoPlayer> createState() =>
       _FullScreenNetworkVideoPlayerState();
@@ -1539,7 +1524,6 @@ class _FullScreenNetworkVideoPlayerState
     extends State<_FullScreenNetworkVideoPlayer> {
   late VideoPlayerController _controller;
   bool _initialized = false;
-
   @override
   void initState() {
     super.initState();

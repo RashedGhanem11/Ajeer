@@ -10,6 +10,7 @@ import 'location_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
+import 'dart:ui';
 
 class DateTimeScreen extends StatefulWidget {
   final List<int> serviceIds;
@@ -153,7 +154,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                 backgroundColor: isDarkMode ? _subtleDark : Colors.white,
               ),
             ),
-            child: child!,
+            // Integrated BackdropFilter here
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+              child: child!,
+            ),
           ),
         );
       },
@@ -231,7 +236,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                     : Colors.grey.shade200,
               ),
             ),
-            child: child!,
+            // Integrated BackdropFilter here
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+              child: child!,
+            ),
           ),
         );
       },
@@ -678,7 +687,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                 Text(
                   lang.convertNumbers(_selectedTime.format(context)),
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: isDarkMode ? Colors.white : Colors.grey[700],
                   ),
