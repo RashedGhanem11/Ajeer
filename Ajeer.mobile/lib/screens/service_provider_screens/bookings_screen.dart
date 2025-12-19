@@ -35,6 +35,10 @@ class _Consts {
   static const logoHeight = 105.0;
   static const borderRadius = 50.0;
   static const navBarHeight = 86.0;
+
+  static const activeGreen = Color(0xFF2abf52);
+  static const pendingYellow = Color(0xFFffe042);
+  static const closedIndigo = Color(0xFF7c54ff);
 }
 
 const List<Color> _vibrantColors = [
@@ -93,6 +97,11 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {});
+      }
+    });
     _fetchBookings();
   }
 
@@ -100,6 +109,19 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Color _getCurrentBottomColor() {
+    switch (_tabController.index) {
+      case 0:
+        return _Consts.activeGreen;
+      case 1:
+        return _Consts.pendingYellow;
+      case 2:
+        return _Consts.closedIndigo;
+      default:
+        return _Consts.primaryBlue;
+    }
   }
 
   Future<void> _fetchBookings() async {
@@ -237,132 +259,10 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
       body: Stack(
         children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: topHeight + 50,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [_Consts.lightBlue, _Consts.primaryBlue],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 5,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Text(
-                _languageNotifier.translate('appName'),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 34,
-                  fontWeight: FontWeight.w900,
-                  shadows: isDarkMode
-                      ? null
-                      : [
-                          const Shadow(
-                            blurRadius: 2,
-                            color: Colors.black26,
-                            offset: Offset(1, 1),
-                          ),
-                        ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: topHeight,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(_Consts.borderRadius),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    spreadRadius: 1,
-                    blurRadius: 10,
-                    offset: Offset(0, -3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 35),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      _languageNotifier.translate('bookings'),
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkMode ? Colors.white : Colors.black87,
-                          ),
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _CustomTabBar(
-                      tabController: _tabController,
-                      counts: [_active.length, _pending.length, _closed.length],
-                      isDarkMode: isDarkMode,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _buildList(
-                                _active,
-                                _BookingListType.active,
-                                isDarkMode,
-                              ),
-                              _buildList(
-                                _pending,
-                                _BookingListType.pending,
-                                isDarkMode,
-                              ),
-                              _buildList(
-                                _closed,
-                                _BookingListType.closed,
-                                isDarkMode,
-                              ),
-                            ],
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            top: topHeight - _Consts.logoHeight + 10,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Image.asset(
-                isDarkMode
-                    ? 'assets/image/home_dark.png'
-                    : 'assets/image/home.png',
-                width: 140,
-                height: _Consts.logoHeight,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
+          _buildGradient(topHeight),
+          _buildHeader(isDarkMode),
+          _buildContent(topHeight, isDarkMode),
+          _buildLogo(topHeight, isDarkMode),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -389,6 +289,122 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
       ),
     );
   }
+
+  Widget _buildGradient(double height) => Align(
+    alignment: Alignment.topCenter,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      height: height + 50,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_Consts.lightBlue, _getCurrentBottomColor()],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildHeader(bool isDark) => Positioned(
+    top: MediaQuery.of(context).padding.top + 5,
+    left: 0,
+    right: 0,
+    child: Center(
+      child: Text(
+        _languageNotifier.translate('appName'),
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 34,
+          fontWeight: FontWeight.w900,
+          shadows: isDark
+              ? null
+              : [
+                  const Shadow(
+                    blurRadius: 2,
+                    color: Colors.black26,
+                    offset: Offset(1, 1),
+                  ),
+                ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildLogo(double top, bool isDark) => Positioned(
+    top: top - _Consts.logoHeight + 10,
+    left: 0,
+    right: 0,
+    child: Center(
+      child: Image.asset(
+        isDark ? 'assets/image/home_dark.png' : 'assets/image/home.png',
+        width: 140,
+        height: _Consts.logoHeight,
+        fit: BoxFit.contain,
+      ),
+    ),
+  );
+
+  Widget _buildContent(double top, bool isDark) => Positioned(
+    top: top,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    child: Container(
+      decoration: BoxDecoration(
+        color: isDark ? Theme.of(context).cardColor : Colors.white,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(_Consts.borderRadius),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: Offset(0, -3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 35),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              _languageNotifier.translate('bookings'),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+          ),
+          const SizedBox(height: 15),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _CustomTabBar(
+              tabController: _tabController,
+              counts: [_active.length, _pending.length, _closed.length],
+              isDarkMode: isDark,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildList(_active, _BookingListType.active, isDark),
+                      _buildList(_pending, _BookingListType.pending, isDark),
+                      _buildList(_closed, _BookingListType.closed, isDark),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _buildList(
     List<BookingListItem> items,

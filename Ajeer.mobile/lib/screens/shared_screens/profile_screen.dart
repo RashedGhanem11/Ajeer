@@ -64,34 +64,25 @@ class _ProfileScreenState extends State<ProfileScreen>
     _languageNotifier = Provider.of<LanguageNotifier>(context);
   }
 
-  bool get _isProviderMode {
-    return Provider.of<UserNotifier>(context, listen: false).isProvider;
-  }
-
+  bool get _isProviderMode =>
+      Provider.of<UserNotifier>(context, listen: false).isProvider;
   Color get _primaryBlue =>
       _isProviderMode ? _providerPrimaryBlue : _customerPrimaryBlue;
   Color get _lightBlue =>
       _isProviderMode ? _providerLightBlue : _customerLightBlue;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final int _selectedIndex = 0;
+  int _selectedIndex = 0;
   bool _isEditing = false;
   bool _dataHasChanged = false;
-
-  String _fullName = '';
-  String _mobileNumber = '';
-  String _email = '';
-  String _password = '';
+  String _fullName = '', _mobileNumber = '', _email = '', _password = '';
   String? _profileImageUrl;
+  File? _profileImage, _originalProfileImage;
 
-  File? _profileImage;
-  File? _originalProfileImage;
-
-  late TextEditingController _fullNameController;
-  late TextEditingController _mobileController;
-  late TextEditingController _emailController;
-  late TextEditingController _passwordController;
-
+  late TextEditingController _fullNameController,
+      _mobileController,
+      _emailController,
+      _passwordController;
   late AnimationController _overlayController;
   bool _showOverlay = false;
   IconData? _overlayIcon;
@@ -102,17 +93,13 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.initState();
     _initializeControllers();
     _loadUserData();
-
     _overlayController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notifier = Provider.of<UserNotifier>(context, listen: false);
-      if (!notifier.isProviderSetupComplete) {
-        notifier.loadUserData();
-      }
+      if (!notifier.isProviderSetupComplete) notifier.loadUserData();
     });
   }
 
@@ -133,10 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           (_passwordController.text != _password &&
               _passwordController.text != '********') ||
           (_profileImage != _originalProfileImage);
-
-      if (_dataHasChanged != changed) {
-        setState(() => _dataHasChanged = changed);
-      }
+      if (_dataHasChanged != changed) setState(() => _dataHasChanged = changed);
     }
 
     _fullNameController.addListener(listener);
@@ -148,7 +132,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     final userJson = prefs.getString('currentUser');
-
     if (userJson != null) {
       final user = jsonDecode(userJson);
       if (mounted) {
@@ -158,7 +141,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           _email = user['email'] ?? '';
           _password = user['password'] ?? '';
           _profileImageUrl = user['profilePictureUrl'];
-
           _fullNameController.text = _fullName;
           _mobileController.text = _mobileNumber;
           _emailController.text = _email;
@@ -180,53 +162,48 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Color _getAvatarColor(String name) {
     if (name.isEmpty) return Colors.grey;
-    final int index = name.hashCode.abs() % _vibrantColors.length;
-    return _vibrantColors[index];
+    return _vibrantColors[name.hashCode.abs() % _vibrantColors.length];
   }
 
   Future<void> _pickImage() async {
     if (!_isEditing) return;
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
+    final XFile? image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+    if (image != null)
       setState(() {
         _profileImage = File(image.path);
         _dataHasChanged = true;
       });
-    }
   }
 
   Future<void> _saveProfile() async {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
-
     try {
-      final userService = Provider.of<UserService>(context, listen: false);
-      final updatedUser = await userService.updateProfile(
-        name: _fullNameController.text,
-        email: _emailController.text,
-        phone: _mobileController.text,
-        profileImage: _profileImage,
-      );
-
+      final updatedUser = await Provider.of<UserService>(context, listen: false)
+          .updateProfile(
+            name: _fullNameController.text,
+            email: _emailController.text,
+            phone: _mobileController.text,
+            profileImage: _profileImage,
+          );
       if (mounted) {
         Navigator.pop(context);
         setState(() {
           _fullName = _fullNameController.text;
           _mobileNumber = _mobileController.text;
           _email = _emailController.text;
-          if (updatedUser?.profilePictureUrl != null) {
+          if (updatedUser?.profilePictureUrl != null)
             _profileImageUrl = updatedUser!.profilePictureUrl;
-          }
           _originalProfileImage = _profileImage;
           _profileImage = null;
           _dataHasChanged = false;
           _isEditing = false;
         });
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_languageNotifier.translate('profileUpdated')),
@@ -250,176 +227,178 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _showChangePasswordDialog(BuildContext context) {
-    final currentPassController = TextEditingController();
-    final newPassController = TextEditingController();
+    final currentPassController = TextEditingController(),
+        newPassController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
-
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
-    final Color dialogBgColor = isDarkMode ? _subtleLighterDark : Colors.white;
-    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
-    final Color hintColor = isDarkMode
-        ? Colors.grey.shade400
-        : Colors.grey.shade600;
-    final Color lineColor = isDarkMode ? Colors.grey.shade600 : Colors.black87;
-    final Color activePrimary = _primaryBlue;
-
     showDialog(
       context: context,
-      builder: (ctx) {
-        return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-          child: StatefulBuilder(
-            builder: (context, setState) {
-              return AlertDialog(
-                backgroundColor: dialogBgColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25.0),
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: isDarkMode ? _subtleLighterDark : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25.0),
+              ),
+              title: Text(
+                _languageNotifier.translate('changePassword'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _primaryBlue,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
                 ),
-                title: Text(
-                  _languageNotifier.translate('changePassword'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: activePrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                  ),
-                ),
-                actionsAlignment: MainAxisAlignment.center,
-                content: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: currentPassController,
-                        obscureText: true,
-                        style: TextStyle(color: textColor),
-                        cursorColor: activePrimary,
-                        decoration: InputDecoration(
-                          labelText: _languageNotifier.translate(
-                            'currentPassword',
-                          ),
-                          labelStyle: TextStyle(color: hintColor),
-                          enabledBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: lineColor),
-                          ),
-                          focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(
-                              color: activePrimary,
-                              width: 2,
-                            ),
+              ),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: currentPassController,
+                      obscureText: true,
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                      cursorColor: _primaryBlue,
+                      decoration: InputDecoration(
+                        labelText: _languageNotifier.translate(
+                          'currentPassword',
+                        ),
+                        labelStyle: TextStyle(
+                          color: isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: isDarkMode
+                                ? Colors.grey.shade600
+                                : Colors.black87,
                           ),
                         ),
-                        validator: (v) => v!.isEmpty
-                            ? _languageNotifier.translate('required')
-                            : null,
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: _primaryBlue, width: 2),
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: newPassController,
-                        obscureText: true,
-                        style: TextStyle(color: textColor),
-                        cursorColor: activePrimary,
-                        decoration: InputDecoration(
-                          labelText: _languageNotifier.translate('newPassword'),
-                          labelStyle: TextStyle(color: hintColor),
-                          enabledBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: lineColor),
-                          ),
-                          focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(
-                              color: activePrimary,
-                              width: 2,
-                            ),
+                      validator: (v) => v!.isEmpty
+                          ? _languageNotifier.translate('required')
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: newPassController,
+                      obscureText: true,
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                      cursorColor: _primaryBlue,
+                      decoration: InputDecoration(
+                        labelText: _languageNotifier.translate('newPassword'),
+                        labelStyle: TextStyle(
+                          color: isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: isDarkMode
+                                ? Colors.grey.shade600
+                                : Colors.black87,
                           ),
                         ),
-                        validator: (v) => v!.length < 6
-                            ? _languageNotifier.translate('min6Chars')
-                            : null,
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: _primaryBlue, width: 2),
+                        ),
                       ),
-                    ],
-                  ),
+                      validator: (v) => v!.length < 6
+                          ? _languageNotifier.translate('min6Chars')
+                          : null,
+                    ),
+                  ],
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(foregroundColor: textColor),
-                    child: Text(_languageNotifier.translate('cancel')),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: isDarkMode ? Colors.white : Colors.black87,
                   ),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            if (formKey.currentState!.validate()) {
-                              setState(() => isLoading = true);
-                              try {
-                                await Provider.of<UserService>(
-                                  context,
-                                  listen: false,
-                                ).changePassword(
-                                  ChangePasswordRequest(
-                                    currentPassword: currentPassController.text,
-                                    newPassword: newPassController.text,
+                  child: Text(_languageNotifier.translate('cancel')),
+                ),
+                ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          if (formKey.currentState!.validate()) {
+                            setState(() => isLoading = true);
+                            try {
+                              await Provider.of<UserService>(
+                                context,
+                                listen: false,
+                              ).changePassword(
+                                ChangePasswordRequest(
+                                  currentPassword: currentPassController.text,
+                                  newPassword: newPassController.text,
+                                ),
+                              );
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      _languageNotifier.translate(
+                                        'passwordChanged',
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.green,
                                   ),
                                 );
-                                if (context.mounted) {
-                                  Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        _languageNotifier.translate(
-                                          'passwordChanged',
-                                        ),
-                                      ),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                setState(() => isLoading = false);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        '${_languageNotifier.translate('error')}${e.toString().replaceAll("Exception:", "")}',
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
                               }
+                            } catch (e) {
+                              setState(() => isLoading = false);
+                              if (context.mounted)
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '${_languageNotifier.translate('error')}${e.toString().replaceAll("Exception:", "")}',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
                             }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: activePrimary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 10,
-                      ),
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    child: isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(_languageNotifier.translate('update')),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 10,
+                    ),
                   ),
-                ],
-              );
-            },
-          ),
-        );
-      },
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(_languageNotifier.translate('update')),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -440,9 +419,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _handleSwitchModeTap(UserNotifier userNotifier) async {
-    final bool isSetupComplete = userNotifier.isProviderSetupComplete;
-
-    if (!isSetupComplete) {
+    if (!userNotifier.isProviderSetupComplete) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -451,23 +428,16 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
       );
     } else {
-      final IconData targetIcon = userNotifier.isProvider
-          ? Icons.person
-          : Icons.handyman;
-      final Color targetColor = userNotifier.isProvider
-          ? _customerPrimaryBlue
-          : _providerPrimaryBlue;
-
       setState(() {
-        _overlayIcon = targetIcon;
-        _overlayIconColor = targetColor;
+        _overlayIcon = userNotifier.isProvider ? Icons.person : Icons.handyman;
+        _overlayIconColor = userNotifier.isProvider
+            ? _customerPrimaryBlue
+            : _providerPrimaryBlue;
         _showOverlay = true;
       });
-
       await _overlayController.forward(from: 0.0);
       await Future.delayed(const Duration(milliseconds: 150));
       userNotifier.toggleUserMode();
-
       _overlayController.reset();
       setState(() {
         _showOverlay = false;
@@ -494,47 +464,39 @@ class _ProfileScreenState extends State<ProfileScreen>
         'notificationCount': 3,
       },
     ];
-    if (!userNotifier.isProvider) {
+    if (!userNotifier.isProvider)
       baseItems.add({
         'label': _languageNotifier.translate('home'),
         'icon': Icons.home_outlined,
         'activeIcon': Icons.home,
       });
-    }
     return baseItems;
   }
 
   void _onNavItemTapped(int index) {
     final userNotifier = Provider.of<UserNotifier>(context, listen: false);
     final navItems = _getNavItems(userNotifier);
-
     if (index >= navItems.length) return;
-
     Widget? nextScreen;
-    if (index == 1) {
+    if (index == 1)
       nextScreen = const ChatScreen();
-    } else if (index == 2) {
+    else if (index == 2)
       nextScreen = userNotifier.isProvider
           ? const provider_screens.ProviderBookingsScreen()
           : const BookingsScreen();
-    } else if (index == 3) {
+    else if (index == 3)
       nextScreen = HomeScreen(themeNotifier: widget.themeNotifier);
-    }
-
-    if (nextScreen != null) {
+    if (nextScreen != null)
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => nextScreen!),
       );
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final userNotifier = Provider.of<UserNotifier>(context);
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
-    final navItems = _getNavItems(userNotifier);
-
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
           ? SystemUiOverlayStyle.light.copyWith(
@@ -544,7 +506,6 @@ class _ProfileScreenState extends State<ProfileScreen>
               statusBarColor: Colors.transparent,
             ),
     );
-
     return Stack(
       children: [
         Scaffold(
@@ -574,8 +535,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
           bottomNavigationBar: CustomBottomNavBar(
-            key: ValueKey(navItems.length),
-            items: navItems,
+            key: ValueKey(_getNavItems(userNotifier).length),
+            items: _getNavItems(userNotifier),
             selectedIndex: _selectedIndex,
             onIndexChanged: _onNavItemTapped,
           ),
@@ -586,7 +547,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildOverlayAnimation() {
-    final bool isDarkMode = widget.themeNotifier.isDarkMode;
     return Positioned.fill(
       child: Container(
         color: Colors.black.withOpacity(0.3),
@@ -600,7 +560,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF40403f) : Colors.white,
+                color: widget.themeNotifier.isDarkMode
+                    ? const Color(0xFF40403f)
+                    : Colors.white,
                 shape: BoxShape.circle,
                 boxShadow: const [
                   BoxShadow(
@@ -620,55 +582,49 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildBackgroundGradient(double containerTop) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Container(
-        height: containerTop + 50,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [_lightBlue, _primaryBlue],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+  Widget _buildBackgroundGradient(double containerTop) => Align(
+    alignment: Alignment.topCenter,
+    child: Container(
+      height: containerTop + 50,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_lightBlue, _primaryBlue],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
       ),
-    );
-  }
+    ),
+  );
 
-  Widget _buildAjeerTitle() {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 5,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Text(
-          _languageNotifier.translate('appName'),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 34,
-            fontWeight: FontWeight.w900,
-            shadows: [
-              Shadow(
-                blurRadius: 2.0,
-                color: Colors.black26,
-                offset: Offset(1.0, 1.0),
-              ),
-            ],
-          ),
+  Widget _buildAjeerTitle() => Positioned(
+    top: MediaQuery.of(context).padding.top + 5,
+    left: 0,
+    right: 0,
+    child: Center(
+      child: Text(
+        _languageNotifier.translate('appName'),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 34,
+          fontWeight: FontWeight.w900,
+          shadows: [
+            Shadow(
+              blurRadius: 2.0,
+              color: Colors.black26,
+              offset: Offset(1.0, 1.0),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
 
   Widget _buildSwitchModeButton(
     BuildContext context,
     bool isDarkMode,
     UserNotifier userNotifier,
   ) {
-    final double buttonTop = MediaQuery.of(context).padding.top + 70;
     final bool isSetupComplete = userNotifier.isProviderSetupComplete;
-
     String label = !isSetupComplete
         ? _languageNotifier.translate('becomeAjeer')
         : (userNotifier.isProvider
@@ -677,9 +633,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     IconData icon = !isSetupComplete
         ? Icons.rocket_launch
         : (userNotifier.isProvider ? Icons.person : Icons.handyman);
-
     return Positioned(
-      top: buttonTop,
+      top: MediaQuery.of(context).padding.top + 70,
       left: 0,
       right: 0,
       child: Center(
@@ -716,22 +671,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildProfileAvatar(double topPosition, bool isDarkMode) {
-    final String initial = _fullName.isNotEmpty
-        ? _fullName[0].toUpperCase()
-        : '?';
     ImageProvider? backgroundImage;
-    if (_profileImage != null) {
+    if (_profileImage != null)
       backgroundImage = FileImage(_profileImage!);
-    } else if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
+    else if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
       backgroundImage = NetworkImage(
         AppConfig.getFullImageUrl(_profileImageUrl),
       );
-    }
-
-    final Color avatarColor = backgroundImage == null
-        ? _getAvatarColor(_fullName)
-        : Colors.grey;
-
     return Positioned(
       top: topPosition,
       left: 0,
@@ -752,11 +698,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
                 child: CircleAvatar(
                   radius: _profileAvatarHeight / 2,
-                  backgroundColor: avatarColor,
+                  backgroundColor: backgroundImage == null
+                      ? _getAvatarColor(_fullName)
+                      : Colors.grey,
                   backgroundImage: backgroundImage,
                   child: backgroundImage == null
                       ? Text(
-                          initial,
+                          _fullName.isNotEmpty
+                              ? _fullName[0].toUpperCase()
+                              : '?',
                           style: const TextStyle(
                             fontSize: 40,
                             fontWeight: FontWeight.bold,
@@ -793,17 +743,15 @@ class _ProfileScreenState extends State<ProfileScreen>
     bool isDarkMode,
     UserNotifier userNotifier,
   ) {
-    final Color bgColor = isDarkMode ? _subtleDark : Colors.white;
-    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
     final Color fieldTextColor = _isEditing
         ? (isDarkMode ? Colors.white : Colors.black87)
         : Colors.grey.shade400;
-    final Color fieldFillColor = _isEditing
-        ? (isDarkMode ? _subtleLighterDark : Colors.white)
-        : (isDarkMode ? _subtleDark : Colors.grey.shade100);
+    final Color fieldFillColor = isDarkMode
+        ? (_isEditing ? _subtleDark : _subtleLighterDark)
+        : (_isEditing ? Colors.white : Colors.grey.shade100);
     final Color fieldBorderColor = _isEditing
         ? (isDarkMode ? _editableBorderColorDark : Colors.grey.shade400)
-        : (isDarkMode ? _subtleDark : Colors.grey.shade300);
+        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
 
     return Positioned(
       top: top,
@@ -812,7 +760,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       bottom: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: bgColor,
+          color: isDarkMode ? _subtleDark : Colors.white,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(_borderRadius),
             topRight: Radius.circular(_borderRadius),
@@ -847,7 +795,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ?.copyWith(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: textColor,
+                            color: isDarkMode ? Colors.white : Colors.black87,
                           ),
                     ),
                     _buildActionButtons(context, userNotifier),
@@ -947,6 +895,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           isEditing: _isEditing,
                           editableBorderColorDark: _editableBorderColorDark,
                           subtleLighterDark: _subtleLighterDark,
+                          subtleDark: _subtleDark,
                           primaryColor: _primaryBlue,
                           languageNotifier: _languageNotifier,
                         ),
@@ -961,68 +910,61 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, UserNotifier userNotifier) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_isEditing) ...[
+  Widget _buildActionButtons(BuildContext context, UserNotifier userNotifier) =>
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_isEditing) ...[
+            _buildCircleButton(
+              Icons.check,
+              _dataHasChanged ? _saveGreen : Colors.grey,
+              _dataHasChanged ? _saveProfile : null,
+              _languageNotifier.translate('save'),
+            ),
+            const SizedBox(width: 10),
+          ],
           _buildCircleButton(
-            Icons.check,
-            _dataHasChanged ? _saveGreen : Colors.grey,
-            _dataHasChanged ? _saveProfile : null,
-            _languageNotifier.translate('save'),
+            _isEditing ? Icons.close : Icons.edit,
+            _isEditing ? _cancelRed : _primaryBlue,
+            _toggleEditMode,
+            _isEditing
+                ? _languageNotifier.translate('cancel')
+                : _languageNotifier.translate('edit'),
           ),
           const SizedBox(width: 10),
+          _buildCircleButton(
+            Icons.settings,
+            _primaryBlue,
+            () => _scaffoldKey.currentState?.openDrawer(),
+            _languageNotifier.translate('settings'),
+          ),
         ],
-        _buildCircleButton(
-          _isEditing ? Icons.close : Icons.edit,
-          _isEditing ? _cancelRed : _primaryBlue,
-          _toggleEditMode,
-          _isEditing
-              ? _languageNotifier.translate('cancel')
-              : _languageNotifier.translate('edit'),
-        ),
-        const SizedBox(width: 10),
-        _buildCircleButton(
-          Icons.settings,
-          _primaryBlue,
-          () => _scaffoldKey.currentState?.openDrawer(),
-          _languageNotifier.translate('settings'),
-        ),
-      ],
-    );
-  }
+      );
 
   Widget _buildCircleButton(
     IconData icon,
     Color color,
     VoidCallback? onTap,
     String tooltip,
-  ) {
-    return _Bounceable(
-      onTap: onTap,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: IconButton(
-          icon: Icon(icon, color: Colors.white, size: 24),
-          onPressed: onTap,
-          tooltip: tooltip,
-        ),
+  ) => _Bounceable(
+    onTap: onTap,
+    child: Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+        ],
       ),
-    );
-  }
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white, size: 24),
+        onPressed: onTap,
+        tooltip: tooltip,
+      ),
+    ),
+  );
 
   Widget _buildTextField(
     TextEditingController controller,
@@ -1035,13 +977,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     final Color textColor = _isEditing
         ? (isDarkMode ? Colors.white : Colors.black87)
         : Colors.grey.shade400;
-    final Color fillColor = _isEditing
-        ? (isDarkMode ? _subtleLighterDark : Colors.white)
-        : (isDarkMode ? _subtleDark : Colors.grey.shade100);
+    final Color fillColor = isDarkMode
+        ? (_isEditing ? _subtleDark : _subtleLighterDark)
+        : (_isEditing ? Colors.white : Colors.grey.shade100);
     final Color borderColor = _isEditing
         ? (isDarkMode ? _editableBorderColorDark : Colors.grey.shade400)
-        : (isDarkMode ? _subtleDark : Colors.grey.shade300);
-
+        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
     return _Bounceable(
       child: Padding(
         padding: const EdgeInsets.only(bottom: 15.0),
@@ -1084,14 +1025,12 @@ class _ProfileScreenState extends State<ProfileScreen>
 
 class _ProviderInfoSection extends StatelessWidget {
   final ProviderData providerData;
-  final bool isEnabled;
-  final bool isDarkMode;
-  final bool isEditing;
-  final Color editableBorderColorDark;
-  final Color subtleLighterDark;
-  final Color primaryColor;
+  final bool isEnabled, isDarkMode, isEditing;
+  final Color editableBorderColorDark,
+      subtleLighterDark,
+      subtleDark,
+      primaryColor;
   final LanguageNotifier languageNotifier;
-
   const _ProviderInfoSection({
     required this.providerData,
     required this.isEnabled,
@@ -1099,6 +1038,7 @@ class _ProviderInfoSection extends StatelessWidget {
     required this.isEditing,
     required this.editableBorderColorDark,
     required this.subtleLighterDark,
+    required this.subtleDark,
     required this.primaryColor,
     required this.languageNotifier,
   });
@@ -1108,7 +1048,6 @@ class _ProviderInfoSection extends StatelessWidget {
     final Color titleColor = isEnabled
         ? (isDarkMode ? Colors.white : Colors.black87)
         : Colors.grey;
-
     return Opacity(
       opacity: isEnabled ? 1.0 : 0.5,
       child: Column(
@@ -1135,11 +1074,11 @@ class _ProviderInfoSection extends StatelessWidget {
                       fixedSize: const Size(30, 30),
                     ),
                     onPressed: () {
-                      final providerData = Provider.of<UserNotifier>(
+                      final pd = Provider.of<UserNotifier>(
                         context,
                         listen: false,
                       ).providerData;
-                      if (providerData != null) {
+                      if (pd != null)
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -1149,11 +1088,10 @@ class _ProviderInfoSection extends StatelessWidget {
                                 listen: false,
                               ),
                               isEdit: true,
-                              initialData: providerData,
+                              initialData: pd,
                             ),
                           ),
                         );
-                      }
                     },
                   ),
               ],
@@ -1202,16 +1140,15 @@ class _ProviderInfoSection extends StatelessWidget {
 
   Widget _infoBox(String label, IconData icon, List<String> content) {
     final bool readOnly = !isEnabled || !isEditing;
-    final Color bgColor = readOnly
-        ? (isDarkMode ? const Color(0xFF1E1E1E) : Colors.grey.shade100)
-        : (isDarkMode ? subtleLighterDark : Colors.white);
+    final Color bgColor = isDarkMode
+        ? (readOnly ? subtleLighterDark : subtleDark)
+        : (readOnly ? Colors.grey.shade100 : Colors.white);
     final Color borderColor = readOnly
         ? Colors.grey
         : (isDarkMode ? editableBorderColorDark : Colors.grey.shade400);
     final Color textColor = readOnly
         ? Colors.grey
         : (isDarkMode ? Colors.white70 : Colors.black87);
-
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 15),
@@ -1257,9 +1194,7 @@ class _ProviderInfoSection extends StatelessWidget {
 class _Bounceable extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
-
   const _Bounceable({required this.child, this.onTap});
-
   @override
   State<_Bounceable> createState() => _BounceableState();
 }
@@ -1268,7 +1203,6 @@ class _BounceableState extends State<_Bounceable>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-
   @override
   void initState() {
     super.initState();
@@ -1288,13 +1222,11 @@ class _BounceableState extends State<_Bounceable>
     super.dispose();
   }
 
-  void _triggerAnimation() {
-    _controller.forward().then((_) => _controller.reverse());
-  }
-
+  void _triggerAnimation() =>
+      _controller.forward().then((_) => _controller.reverse());
   @override
   Widget build(BuildContext context) {
-    if (widget.onTap != null) {
+    if (widget.onTap != null)
       return GestureDetector(
         onTap: () {
           _triggerAnimation();
@@ -1305,11 +1237,9 @@ class _BounceableState extends State<_Bounceable>
           child: AbsorbPointer(child: widget.child),
         ),
       );
-    } else {
-      return Listener(
-        onPointerDown: (_) => _triggerAnimation(),
-        child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
-      );
-    }
+    return Listener(
+      onPointerDown: (_) => _triggerAnimation(),
+      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
+    );
   }
 }
