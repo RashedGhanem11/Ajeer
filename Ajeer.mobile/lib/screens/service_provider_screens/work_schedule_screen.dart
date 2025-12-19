@@ -328,12 +328,20 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
               ),
             ),
             timePickerTheme: TimePickerThemeData(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(40.0),
+              ),
               backgroundColor: isDarkMode ? subtleDark : Colors.white,
               dialBackgroundColor: isDarkMode
                   ? subtleLighterDark
                   : Colors.grey.shade200,
               dialHandColor: kPrimaryBlue,
-              dialTextColor: isDarkMode ? Colors.white : Colors.black87,
+              dialTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return isDarkMode ? Colors.white70 : Colors.black87;
+              }),
               entryModeIconColor: kPrimaryBlue,
               dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {

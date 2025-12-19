@@ -47,7 +47,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
   static const double _logoHeight = 105.0;
   static const double _overlapAdjustment = 10.0;
   static const double _navBarTotalHeight = 56.0 + 20.0 + 10.0;
-  static const double _dialogBorderRadius = 38.0;
+  static const double _dialogBorderRadius = 40.0;
 
   @override
   void initState() {
@@ -203,6 +203,9 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                 ),
               ),
               timePickerTheme: TimePickerThemeData(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(_dialogBorderRadius),
+                ),
                 backgroundColor: isDarkMode ? _subtleDark : Colors.white,
                 dialBackgroundColor: isDarkMode
                     ? _subtleLighterDark

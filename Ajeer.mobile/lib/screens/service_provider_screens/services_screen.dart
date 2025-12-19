@@ -824,7 +824,7 @@ class _UnitTypeSelectionDialogState extends State<_UnitTypeSelectionDialog> {
 
     return AlertDialog(
       backgroundColor: dialogBgColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40.0)),
       title: Text(
         '${widget.languageNotifier.translate('selectUnitTypesFor')} ${widget.languageNotifier.translate(widget.categoryName)}',
         textAlign: TextAlign.center,
