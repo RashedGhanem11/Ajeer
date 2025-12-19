@@ -21,6 +21,7 @@ import '../service_provider_screens/services_screen.dart';
 import '../../services/user_service.dart';
 import '../../models/change_password_request.dart';
 import '../service_provider_screens/bookings_screen.dart' as provider_screens;
+import 'dart:ui';
 
 class ProfileScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -274,152 +275,159 @@ class _ProfileScreenState extends State<ProfileScreen>
     showDialog(
       context: context,
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: dialogBgColor,
-              title: Text(
-                _languageNotifier.translate('changePassword'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: activePrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
+        // Added BackdropFilter to create the blur effect
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                backgroundColor: dialogBgColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25.0),
                 ),
-              ),
-              actionsAlignment: MainAxisAlignment.center,
-              content: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      controller: currentPassController,
-                      obscureText: true,
-                      style: TextStyle(color: textColor),
-                      cursorColor: activePrimary,
-                      decoration: InputDecoration(
-                        labelText: _languageNotifier.translate(
-                          'currentPassword',
-                        ),
-                        labelStyle: TextStyle(color: hintColor),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: lineColor),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(
-                            color: activePrimary,
-                            width: 2,
+                title: Text(
+                  _languageNotifier.translate('changePassword'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: activePrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                  ),
+                ),
+                actionsAlignment: MainAxisAlignment.center,
+                content: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: currentPassController,
+                        obscureText: true,
+                        style: TextStyle(color: textColor),
+                        cursorColor: activePrimary,
+                        decoration: InputDecoration(
+                          labelText: _languageNotifier.translate(
+                            'currentPassword',
+                          ),
+                          labelStyle: TextStyle(color: hintColor),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: lineColor),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: activePrimary,
+                              width: 2,
+                            ),
                           ),
                         ),
+                        validator: (v) => v!.isEmpty
+                            ? _languageNotifier.translate('required')
+                            : null,
                       ),
-                      validator: (v) => v!.isEmpty
-                          ? _languageNotifier.translate('required')
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: newPassController,
-                      obscureText: true,
-                      style: TextStyle(color: textColor),
-                      cursorColor: activePrimary,
-                      decoration: InputDecoration(
-                        labelText: _languageNotifier.translate('newPassword'),
-                        labelStyle: TextStyle(color: hintColor),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: lineColor),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(
-                            color: activePrimary,
-                            width: 2,
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: newPassController,
+                        obscureText: true,
+                        style: TextStyle(color: textColor),
+                        cursorColor: activePrimary,
+                        decoration: InputDecoration(
+                          labelText: _languageNotifier.translate('newPassword'),
+                          labelStyle: TextStyle(color: hintColor),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: lineColor),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: activePrimary,
+                              width: 2,
+                            ),
                           ),
                         ),
+                        validator: (v) => v!.length < 6
+                            ? _languageNotifier.translate('min6Chars')
+                            : null,
                       ),
-                      validator: (v) => v!.length < 6
-                          ? _languageNotifier.translate('min6Chars')
-                          : null,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(foregroundColor: textColor),
-                  child: Text(_languageNotifier.translate('cancel')),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: isLoading
-                      ? null
-                      : () async {
-                          if (formKey.currentState!.validate()) {
-                            setState(() => isLoading = true);
-                            try {
-                              await Provider.of<UserService>(
-                                context,
-                                listen: false,
-                              ).changePassword(
-                                ChangePasswordRequest(
-                                  currentPassword: currentPassController.text,
-                                  newPassword: newPassController.text,
-                                ),
-                              );
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(foregroundColor: textColor),
+                    child: Text(_languageNotifier.translate('cancel')),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            if (formKey.currentState!.validate()) {
+                              setState(() => isLoading = true);
+                              try {
+                                await Provider.of<UserService>(
+                                  context,
+                                  listen: false,
+                                ).changePassword(
+                                  ChangePasswordRequest(
+                                    currentPassword: currentPassController.text,
+                                    newPassword: newPassController.text,
+                                  ),
+                                );
 
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      _languageNotifier.translate(
-                                        'passwordChanged',
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        _languageNotifier.translate(
+                                          'passwordChanged',
+                                        ),
                                       ),
+                                      backgroundColor: Colors.green,
                                     ),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              setState(() => isLoading = false);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      '${_languageNotifier.translate('error')}${e.toString().replaceAll("Exception:", "")}',
+                                  );
+                                }
+                              } catch (e) {
+                                setState(() => isLoading = false);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '${_languageNotifier.translate('error')}${e.toString().replaceAll("Exception:", "")}',
+                                      ),
+                                      backgroundColor: Colors.red,
                                     ),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
+                                  );
+                                }
                               }
                             }
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: activePrimary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: activePrimary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 10,
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 30,
-                      vertical: 10,
-                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(_languageNotifier.translate('update')),
                   ),
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(_languageNotifier.translate('update')),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         );
       },
     );
