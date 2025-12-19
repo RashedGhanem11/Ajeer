@@ -7,6 +7,7 @@ import '../../models/provider_data.dart';
 import '../../notifiers/user_notifier.dart';
 import '../../notifiers/language_notifier.dart';
 import '../shared_screens/profile_screen.dart';
+import 'dart:ui';
 
 const Color kPrimaryBlue = Color(0xFF2f6cfa);
 const Color kLightBlue = Color(0xFFa2bdfc);
@@ -116,7 +117,8 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
 
   void _showConfirmationDialog() {
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
-    final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+    // This is the color used for the title "Save Changes" or "Become Ajeer"
+    final Color titleTextColor = isDarkMode ? Colors.white : Colors.black87;
     final Color bodyTextColor = isDarkMode
         ? Colors.grey.shade400
         : Colors.black54;
@@ -125,159 +127,165 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30.0),
-          ),
-          backgroundColor: isDarkMode
-              ? Theme.of(context).cardColor
-              : Colors.white,
-          contentPadding: const EdgeInsets.all(25.0),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.check_circle_outline,
-                color: kSelectedGreen,
-                size: 60,
-              ),
-              const SizedBox(height: 15.0),
-              Text(
-                widget.isEdit
-                    ? _languageNotifier.translate('saveChanges')
-                    : _languageNotifier.translate('becomeAjeer'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                  color: textColor,
+        return BackdropFilter(
+          // 1. Added the same blur effect as the clock and services dialogs
+          filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30.0),
+            ),
+            backgroundColor: isDarkMode
+                ? Theme.of(context).cardColor
+                : Colors.white,
+            contentPadding: const EdgeInsets.all(25.0),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: kSelectedGreen,
+                  size: 60,
                 ),
-              ),
-              const SizedBox(height: 10.0),
-              if (!widget.isEdit) ...[
+                const SizedBox(height: 15.0),
                 Text(
-                  _languageNotifier.translate('freeTrialMsg'),
+                  widget.isEdit
+                      ? _languageNotifier.translate('saveChanges')
+                      : _languageNotifier.translate('becomeAjeer'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 15,
-                    color: bodyTextColor,
-                    height: 1.5,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    color: titleTextColor,
                   ),
                 ),
-                const SizedBox(height: 25.0),
-              ],
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: kPrimaryBlue,
-                        padding: const EdgeInsets.symmetric(vertical: 12.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                      ),
-                      child: Text(
-                        _languageNotifier.translate('cancel'),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                const SizedBox(height: 10.0),
+                if (!widget.isEdit) ...[
+                  Text(
+                    _languageNotifier.translate('freeTrialMsg'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: bodyTextColor,
+                      height: 1.5,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (c) =>
-                              const Center(child: CircularProgressIndicator()),
-                        );
+                  const SizedBox(height: 25.0),
+                ],
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        style: TextButton.styleFrom(
+                          // 2. Cancel button color matches the Title Text color
+                          foregroundColor: titleTextColor,
+                          padding: const EdgeInsets.symmetric(vertical: 12.0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                        ),
+                        child: Text(
+                          _languageNotifier.translate('cancel'),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (c) => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
 
-                        final providerData = ProviderData(
-                          selectedServices: widget.selectedServices,
-                          selectedLocations: widget.selectedLocations,
-                          finalSchedule: _finalSchedule,
-                          serviceIds: widget.serviceIds,
-                          areaIds: widget.areaIds,
-                        );
+                          final providerData = ProviderData(
+                            selectedServices: widget.selectedServices,
+                            selectedLocations: widget.selectedLocations,
+                            finalSchedule: _finalSchedule,
+                            serviceIds: widget.serviceIds,
+                            areaIds: widget.areaIds,
+                          );
 
-                        final userNotifier = Provider.of<UserNotifier>(
-                          context,
-                          listen: false,
-                        );
+                          final userNotifier = Provider.of<UserNotifier>(
+                            context,
+                            listen: false,
+                          );
 
-                        try {
-                          if (widget.isEdit) {
-                            await userNotifier.updateProviderData(providerData);
-                          } else {
-                            await userNotifier.completeProviderSetup(
-                              providerData,
-                            );
-                          }
-
-                          if (mounted) {
-                            Navigator.of(context).pop();
-                            Navigator.of(context).pop();
-
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                builder: (context) => ProfileScreen(
-                                  themeNotifier: widget.themeNotifier,
-                                ),
-                              ),
-                              (Route<dynamic> route) => false,
-                            );
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            Navigator.of(context).pop();
-
-                            String errorMsg = e
-                                .toString()
-                                .replaceAll("Exception:", "")
-                                .trim();
-
-                            if (errorMsg.startsWith('{')) {
-                              errorMsg = extractErrorMessage(
-                                e,
-                                _languageNotifier,
+                          try {
+                            if (widget.isEdit) {
+                              await userNotifier.updateProviderData(
+                                providerData,
+                              );
+                            } else {
+                              await userNotifier.completeProviderSetup(
+                                providerData,
                               );
                             }
 
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${_languageNotifier.translate('error')}$errorMsg',
+                            if (mounted) {
+                              Navigator.of(context).pop();
+                              Navigator.of(context).pop();
+
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (context) => ProfileScreen(
+                                    themeNotifier: widget.themeNotifier,
+                                  ),
                                 ),
-                                backgroundColor: kDeleteRed,
-                                duration: const Duration(seconds: 5),
-                              ),
-                            );
+                                (Route<dynamic> route) => false,
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              Navigator.of(context).pop();
+                              String errorMsg = e
+                                  .toString()
+                                  .replaceAll("Exception:", "")
+                                  .trim();
+                              if (errorMsg.startsWith('{')) {
+                                errorMsg = extractErrorMessage(
+                                  e,
+                                  _languageNotifier,
+                                );
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '${_languageNotifier.translate('error')}$errorMsg',
+                                  ),
+                                  backgroundColor: kDeleteRed,
+                                  duration: const Duration(seconds: 5),
+                                ),
+                              );
+                            }
                           }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kPrimaryBlue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
+                        },
+                        style: ElevatedButton.styleFrom(
+                          // 3. Confirm button color changed to green to match the checkmark
+                          backgroundColor: kSelectedGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12.0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                          elevation: 5,
                         ),
-                        elevation: 5,
-                      ),
-                      child: Text(
-                        _languageNotifier.translate('confirm'),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        child: Text(
+                          _languageNotifier.translate('confirm'),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -362,7 +370,11 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                   : Colors.grey.shade200,
             ),
           ),
-          child: child!,
+          // Adding the Blur Filter here
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+            child: child!,
+          ),
         );
       },
     );

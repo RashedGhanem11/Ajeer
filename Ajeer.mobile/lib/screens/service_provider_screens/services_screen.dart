@@ -9,6 +9,7 @@ import '../../config/app_config.dart';
 import 'location_screen.dart';
 import '../../../models/provider_data.dart';
 import '../../notifiers/language_notifier.dart';
+import 'dart:ui';
 
 class ServicesScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -538,19 +539,22 @@ class _ProviderServiceGridView extends StatelessWidget {
       showDialog(
         context: context,
         builder: (context) {
-          return _UnitTypeSelectionDialog(
-            categoryName: category.name,
-            items: categoryItems[category.id] ?? [],
-            initialSelectedUnitTypes: selectedUnitTypes[category.name] ?? {},
-            onSave: (newSelection) {
-              final Map<String, Set<String>> updatedSelection = {};
-              if (newSelection.isNotEmpty) {
-                updatedSelection[category.name] = newSelection;
-              }
-              onUnitTypeSelectionChanged(updatedSelection);
-            },
-            isDarkMode: isDarkMode,
-            languageNotifier: languageNotifier,
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+            child: _UnitTypeSelectionDialog(
+              categoryName: category.name,
+              items: categoryItems[category.id] ?? [],
+              initialSelectedUnitTypes: selectedUnitTypes[category.name] ?? {},
+              onSave: (newSelection) {
+                final Map<String, Set<String>> updatedSelection = {};
+                if (newSelection.isNotEmpty) {
+                  updatedSelection[category.name] = newSelection;
+                }
+                onUnitTypeSelectionChanged(updatedSelection);
+              },
+              isDarkMode: isDarkMode,
+              languageNotifier: languageNotifier,
+            ),
           );
         },
       );
@@ -564,7 +568,7 @@ class _ProviderServiceGridView extends StatelessWidget {
           crossAxisCount: 3,
           childAspectRatio: 0.75,
           crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          mainAxisSpacing: 5,
         ),
         itemCount: categoriesToShow.length,
         itemBuilder: (context, index) {
@@ -652,6 +656,7 @@ class _ProviderServiceGridItem extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Stack(
+            clipBehavior: Clip.none,
             children: [
               Container(
                 width: iconContainerSize,

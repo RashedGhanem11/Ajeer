@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,13 +18,14 @@ class SettingsMenu extends StatefulWidget {
 }
 
 class _SettingsMenuState extends State<SettingsMenu>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _controller;
+  late AnimationController _bellController;
   late Animation<double> _opacityAnimation;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _bellAnimation;
   OverlayEntry? _overlayEntry;
 
-  // Internal notification list (Empty as requested)
   final List<Map<String, dynamic>> _notifications = [];
   final Set<int> _selectedNotifications = {};
   bool _isDeleting = false;
@@ -43,11 +45,26 @@ class _SettingsMenuState extends State<SettingsMenu>
       begin: 0.5,
       end: 1.2,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+
+    _bellController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
+
+    _bellAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -0.04), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -0.04, end: 0.04), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 0.04, end: -0.04), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -0.04, end: 0.04), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 0.04, end: 0.0), weight: 1),
+      TweenSequenceItem(tween: ConstantTween(0.0), weight: 15),
+    ]).animate(CurvedAnimation(parent: _bellController, curve: Curves.linear));
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _bellController.dispose();
     _overlayEntry?.remove();
     _overlayEntry = null;
     super.dispose();
@@ -113,18 +130,13 @@ class _SettingsMenuState extends State<SettingsMenu>
 
   Future<void> _handleLanguageToggle(LanguageNotifier lang) async {
     _showLanguageOverlay();
-
     await _controller.forward();
-
     if (!mounted) return;
     lang.toggleLanguage();
     setState(() {});
-
     await Future.delayed(const Duration(milliseconds: 600));
-
     if (!mounted) return;
     await _controller.reverse();
-
     _overlayEntry?.remove();
     _overlayEntry = null;
   }
@@ -175,14 +187,11 @@ class _SettingsMenuState extends State<SettingsMenu>
 
   Future<void> _handleThemeToggle() async {
     final bool willBeDark = !widget.themeNotifier.isDarkMode;
-
     _showOverlay(willBeDark);
     widget.themeNotifier.toggleTheme();
-
     await _controller.forward();
     await Future.delayed(const Duration(milliseconds: 400));
     await _controller.reverse();
-
     _overlayEntry?.remove();
     _overlayEntry = null;
   }
@@ -194,25 +203,28 @@ class _SettingsMenuState extends State<SettingsMenu>
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: bgColor,
-        title: Text(
-          lang.translate('infoTitle'),
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
-        ),
-        content: Text(
-          lang.translate('infoMsg'),
-          textAlign: TextAlign.center,
-          style: TextStyle(color: textColor),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(foregroundColor: textColor),
-            child: Text(lang.translate('close')),
+      builder: (_) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+        child: AlertDialog(
+          backgroundColor: bgColor,
+          title: Text(
+            lang.translate('infoTitle'),
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
           ),
-        ],
+          content: Text(
+            lang.translate('infoMsg'),
+            textAlign: TextAlign.center,
+            style: TextStyle(color: textColor),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(foregroundColor: textColor),
+              child: Text(lang.translate('close')),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -224,49 +236,52 @@ class _SettingsMenuState extends State<SettingsMenu>
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: bgColor,
-        title: Text(
-          lang.translate('signOutTitle'),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.red,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          lang.translate('signOutMsg'),
-          textAlign: TextAlign.center,
-          style: TextStyle(color: textColor),
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(foregroundColor: textColor),
-            child: Text(lang.translate('no')),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              Provider.of<UserNotifier>(context, listen: false).clearData();
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('currentUser');
-              await prefs.remove('authToken');
-              if (mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (r) => false,
-                );
-              }
-            },
-            child: Text(
-              lang.translate('signOut'),
-              style: const TextStyle(color: Colors.white),
+      builder: (_) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+        child: AlertDialog(
+          backgroundColor: bgColor,
+          title: Text(
+            lang.translate('signOutTitle'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ],
+          content: Text(
+            lang.translate('signOutMsg'),
+            textAlign: TextAlign.center,
+            style: TextStyle(color: textColor),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(foregroundColor: textColor),
+              child: Text(lang.translate('no')),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                Provider.of<UserNotifier>(context, listen: false).clearData();
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('currentUser');
+                await prefs.remove('authToken');
+                if (mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (r) => false,
+                  );
+                }
+              },
+              child: Text(
+                lang.translate('signOut'),
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -340,7 +355,6 @@ class _SettingsMenuState extends State<SettingsMenu>
               ),
             ),
           ),
-
           ListTile(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16.0,
@@ -371,7 +385,6 @@ class _SettingsMenuState extends State<SettingsMenu>
             ),
             onTap: () => _handleLanguageToggle(lang),
           ),
-
           SwitchListTile(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16.0,
@@ -433,7 +446,13 @@ class _SettingsMenuState extends State<SettingsMenu>
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.notifications_none, color: textColor),
+                          RotationTransition(
+                            turns: _bellAnimation,
+                            child: Icon(
+                              Icons.notifications_none,
+                              color: textColor,
+                            ),
+                          ),
                           const SizedBox(width: 12),
                           Text(
                             lang.translate('notifications'),
@@ -475,125 +494,98 @@ class _SettingsMenuState extends State<SettingsMenu>
                                   ),
                                 ),
                               )
-                            : Stack(
-                                children: [
-                                  ListView.builder(
-                                    padding: EdgeInsets.zero,
-                                    itemCount: _notifications.length,
-                                    itemBuilder: (context, index) {
-                                      final notification =
-                                          _notifications[index];
-                                      final isSelected = _selectedNotifications
-                                          .contains(index);
-
-                                      return GestureDetector(
-                                        onLongPress: () =>
-                                            _toggleNotificationSelection(index),
-                                        onTap: () {
-                                          if (_isDeleting) {
-                                            _toggleNotificationSelection(index);
-                                          }
-                                        },
-                                        child: Container(
-                                          margin: const EdgeInsets.only(
-                                            bottom: 12.0,
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 4,
-                                            vertical: 8,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? Colors.red.withOpacity(0.2)
-                                                : Colors.transparent,
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              if (_isDeleting)
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                        right: 8.0,
-                                                        top: 4.0,
+                            : ListView.builder(
+                                padding: EdgeInsets.zero,
+                                itemCount: _notifications.length,
+                                itemBuilder: (context, index) {
+                                  final notification = _notifications[index];
+                                  final isSelected = _selectedNotifications
+                                      .contains(index);
+                                  return GestureDetector(
+                                    onLongPress: () =>
+                                        _toggleNotificationSelection(index),
+                                    onTap: () {
+                                      if (_isDeleting) {
+                                        _toggleNotificationSelection(index);
+                                      }
+                                    },
+                                    child: Container(
+                                      margin: const EdgeInsets.only(
+                                        bottom: 12.0,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? Colors.red.withOpacity(0.2)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          if (_isDeleting)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                right: 8.0,
+                                                top: 4.0,
+                                              ),
+                                              child: Icon(
+                                                isSelected
+                                                    ? Icons.check_circle
+                                                    : Icons.circle_outlined,
+                                                color: isSelected
+                                                    ? Colors.red
+                                                    : textColor.withOpacity(
+                                                        0.5,
                                                       ),
-                                                  child: Icon(
-                                                    isSelected
-                                                        ? Icons.check_circle
-                                                        : Icons.circle_outlined,
-                                                    color: isSelected
-                                                        ? Colors.red
-                                                        : textColor.withOpacity(
-                                                            0.5,
-                                                          ),
-                                                    size: 20,
-                                                  ),
-                                                ),
-                                              Icon(
-                                                notification['icon']
-                                                    as IconData,
-                                                color:
-                                                    notification['color']
-                                                        as Color,
                                                 size: 20,
                                               ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      notification['title']
-                                                          as String,
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 14,
-                                                        color: textColor,
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      notification['subtitle']
-                                                          as String,
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        color: textColor
-                                                            .withOpacity(0.7),
-                                                      ),
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
+                                            ),
+                                          Icon(
+                                            notification['icon'] as IconData,
+                                            color:
+                                                notification['color'] as Color,
+                                            size: 20,
                                           ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  if (_isDeleting)
-                                    Positioned(
-                                      bottom: 10,
-                                      right: lang.isArabic ? null : 10,
-                                      left: lang.isArabic ? 10 : null,
-                                      child: FloatingActionButton(
-                                        onPressed: _deleteSelectedNotifications,
-                                        backgroundColor: Colors.red,
-                                        mini: true,
-                                        child: const Icon(
-                                          Icons.delete,
-                                          color: Colors.white,
-                                        ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  notification['title']
+                                                      as String,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14,
+                                                    color: textColor,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  notification['subtitle']
+                                                      as String,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: textColor
+                                                        .withOpacity(0.7),
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                ],
+                                  );
+                                },
                               ),
                       ),
                     ],
