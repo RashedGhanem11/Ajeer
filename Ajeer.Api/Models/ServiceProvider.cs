@@ -8,6 +8,7 @@ public class ServiceProvider
     public decimal Rating { get; set; }
     public int TotalReviews { get; set; }
     public bool IsVerified { get; set; }
+    public bool IsActive { get; set; }
 
     public User User { get; set; } = null!;
     public Attachment? IdCardAttachment { get; set; }

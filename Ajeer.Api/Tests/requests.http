@@ -207,12 +207,12 @@ Content-Type: {{contentType}}
 
 {
     "name": "Majed Ahmed",
-    "email": "majed@gmail.com",
+    "email": "majed@example.com",
     "phone": "0790001100",
     "password": "Password@123"
 }
 ###
-@tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyIiwidW5pcXVlX25hbWUiOiJNYWplZCBBaG1lZCIsImVtYWlsIjoibWFqZWRAZ21haWwuY29tIiwicm9sZSI6IlNlcnZpY2VQcm92aWRlciIsIm5iZiI6MTc2NDg3NzE4NCwiZXhwIjoxNzY0OTYzNTg0LCJpYXQiOjE3NjQ4NzcxODQsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.LOahaPcW29ZWtv09WuKASiR0YM2UhgkoMuz8tW_pOrs
+@tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwidW5pcXVlX25hbWUiOiJNYWplZCBBaG1lZCIsImVtYWlsIjoibWFqZWRAZXhhbXBsZS5jb20iLCJyb2xlIjoiQ3VzdG9tZXIiLCJuYmYiOjE3NjYzNDMwMTIsImV4cCI6MTc2NjQyOTQxMiwiaWF0IjoxNzY2MzQzMDEyLCJpc3MiOiJBamVlckJhY2tlbmRBUEkiLCJhdWQiOiJBamVlckNsaWVudHMifQ.hkV5rzmVCLVoxsCk370xqMdNuWXOTQgAxzaN9CnegrE
 
 
 ### 1.2 Verify Jane's Initial Role (Should see "Customer")
@@ -273,60 +273,16 @@ Content-Type: {{contentType}}
     ]
 }
 ###
-@tokenProvider = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyIiwidW5pcXVlX25hbWUiOiJNYWplZCBBaG1lZCIsImVtYWlsIjoibWFqZWRAZ21haWwuY29tIiwicm9sZSI6IlNlcnZpY2VQcm92aWRlciIsIm5iZiI6MTc2NDg2OTIwNiwiZXhwIjoxNzY0OTU1NjA2LCJpYXQiOjE3NjQ4NjkyMDYsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.6W22KQf8xvM7d3yrwm7yYKWYby-HLZlmL6Unzg58MuI
+@tokenProvider = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwidW5pcXVlX25hbWUiOiJNYWplZCBBaG1lZCIsImVtYWlsIjoibWFqZWRAZXhhbXBsZS5jb20iLCJyb2xlIjoiU2VydmljZVByb3ZpZGVyIiwibmJmIjoxNzY2MzQ0NDc1LCJleHAiOjE3NjY0MzA4NzUsImlhdCI6MTc2NjM0NDQ3NSwiaXNzIjoiQWplZXJCYWNrZW5kQVBJIiwiYXVkIjoiQWplZXJDbGllbnRzIn0.aa1Tnnx3_jxV6JBNFtcBFPp4IA31_M0YimEMsjPFUqU
 ### 2.2 Verify New Role (Should see "ServiceProvider")
 # Using the NEW token from the provider registration response.
 GET {{host}}/api/auth/test-auth
-Authorization: Bearer {{tokenCustomer}}
-
-
-# ==============================================================================
-# 3. VALIDATION FAILURE TESTS
-# ==============================================================================
-
-### 3.1 Fail: Duplicate Registration (Jane is already a provider)
-# Expected: 400 Bad Request / Exception message: "User is already registered as a service provider."
-POST {{host}}/api/providers/register
 Authorization: Bearer {{tokenProvider}}
-Content-Type: {{contentType}}
-
-{
-    "bio": "Should fail.",
-    "serviceIds": [ -1 ],
-    "serviceAreaIds": [ -1 ],
-    "schedules": [ { "dayOfWeek": "Monday", "startTime": "09:00:00", "endTime": "17:00:00" } ]
-}
-
-
-### 3.2 Fail: Schedule Overlap
-# Monday slot 1 (9:00 - 11:00) overlaps with slot 2 (10:00 - 12:00)
-# Expected: 400 Bad Request / Validation Error: "Your schedule contains overlapping time slots..."
-POST {{host}}/api/providers/register
-Authorization: Bearer {{tokenCustomer}}
-Content-Type: {{contentType}}
-
-{
-    "bio": "Test Overlap",
-    "serviceIds": [ -1 ],
-    "serviceAreaIds": [ -1 ],
-    "schedules": [
-        {
-            "dayOfWeek": "Tuesday",
-            "startTime": "09:00:00",
-            "endTime": "11:00:00"
-        },
-        {
-            "dayOfWeek": "Tuesday",
-            "startTime": "10:00:00",
-            "endTime": "12:00:00"
-        }
-    ]
-}
 
 ###
 # Get provider info
 GET {{host}}/api/serviceProviders/my-profile
-Authorization: Bearer {{tokenPro1}}
+Authorization: Bearer {{tokenProvider}}
 
 ### 3. Update Profile
 # Change Bio
@@ -455,3 +411,19 @@ Content-Type: {{contentType}}
     "identifier": "sara@example.com",
     "password": "NewStrongPassword123"
 }
+
+###
+
+GET {{host}}/api/Subscriptions/plans
+Authorization: Bearer {{tokenProvider}}
+
+###
+
+POST {{host}}/api/Subscriptions/create-payment-intent/-1
+Authorization: Bearer {{tokenProvider}}
+
+
+###
+
+GET {{host}}/api/Subscriptions/my-status
+Authorization: Bearer {{tokenProvider}}

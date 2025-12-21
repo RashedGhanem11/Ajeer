@@ -36,7 +36,5 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
             .WithMany(b => b.Messages)
             .HasForeignKey(m => m.BookingId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasData(SeedData.GetMessages());
     }
 }

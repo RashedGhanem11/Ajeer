@@ -82,7 +82,5 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .HasForeignKey(a => a.BookingId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasData(SeedData.GetBookings());
     }
 }

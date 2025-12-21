@@ -10,7 +10,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<BookingServiceItem> BookingServiceItems { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<Notification> Notifications { get; set; }
-    public DbSet<Payment> Payments { get; set; }
     public DbSet<ProviderService> ProviderServices { get; set; }
     public DbSet<ProviderServiceArea> ProviderServiceAreas { get; set; }
     public DbSet<Review> Reviews { get; set; }
@@ -20,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ServiceCategory> ServiceCategories { get; set; }
     public DbSet<Models.ServiceProvider> ServiceProviders { get; set; }
     public DbSet<Subscription> Subscriptions { get; set; }
+    public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
     public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -27,7 +27,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-        modelBuilder.Entity<ProviderService>().HasData(SeedData.GetProviderServices());
-        modelBuilder.Entity<ProviderServiceArea>().HasData(SeedData.GetProviderServiceAreas());
+        modelBuilder.Entity<Service>().HasData(SeedData.GetServices());
+        modelBuilder.Entity<ServiceArea>().HasData(SeedData.GetServiceAreas());
+        modelBuilder.Entity<ServiceCategory>().HasData(SeedData.GetServiceCategories());
+        modelBuilder.Entity<SubscriptionPlan>().HasData(SeedData.GetSubscriptionPlans());
     }
 }

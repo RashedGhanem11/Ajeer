@@ -8,11 +8,12 @@ using Ajeer.Api.Enums;
 using Ajeer.Api.Models;
 using Ajeer.Api.Services.Auth;
 using Ajeer.Api.Services.Files;
+using Ajeer.Api.Services.Subscriptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ajeer.Api.Services.ServiceProviders;
 
-public class ServiceProviderService(AppDbContext _context, IAuthService _authService, IFileService _fileService) : IServiceProviderService
+public class ServiceProviderService(AppDbContext _context, IAuthService _authService, IFileService _fileService, ISubscriptionService _subscriptionService) : IServiceProviderService
 {
     public async Task<AuthResponse> BecomeProviderAsync(int userId, BecomeProviderRequest dto)
     {
@@ -31,7 +32,8 @@ public class ServiceProviderService(AppDbContext _context, IAuthService _authSer
             Bio = dto.Bio,
             IsVerified = true,
             Rating = 0,
-            TotalReviews = 0
+            TotalReviews = 0,
+            IsActive = true
         };
 
         foreach (var serviceId in dto.ServiceIds)
@@ -59,6 +61,9 @@ public class ServiceProviderService(AppDbContext _context, IAuthService _authSer
         _context.ServiceProviders.Add(provider);
 
         await _context.SaveChangesAsync();
+
+        // free subscription for 30 days
+        await _subscriptionService.ActivateSubscriptionAsync(provider.UserId, -1);
 
         string newToken = _authService.GenerateJwtToken(user);
 

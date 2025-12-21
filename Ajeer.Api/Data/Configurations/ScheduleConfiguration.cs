@@ -26,7 +26,5 @@ public class ScheduleConfiguration : IEntityTypeConfiguration<Schedule>
             .WithMany(sp => sp.Schedules)
             .HasForeignKey(s => s.ServiceProviderId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasData(SeedData.GetSchedules());
     }
 }

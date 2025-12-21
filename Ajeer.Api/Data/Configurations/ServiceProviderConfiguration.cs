@@ -26,6 +26,9 @@ public class ServiceProviderConfiguration : IEntityTypeConfiguration<Models.Serv
         builder.Property(sp => sp.IsVerified)
             .HasDefaultValue(false);
 
+        builder.Property(sp => sp.IsActive)
+            .HasDefaultValue(true);
+
         builder.HasOne(sp => sp.User)
             .WithOne(u => u.ServiceProvider)
             .HasForeignKey<Models.ServiceProvider>(sp => sp.UserId)
@@ -80,7 +83,5 @@ public class ServiceProviderConfiguration : IEntityTypeConfiguration<Models.Serv
                     j.ToTable("ProviderServiceAreas");
                     j.HasKey(psa => new { psa.ServiceProviderId, psa.ServiceAreaId });
                 });
-
-        builder.HasData(SeedData.GetServiceProviders());
     }
 }

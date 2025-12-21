@@ -12,7 +12,7 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
 
         builder.HasKey(s => s.Id);
 
-        builder.Property(s => s.Price)
+        builder.Property(s => s.PriceAtPurchase)
             .IsRequired()
             .HasColumnType("decimal(10,2)");
 
@@ -22,19 +22,18 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
         builder.Property(s => s.EndDate)
             .IsRequired();
 
-        builder.Property(s => s.IsActive)
-            .HasDefaultValue(true);
+        builder.Property(s => s.PaymentIntentId)
+            .IsRequired(false)
+            .HasMaxLength(255);
 
         builder.HasOne(s => s.ServiceProvider)
             .WithMany(sp => sp.Subscriptions)
             .HasForeignKey(s => s.ServiceProviderId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(s => s.Payment)
-            .WithOne(p => p.Subscription)
-            .HasForeignKey<Payment>(p => p.SubscriptionId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasData(SeedData.GetSubscriptions());
+        builder.HasOne(s => s.SubscriptionPlan)
+            .WithMany()
+            .HasForeignKey(s => s.SubscriptionPlanId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

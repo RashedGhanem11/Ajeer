@@ -27,6 +27,8 @@ public class BookingService(AppDbContext _context, IFileService _fileService,
 
         var query = _context.ServiceProviders
             .AsNoTracking()
+            .Where(p => p.IsActive)
+            .Where(p => p.Subscriptions.Any(s => s.EndDate >= DateTime.Now))
             .Where(p => p.ServiceAreas.Any(a => a.Id == serviceAreaId))
             .Where(p => serviceIds.All(reqId => p.Services.Any(s => s.Id == reqId)))
             .Where(p => p.Schedules.Any(s =>

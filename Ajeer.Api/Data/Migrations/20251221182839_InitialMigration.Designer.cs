@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ajeer.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251202192801_MakeBioNullableAndRefineRelations")]
-    partial class MakeBioNullableAndRefineRelations
+    [Migration("20251221182839_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -59,17 +59,6 @@ namespace Ajeer.Api.Data.Migrations
                     b.HasIndex("UploaderId");
 
                     b.ToTable("Attachments", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = -1,
-                            BookingId = -1,
-                            FileType = "Image",
-                            FileUrl = "7c5c6692-c684-486a-a41f-eb5ad0ffcda7_test-image",
-                            MimeType = "Jpeg",
-                            UploaderId = -2
-                        });
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.Booking", b =>
@@ -132,40 +121,6 @@ namespace Ajeer.Api.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Bookings", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = -1,
-                            Address = "Abdoun, Amman",
-                            CreatedAt = new DateTime(2025, 11, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            EstimatedHours = 2m,
-                            Latitude = 31.9539m,
-                            Longitude = 35.9106m,
-                            Notes = "Water leaking under the sink.",
-                            ScheduledDate = new DateTime(2025, 11, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ServiceAreaId = -1,
-                            ServiceProviderId = -1,
-                            Status = "Active",
-                            TotalAmount = 25m,
-                            UserId = -2
-                        },
-                        new
-                        {
-                            Id = -2,
-                            Address = "Dabouq, Amman",
-                            CreatedAt = new DateTime(2025, 11, 6, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            EstimatedHours = 4m,
-                            Latitude = 31.9762m,
-                            Longitude = 35.9105m,
-                            Notes = "Deep cleaning before guests arrive.",
-                            ScheduledDate = new DateTime(2025, 11, 8, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ServiceAreaId = -5,
-                            ServiceProviderId = -3,
-                            Status = "Completed",
-                            TotalAmount = 40m,
-                            UserId = -2
-                        });
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.BookingServiceItem", b =>
@@ -192,22 +147,6 @@ namespace Ajeer.Api.Data.Migrations
                     b.HasIndex("ServiceId");
 
                     b.ToTable("BookingServiceItems", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = -1,
-                            BookingId = -1,
-                            PriceAtBooking = 25m,
-                            ServiceId = -1
-                        },
-                        new
-                        {
-                            Id = -2,
-                            BookingId = -2,
-                            PriceAtBooking = 40m,
-                            ServiceId = -6
-                        });
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.Message", b =>
@@ -251,28 +190,6 @@ namespace Ajeer.Api.Data.Migrations
                     b.HasIndex("SenderId");
 
                     b.ToTable("Messages", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = -1,
-                            BookingId = -1,
-                            Content = "Hi Bob, can you confirm the scheduled date?",
-                            IsRead = true,
-                            ReceiverId = -2,
-                            SenderId = -1,
-                            SentAt = new DateTime(2025, 11, 11, 2, 30, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
-                            Id = -2,
-                            BookingId = -1,
-                            Content = "Yes, I'm confirmed for tomorrow at 10 AM.",
-                            IsRead = false,
-                            ReceiverId = -1,
-                            SenderId = -2,
-                            SentAt = new DateTime(2025, 11, 11, 3, 30, 0, 0, DateTimeKind.Unspecified)
-                        });
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.Notification", b =>
@@ -315,71 +232,6 @@ namespace Ajeer.Api.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Notifications", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = -1,
-                            CreatedAt = new DateTime(2025, 11, 11, 3, 30, 0, 0, DateTimeKind.Unspecified),
-                            IsRead = false,
-                            Message = "Your booking with Rashed Provider has been confirmed.",
-                            Title = "Booking Accepted",
-                            Type = "BookingAccepted",
-                            UserId = -2
-                        },
-                        new
-                        {
-                            Id = -2,
-                            CreatedAt = new DateTime(2025, 11, 11, 3, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsRead = true,
-                            Message = "Alice sent you a new message regarding Booking #-1.",
-                            Title = "New Message",
-                            Type = "Chat",
-                            UserId = -2
-                        });
-                });
-
-            modelBuilder.Entity("Ajeer.Api.Models.Payment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<DateTime>("PaymentDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<int>("SubscriptionId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SubscriptionId")
-                        .IsUnique();
-
-                    b.ToTable("Payments", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = -1,
-                            Amount = 50m,
-                            PaymentDate = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            SubscriptionId = -1
-                        },
-                        new
-                        {
-                            Id = -2,
-                            Amount = 50m,
-                            PaymentDate = new DateTime(2025, 11, 6, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            SubscriptionId = -2
-                        });
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.ProviderService", b =>
@@ -395,68 +247,6 @@ namespace Ajeer.Api.Data.Migrations
                     b.HasIndex("ServiceId");
 
                     b.ToTable("ProviderServices", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            ServiceProviderId = -1,
-                            ServiceId = -1
-                        },
-                        new
-                        {
-                            ServiceProviderId = -1,
-                            ServiceId = -2
-                        },
-                        new
-                        {
-                            ServiceProviderId = -1,
-                            ServiceId = -3
-                        },
-                        new
-                        {
-                            ServiceProviderId = -3,
-                            ServiceId = -6
-                        },
-                        new
-                        {
-                            ServiceProviderId = -3,
-                            ServiceId = -7
-                        },
-                        new
-                        {
-                            ServiceProviderId = -3,
-                            ServiceId = -8
-                        },
-                        new
-                        {
-                            ServiceProviderId = -4,
-                            ServiceId = -1
-                        },
-                        new
-                        {
-                            ServiceProviderId = -4,
-                            ServiceId = -2
-                        },
-                        new
-                        {
-                            ServiceProviderId = -4,
-                            ServiceId = -3
-                        },
-                        new
-                        {
-                            ServiceProviderId = -5,
-                            ServiceId = -1
-                        },
-                        new
-                        {
-                            ServiceProviderId = -5,
-                            ServiceId = -2
-                        },
-                        new
-                        {
-                            ServiceProviderId = -5,
-                            ServiceId = -3
-                        });
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.ProviderServiceArea", b =>
@@ -472,48 +262,6 @@ namespace Ajeer.Api.Data.Migrations
                     b.HasIndex("ServiceAreaId");
 
                     b.ToTable("ProviderServiceAreas", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            ServiceProviderId = -1,
-                            ServiceAreaId = -1
-                        },
-                        new
-                        {
-                            ServiceProviderId = -1,
-                            ServiceAreaId = -2
-                        },
-                        new
-                        {
-                            ServiceProviderId = -3,
-                            ServiceAreaId = -4
-                        },
-                        new
-                        {
-                            ServiceProviderId = -3,
-                            ServiceAreaId = -5
-                        },
-                        new
-                        {
-                            ServiceProviderId = -4,
-                            ServiceAreaId = -1
-                        },
-                        new
-                        {
-                            ServiceProviderId = -4,
-                            ServiceAreaId = -2
-                        },
-                        new
-                        {
-                            ServiceProviderId = -5,
-                            ServiceAreaId = -1
-                        },
-                        new
-                        {
-                            ServiceProviderId = -5,
-                            ServiceAreaId = -2
-                        });
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.Review", b =>
@@ -555,18 +303,6 @@ namespace Ajeer.Api.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Reviews", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = -1,
-                            BookingId = -2,
-                            Comment = "Great cleaning service, very professional!",
-                            Rating = 5,
-                            ReviewDate = new DateTime(2025, 11, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ServiceProviderId = -3,
-                            UserId = -2
-                        });
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.Schedule", b =>
@@ -594,64 +330,6 @@ namespace Ajeer.Api.Data.Migrations
                     b.HasIndex("ServiceProviderId");
 
                     b.ToTable("Schedules", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = -1,
-                            DayOfWeek = (byte)1,
-                            EndTime = new TimeSpan(0, 17, 0, 0, 0),
-                            ServiceProviderId = -1,
-                            StartTime = new TimeSpan(0, 9, 0, 0, 0)
-                        },
-                        new
-                        {
-                            Id = -2,
-                            DayOfWeek = (byte)2,
-                            EndTime = new TimeSpan(0, 17, 0, 0, 0),
-                            ServiceProviderId = -1,
-                            StartTime = new TimeSpan(0, 9, 0, 0, 0)
-                        },
-                        new
-                        {
-                            Id = -3,
-                            DayOfWeek = (byte)6,
-                            EndTime = new TimeSpan(0, 18, 0, 0, 0),
-                            ServiceProviderId = -3,
-                            StartTime = new TimeSpan(0, 10, 0, 0, 0)
-                        },
-                        new
-                        {
-                            Id = -4,
-                            DayOfWeek = (byte)1,
-                            EndTime = new TimeSpan(0, 17, 0, 0, 0),
-                            ServiceProviderId = -4,
-                            StartTime = new TimeSpan(0, 9, 0, 0, 0)
-                        },
-                        new
-                        {
-                            Id = -5,
-                            DayOfWeek = (byte)2,
-                            EndTime = new TimeSpan(0, 17, 0, 0, 0),
-                            ServiceProviderId = -4,
-                            StartTime = new TimeSpan(0, 9, 0, 0, 0)
-                        },
-                        new
-                        {
-                            Id = -6,
-                            DayOfWeek = (byte)1,
-                            EndTime = new TimeSpan(0, 17, 0, 0, 0),
-                            ServiceProviderId = -5,
-                            StartTime = new TimeSpan(0, 9, 0, 0, 0)
-                        },
-                        new
-                        {
-                            Id = -7,
-                            DayOfWeek = (byte)2,
-                            EndTime = new TimeSpan(0, 17, 0, 0, 0),
-                            ServiceProviderId = -5,
-                            StartTime = new TimeSpan(0, 9, 0, 0, 0)
-                        });
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.Service", b =>
@@ -1047,6 +725,11 @@ namespace Ajeer.Api.Data.Migrations
                     b.Property<int?>("IdCardAttachmentId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<bool>("IsVerified")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -1069,40 +752,6 @@ namespace Ajeer.Api.Data.Migrations
                         .HasFilter("[IdCardAttachmentId] IS NOT NULL");
 
                     b.ToTable("ServiceProviders", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            UserId = -1,
-                            Bio = "Experienced plumber with 10 years in Riyadh.",
-                            IsVerified = true,
-                            Rating = 0m,
-                            TotalReviews = 0
-                        },
-                        new
-                        {
-                            UserId = -3,
-                            Bio = "Professional cleaning services, available weekends.",
-                            IsVerified = false,
-                            Rating = 5m,
-                            TotalReviews = 1
-                        },
-                        new
-                        {
-                            UserId = -4,
-                            Bio = "Experienced plumber with 10 years in Cairo.",
-                            IsVerified = true,
-                            Rating = 0m,
-                            TotalReviews = 0
-                        },
-                        new
-                        {
-                            UserId = -5,
-                            Bio = "Experienced plumber with 10 years in Amman.",
-                            IsVerified = true,
-                            Rating = 0m,
-                            TotalReviews = 0
-                        });
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.Subscription", b =>
@@ -1116,12 +765,11 @@ namespace Ajeer.Api.Data.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
+                    b.Property<string>("PaymentIntentId")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
-                    b.Property<decimal>("Price")
+                    b.Property<decimal>("PriceAtPurchase")
                         .HasColumnType("decimal(10,2)");
 
                     b.Property<int>("ServiceProviderId")
@@ -1132,30 +780,55 @@ namespace Ajeer.Api.Data.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETDATE()");
 
+                    b.Property<int>("SubscriptionPlanId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ServiceProviderId");
 
+                    b.HasIndex("SubscriptionPlanId");
+
                     b.ToTable("Subscriptions", (string)null);
+                });
+
+            modelBuilder.Entity("Ajeer.Api.Models.SubscriptionPlan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DurationInDays")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SubscriptionPlans", (string)null);
 
                     b.HasData(
                         new
                         {
                             Id = -1,
-                            EndDate = new DateTime(2025, 12, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsActive = true,
-                            Price = 50m,
-                            ServiceProviderId = -1,
-                            StartDate = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            DurationInDays = 30,
+                            Name = "1 Month Plan",
+                            Price = 20.00m
                         },
                         new
                         {
                             Id = -2,
-                            EndDate = new DateTime(2025, 12, 6, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsActive = true,
-                            Price = 50m,
-                            ServiceProviderId = -3,
-                            StartDate = new DateTime(2025, 11, 6, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            DurationInDays = 90,
+                            Name = "3 Month Plan",
+                            Price = 50.00m
                         });
                 });
 
@@ -1220,69 +893,6 @@ namespace Ajeer.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = -1,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "rashed@example.com",
-                            IsActive = true,
-                            LastLoginAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Rashed Ghanem",
-                            Password = "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe",
-                            Phone = "0791111111",
-                            Role = (byte)1
-                        },
-                        new
-                        {
-                            Id = -2,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "sara@example.com",
-                            IsActive = true,
-                            LastLoginAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Sara Ahmad",
-                            Password = "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe",
-                            Phone = "0792222222",
-                            Role = (byte)0
-                        },
-                        new
-                        {
-                            Id = -3,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "ali@example.com",
-                            IsActive = true,
-                            LastLoginAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Ali Saleh",
-                            Password = "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe",
-                            Phone = "0793333333",
-                            ProfilePictureUrl = "ProfilePicture_-3.jpg",
-                            Role = (byte)1
-                        },
-                        new
-                        {
-                            Id = -4,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "hothifah@example.com",
-                            IsActive = true,
-                            LastLoginAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Hothifah Maen",
-                            Password = "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe",
-                            Phone = "0794444444",
-                            Role = (byte)1
-                        },
-                        new
-                        {
-                            Id = -5,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "saad@example.com",
-                            IsActive = true,
-                            LastLoginAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "Saad Jbarah",
-                            Password = "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe",
-                            Phone = "0795555555",
-                            Role = (byte)1
-                        });
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.Attachment", b =>
@@ -1385,17 +995,6 @@ namespace Ajeer.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Ajeer.Api.Models.Payment", b =>
-                {
-                    b.HasOne("Ajeer.Api.Models.Subscription", "Subscription")
-                        .WithOne("Payment")
-                        .HasForeignKey("Ajeer.Api.Models.Payment", "SubscriptionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Subscription");
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.ProviderService", b =>
@@ -1510,7 +1109,15 @@ namespace Ajeer.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Ajeer.Api.Models.SubscriptionPlan", "SubscriptionPlan")
+                        .WithMany()
+                        .HasForeignKey("SubscriptionPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("ServiceProvider");
+
+                    b.Navigation("SubscriptionPlan");
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.Booking", b =>
@@ -1547,11 +1154,6 @@ namespace Ajeer.Api.Data.Migrations
                     b.Navigation("Schedules");
 
                     b.Navigation("Subscriptions");
-                });
-
-            modelBuilder.Entity("Ajeer.Api.Models.Subscription", b =>
-                {
-                    b.Navigation("Payment");
                 });
 
             modelBuilder.Entity("Ajeer.Api.Models.User", b =>

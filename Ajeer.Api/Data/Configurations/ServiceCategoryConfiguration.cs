@@ -28,7 +28,5 @@ public class ServiceCategoryConfiguration : IEntityTypeConfiguration<ServiceCate
             .WithOne(s => s.Category)
             .HasForeignKey(s => s.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasData(SeedData.GetServiceCategories());
     }
 }

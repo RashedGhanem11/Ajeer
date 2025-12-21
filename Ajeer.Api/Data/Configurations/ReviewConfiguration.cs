@@ -36,7 +36,5 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
             .WithMany(sp => sp.Reviews)
             .HasForeignKey(r => r.ServiceProviderId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasData(SeedData.GetReviews());
     }
 }

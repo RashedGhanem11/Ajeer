@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Ajeer.Api.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialSchema : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -40,6 +40,21 @@ namespace Ajeer.Api.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ServiceCategories", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SubscriptionPlans",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Price = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
+                    DurationInDays = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SubscriptionPlans", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -138,10 +153,11 @@ namespace Ajeer.Api.Data.Migrations
                 {
                     UserId = table.Column<int>(type: "int", nullable: false),
                     IdCardAttachmentId = table.Column<int>(type: "int", nullable: true),
-                    Bio = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Bio = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Rating = table.Column<decimal>(type: "decimal(3,2)", nullable: false, defaultValue: 0m),
                     TotalReviews = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    IsVerified = table.Column<bool>(type: "bit", nullable: false, defaultValue: false)
+                    IsVerified = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
@@ -277,11 +293,12 @@ namespace Ajeer.Api.Data.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    PaymentIntentId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     ServiceProviderId = table.Column<int>(type: "int", nullable: false),
-                    Price = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
+                    SubscriptionPlanId = table.Column<int>(type: "int", nullable: false),
+                    PriceAtPurchase = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
+                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -292,6 +309,12 @@ namespace Ajeer.Api.Data.Migrations
                         principalTable: "ServiceProviders",
                         principalColumn: "UserId",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Subscriptions_SubscriptionPlans_SubscriptionPlanId",
+                        column: x => x.SubscriptionPlanId,
+                        principalTable: "SubscriptionPlans",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -393,27 +416,6 @@ namespace Ajeer.Api.Data.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "Payments",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    SubscriptionId = table.Column<int>(type: "int", nullable: false),
-                    Amount = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
-                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Payments", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Payments_Subscriptions_SubscriptionId",
-                        column: x => x.SubscriptionId,
-                        principalTable: "Subscriptions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
             migrationBuilder.InsertData(
                 table: "ServiceAreas",
                 columns: new[] { "Id", "AreaName", "CityName" },
@@ -446,39 +448,13 @@ namespace Ajeer.Api.Data.Migrations
                 });
 
             migrationBuilder.InsertData(
-                table: "Users",
-                columns: new[] { "Id", "Email", "IsActive", "Name", "Password", "Phone", "ProfilePictureUrl", "Role" },
-                values: new object[] { -3, "ali@example.com", true, "Ali Saleh", "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe", "0793333333", "ProfilePicture_-3.jpg", (byte)1 });
-
-            migrationBuilder.InsertData(
-                table: "Users",
-                columns: new[] { "Id", "Email", "IsActive", "Name", "Password", "Phone", "ProfilePictureUrl" },
-                values: new object[] { -2, "sara@example.com", true, "Sara Ahmad", "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe", "0792222222", null });
-
-            migrationBuilder.InsertData(
-                table: "Users",
-                columns: new[] { "Id", "Email", "IsActive", "Name", "Password", "Phone", "ProfilePictureUrl", "Role" },
-                values: new object[] { -1, "rashed@example.com", true, "Rashed Ghanem", "$2b$10$3YEGSx9sDaSakYDcfrMBPuX0XWhe6yP0NXnyszsojsepfCOmzFnEe", "0791111111", null, (byte)1 });
-
-            migrationBuilder.InsertData(
-                table: "Notifications",
-                columns: new[] { "Id", "CreatedAt", "IsRead", "Message", "Title", "Type", "UserId" },
-                values: new object[] { -2, new DateTime(2025, 11, 11, 3, 0, 0, 0, DateTimeKind.Unspecified), true, "Alice sent you a new message regarding Booking #-1.", "New Message", "Chat", -2 });
-
-            migrationBuilder.InsertData(
-                table: "Notifications",
-                columns: new[] { "Id", "CreatedAt", "Message", "Title", "Type", "UserId" },
-                values: new object[] { -1, new DateTime(2025, 11, 11, 3, 30, 0, 0, DateTimeKind.Unspecified), "Your booking with Rashed Provider has been confirmed.", "Booking Accepted", "BookingAccepted", -2 });
-
-            migrationBuilder.InsertData(
-                table: "ServiceProviders",
-                columns: new[] { "UserId", "Bio", "IdCardAttachmentId", "Rating", "TotalReviews" },
-                values: new object[] { -3, "Professional cleaning services, available weekends.", null, 5m, 1 });
-
-            migrationBuilder.InsertData(
-                table: "ServiceProviders",
-                columns: new[] { "UserId", "Bio", "IdCardAttachmentId", "IsVerified" },
-                values: new object[] { -1, "Experienced plumber with 10 years in Riyadh.", null, true });
+                table: "SubscriptionPlans",
+                columns: new[] { "Id", "DurationInDays", "Name", "Price" },
+                values: new object[,]
+                {
+                    { -2, 90, "3 Month Plan", 50.00m },
+                    { -1, 30, "1 Month Plan", 20.00m }
+                });
 
             migrationBuilder.InsertData(
                 table: "Services",
@@ -509,96 +485,6 @@ namespace Ajeer.Api.Data.Migrations
                     { -2, 25m, -1, 3m, "Pipe Installation" },
                     { -1, 10m, -1, 1.5m, "Leak Repair" }
                 });
-
-            migrationBuilder.InsertData(
-                table: "Bookings",
-                columns: new[] { "Id", "Address", "CreatedAt", "EstimatedHours", "Latitude", "Longitude", "Notes", "ScheduledDate", "ServiceAreaId", "ServiceProviderId", "Status", "TotalAmount", "UserId" },
-                values: new object[,]
-                {
-                    { -2, "Dabouq, Amman", new DateTime(2025, 11, 6, 0, 0, 0, 0, DateTimeKind.Unspecified), 4m, 31.9762m, 35.9105m, "Deep cleaning before guests arrive.", new DateTime(2025, 11, 8, 0, 0, 0, 0, DateTimeKind.Unspecified), -5, -3, "Completed", 40m, -2 },
-                    { -1, "Abdoun, Amman", new DateTime(2025, 11, 10, 0, 0, 0, 0, DateTimeKind.Unspecified), 2m, 31.9539m, 35.9106m, "Water leaking under the sink.", new DateTime(2025, 11, 12, 0, 0, 0, 0, DateTimeKind.Unspecified), -1, -1, "Active", 25m, -2 }
-                });
-
-            migrationBuilder.InsertData(
-                table: "ProviderServiceAreas",
-                columns: new[] { "ServiceAreaId", "ServiceProviderId" },
-                values: new object[,]
-                {
-                    { -5, -3 },
-                    { -4, -3 },
-                    { -2, -1 },
-                    { -1, -1 }
-                });
-
-            migrationBuilder.InsertData(
-                table: "ProviderServices",
-                columns: new[] { "ServiceId", "ServiceProviderId" },
-                values: new object[,]
-                {
-                    { -8, -3 },
-                    { -7, -3 },
-                    { -6, -3 },
-                    { -3, -1 },
-                    { -2, -1 },
-                    { -1, -1 }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Schedules",
-                columns: new[] { "Id", "DayOfWeek", "EndTime", "ServiceProviderId", "StartTime" },
-                values: new object[,]
-                {
-                    { -3, (byte)6, new TimeSpan(0, 18, 0, 0, 0), -3, new TimeSpan(0, 10, 0, 0, 0) },
-                    { -2, (byte)2, new TimeSpan(0, 17, 0, 0, 0), -1, new TimeSpan(0, 9, 0, 0, 0) },
-                    { -1, (byte)1, new TimeSpan(0, 17, 0, 0, 0), -1, new TimeSpan(0, 9, 0, 0, 0) }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Subscriptions",
-                columns: new[] { "Id", "EndDate", "IsActive", "Price", "ServiceProviderId", "StartDate" },
-                values: new object[,]
-                {
-                    { -2, new DateTime(2025, 12, 6, 0, 0, 0, 0, DateTimeKind.Unspecified), true, 50m, -3, new DateTime(2025, 11, 6, 0, 0, 0, 0, DateTimeKind.Unspecified) },
-                    { -1, new DateTime(2025, 12, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), true, 50m, -1, new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified) }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Attachments",
-                columns: new[] { "Id", "BookingId", "FileType", "FileUrl", "MimeType", "UploaderId" },
-                values: new object[] { -1, -1, "Image", "7c5c6692-c684-486a-a41f-eb5ad0ffcda7_test-image", "Jpeg", -2 });
-
-            migrationBuilder.InsertData(
-                table: "BookingServiceItems",
-                columns: new[] { "Id", "BookingId", "PriceAtBooking", "ServiceId" },
-                values: new object[,]
-                {
-                    { -2, -2, 40m, -6 },
-                    { -1, -1, 25m, -1 }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Messages",
-                columns: new[] { "Id", "BookingId", "Content", "ReceiverId", "SenderId", "SentAt" },
-                values: new object[] { -2, -1, "Yes, I'm confirmed for tomorrow at 10 AM.", -1, -2, new DateTime(2025, 11, 11, 3, 30, 0, 0, DateTimeKind.Unspecified) });
-
-            migrationBuilder.InsertData(
-                table: "Messages",
-                columns: new[] { "Id", "BookingId", "Content", "IsRead", "ReceiverId", "SenderId", "SentAt" },
-                values: new object[] { -1, -1, "Hi Bob, can you confirm the scheduled date?", true, -2, -1, new DateTime(2025, 11, 11, 2, 30, 0, 0, DateTimeKind.Unspecified) });
-
-            migrationBuilder.InsertData(
-                table: "Payments",
-                columns: new[] { "Id", "Amount", "PaymentDate", "SubscriptionId" },
-                values: new object[,]
-                {
-                    { -2, 50m, new DateTime(2025, 11, 6, 0, 0, 0, 0, DateTimeKind.Unspecified), -2 },
-                    { -1, 50m, new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), -1 }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Reviews",
-                columns: new[] { "Id", "BookingId", "Comment", "Rating", "ReviewDate", "ServiceProviderId", "UserId" },
-                values: new object[] { -1, -2, "Great cleaning service, very professional!", 5, new DateTime(2025, 11, 9, 0, 0, 0, 0, DateTimeKind.Unspecified), -3, -2 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Attachments_BookingId",
@@ -656,12 +542,6 @@ namespace Ajeer.Api.Data.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Payments_SubscriptionId",
-                table: "Payments",
-                column: "SubscriptionId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ProviderServiceAreas_ServiceAreaId",
                 table: "ProviderServiceAreas",
                 column: "ServiceAreaId");
@@ -710,6 +590,11 @@ namespace Ajeer.Api.Data.Migrations
                 column: "ServiceProviderId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Subscriptions_SubscriptionPlanId",
+                table: "Subscriptions",
+                column: "SubscriptionPlanId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",
                 table: "Users",
                 column: "Email",
@@ -747,9 +632,6 @@ namespace Ajeer.Api.Data.Migrations
                 name: "Notifications");
 
             migrationBuilder.DropTable(
-                name: "Payments");
-
-            migrationBuilder.DropTable(
                 name: "ProviderServiceAreas");
 
             migrationBuilder.DropTable(
@@ -766,6 +648,9 @@ namespace Ajeer.Api.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "Services");
+
+            migrationBuilder.DropTable(
+                name: "SubscriptionPlans");
 
             migrationBuilder.DropTable(
                 name: "ServiceCategories");

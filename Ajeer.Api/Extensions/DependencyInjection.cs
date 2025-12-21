@@ -12,6 +12,7 @@ using Ajeer.Api.Services.ServiceAreas;
 using Ajeer.Api.Services.ServiceCategories;
 using Ajeer.Api.Services.ServiceProviders;
 using Ajeer.Api.Services.Services;
+using Ajeer.Api.Services.Subscriptions;
 using Ajeer.Api.Services.Users;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -122,6 +123,7 @@ public static class DependencyInjection
         services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
         services.AddScoped<IServiceProviderService, ServiceProviderService>();
         services.AddScoped<IServiceService, ServiceService>();
+        services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<IUserService, UserService>();
 
         return services;
