@@ -49,18 +49,28 @@ class SubscriptionService {
 
   Future<PaymentIntentData> createPaymentIntent(int planId) async {
     final token = await _getToken();
+    final url = Uri.parse('$_baseUrl/create-payment-intent/$planId');
+
+    print("Requesting Payment Intent: $url"); // Debug log 1
+
     final response = await http.post(
-      Uri.parse('$_baseUrl/create-payment-intent/$planId'),
+      url,
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
     );
 
+    print("Response Status: ${response.statusCode}"); // Debug log 2
+    print("Response Body: ${response.body}"); // Debug log 3
+
     if (response.statusCode == 200) {
       return PaymentIntentData.fromJson(jsonDecode(response.body));
     } else {
-      throw Exception('Failed to initiate payment');
+      // CHANGE THIS LINE: Include the actual server error in the exception
+      throw Exception(
+        'Failed to initiate payment: ${response.statusCode} - ${response.body}',
+      );
     }
   }
 }

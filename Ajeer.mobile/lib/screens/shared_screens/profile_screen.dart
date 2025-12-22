@@ -228,63 +228,71 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       showModalBottomSheet(
         context: context,
-        backgroundColor: isDark ? _subtleDark : Colors.white,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (ctx) => Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _languageNotifier.translate('choosePlan'),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
+        backgroundColor: Colors.transparent, // Transparent for blur
+        builder: (ctx) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), // Blur effect
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? _subtleDark : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(40), // Rounded corners 40
               ),
-              const SizedBox(height: 20),
-              if (plans.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Text(
-                    "No plans available",
-                    style: TextStyle(
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
+            ),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _languageNotifier.translate('choosePlan'),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
                   ),
                 ),
-              ...plans.map(
-                (plan) => ListTile(
-                  title: Text(
-                    plan.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
+                const SizedBox(height: 20),
+                if (plans.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      "No plans available",
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                     ),
                   ),
-                  subtitle: Text(
-                    "${plan.durationInDays} days",
-                    style: TextStyle(
-                      color: isDark ? Colors.grey : Colors.black54,
+                ...plans.map(
+                  (plan) => ListTile(
+                    title: Text(
+                      _languageNotifier.translate(
+                        plan.name,
+                      ), // Translate Plan Name
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                     ),
-                  ),
-                  trailing: Text(
-                    "${plan.price} SAR",
-                    style: TextStyle(
-                      color: _primaryBlue,
-                      fontWeight: FontWeight.bold,
+                    subtitle: Text(
+                      "${_languageNotifier.convertNumbers(plan.durationInDays.toString())} ${_languageNotifier.translate('days_duration')}", // Duration translation
+                      style: TextStyle(
+                        color: isDark ? Colors.grey : Colors.black54,
+                      ),
                     ),
+                    trailing: Text(
+                      "${_languageNotifier.convertNumbers(plan.price.toString())} ${_languageNotifier.translate('jod')}", // Price & Currency
+                      style: TextStyle(
+                        color: _primaryBlue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _handlePayment(plan);
+                    },
                   ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _handlePayment(plan);
-                  },
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -1186,8 +1194,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                         children: [
                           Text(
                             hasActive
-                                ? (_subscriptionStatus!.planName ??
-                                      'Active Plan')
+                                ? (_subscriptionStatus!.planName != null
+                                      ? lang.translate(
+                                          _subscriptionStatus!.planName!,
+                                        ) // Translate active plan name
+                                      : 'Active Plan')
                                 : lang.translate('noActivePlan'),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
@@ -1198,7 +1209,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           if (hasActive &&
                               _subscriptionStatus!.expiryDate != null)
                             Text(
-                              "${lang.translate('expiresOn')}: ${_subscriptionStatus!.expiryDate.toString().split(' ')[0]}",
+                              "${lang.translate('expiresOn')}: ${lang.getNumericDate(_subscriptionStatus!.expiryDate!)}", // Use getNumericDate
                               style: TextStyle(
                                 color: isDark ? Colors.grey : Colors.black54,
                               ),

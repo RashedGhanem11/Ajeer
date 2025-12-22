@@ -70,6 +70,13 @@ class LanguageNotifier extends ChangeNotifier {
     return '$month $day، $year';
   }
 
+  // NEW: Helper for dd-MM-yyyy with number conversion
+  String getNumericDate(DateTime date) {
+    final formatter = DateFormat('dd-MM-yyyy');
+    String formatted = formatter.format(date);
+    return convertNumbers(formatted);
+  }
+
   String translateCityArea(String input) {
     if (!isArabic) return input;
     List<String> parts = input.split(',');
@@ -82,16 +89,13 @@ class LanguageNotifier extends ChangeNotifier {
   String translateServices(String input) {
     if (input.isEmpty) return input;
 
-    // 1. Split by comma and handle any extra whitespace
     List<String> parts = input.split(',');
 
     List<String> translatedParts = parts.map((part) {
-      // 2. Trim every part to ensure it matches your map keys exactly
       String serviceKey = part.trim();
       return translate(serviceKey);
     }).toList();
 
-    // 3. Join with the specific Arabic comma if language is Arabic
     return translatedParts.join(isArabic ? '، ' : ', ');
   }
 
@@ -131,7 +135,6 @@ class LanguageNotifier extends ChangeNotifier {
     if (lowerInput == 'just now') return translate('justNow');
     if (lowerInput == 'yesterday') return translate('yesterday');
 
-    // Regex for relative times
     final daysRegex = RegExp(r'(\d+)\s+days?\s+ago', caseSensitive: false);
     final hoursRegex = RegExp(
       r'(\d+)\s+(hours?|hrs?)\s+ago',
@@ -158,7 +161,6 @@ class LanguageNotifier extends ChangeNotifier {
       return 'منذ ${convertNumbers(count!)} ${translate('minutes')}';
     }
 
-    // NEW: Handle Month translation for strings like "Dec 8, 2025"
     String translated = input;
     final monthMap = {
       'Jan': 'يناير',
@@ -179,7 +181,6 @@ class LanguageNotifier extends ChangeNotifier {
       translated = translated.replaceAll(en, ar);
     });
 
-    // Finally translate AM/PM and convert numbers
     return convertNumbers(translateTimeRange(translated));
   }
 
@@ -511,6 +512,15 @@ class LanguageNotifier extends ChangeNotifier {
       'providerAssignedMsg': 'John Doe has been assigned.',
       'paymentReminder': 'Payment Reminder',
       'paymentReminderMsg': 'Service fee due tomorrow.',
+      'providerSubscription': 'Provider Subscription',
+      'noActivePlan': 'No active plan',
+      'expiresOn': 'Expires on',
+      'renewOrUpgrade': 'Renew or Upgrade',
+      'choosePlan': 'Choose Plan',
+      'paymentSuccess': 'Payment successful!',
+      '1 Month Plan': '1 Month Plan',
+      '3 Month Plan': '3 Month Plan',
+      'days_duration': 'days',
     },
     'ar': {
       'settings': 'الإعدادات',
@@ -819,6 +829,15 @@ class LanguageNotifier extends ChangeNotifier {
       'providerAssignedMsg': 'تم تعيين جون دو.',
       'paymentReminder': 'تذكير بالدفع',
       'paymentReminderMsg': 'رسوم الخدمة مستحقة غداً.',
+      'providerSubscription': 'اشتراك المزود',
+      'noActivePlan': 'لا يوجد اشتراك نشط',
+      'expiresOn': 'ينتهي في',
+      'renewOrUpgrade': 'تجديد أو ترقية',
+      'choosePlan': 'اختر خطة',
+      'paymentSuccess': 'تم الدفع بنجاح!',
+      '1 Month Plan': 'خطة ١ شهر',
+      '3 Month Plan': 'خطة ٣ شهر',
+      'days_duration': 'يوم',
     },
   };
 
