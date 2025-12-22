@@ -132,6 +132,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     final userJson = prefs.getString('currentUser');
+    final userNotifier = Provider.of<UserNotifier>(context, listen: false);
+
     if (userJson != null) {
       final user = jsonDecode(userJson);
       if (mounted) {
@@ -139,14 +141,16 @@ class _ProfileScreenState extends State<ProfileScreen>
           _fullName = user['name'] ?? '';
           _mobileNumber = user['phone'] ?? '';
           _email = user['email'] ?? '';
-          _password = user['password'] ?? '';
-          _profileImageUrl = user['profilePictureUrl'];
           _fullNameController.text = _fullName;
           _mobileController.text = _mobileNumber;
           _emailController.text = _email;
           _passwordController.text = '********';
+          _profileImageUrl = user['profilePictureUrl'];
         });
       }
+    }
+    if (userNotifier.isProvider && userNotifier.providerData == null) {
+      await userNotifier.loadUserData();
     }
   }
 
@@ -991,6 +995,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           readOnly: !_isEditing,
           obscureText: isPassword,
           keyboardType: type,
+          enableInteractiveSelection: _isEditing,
+          contextMenuBuilder: _isEditing
+              ? null
+              : (context, state) => const SizedBox.shrink(),
           style: TextStyle(color: textColor),
           decoration: InputDecoration(
             labelText: label,
