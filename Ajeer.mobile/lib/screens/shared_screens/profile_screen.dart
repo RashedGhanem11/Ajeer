@@ -152,7 +152,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         });
       }
     } finally {
-      // Reset the flag so we can try again later if needed
       _isFetchingStatus = false;
     }
   }
@@ -165,11 +164,17 @@ class _ProfileScreenState extends State<ProfileScreen>
       // 1. Get Keys (ClientSecret & PublishableKey) from Backend
       final paymentData = await service.createPaymentIntent(plan.id);
 
+      // DEBUG: Print the key to console to verify it's the correct one
+      debugPrint(
+        "STRIPE DEBUG: Backend sent Publishable Key: ${paymentData.publishableKey}",
+      );
+
       // 2. Set the Key Dynamically
+      // This overrides whatever (or nothing) was in main.dart
       Stripe.publishableKey = paymentData.publishableKey;
       await Stripe.instance.applySettings();
 
-      // 3. Initialize Stripe Sheet
+      // 3. Initialize Stripe Sheet with the Client Secret
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: paymentData.clientSecret,
@@ -279,10 +284,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                     trailing: Text(
-                      "${_languageNotifier.convertNumbers(plan.price.toString())} ${_languageNotifier.translate('jod')}", // Price & Currency
+                      "${_languageNotifier.convertNumbers(plan.price.toString())} ${_languageNotifier.translate('USD')}",
                       style: TextStyle(
                         color: _primaryBlue,
                         fontWeight: FontWeight.bold,
+                        fontSize: 18,
                       ),
                     ),
                     onTap: () {

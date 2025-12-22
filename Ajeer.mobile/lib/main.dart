@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 
 import 'screens/customer_screens/login_screen.dart';
 import 'themes/app_themes.dart';
@@ -16,10 +15,6 @@ import 'screens/shared_screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  Stripe.publishableKey =
-      "pk_test_51SfIa5JzMFgTthnCq1pLnBIpWWevQ4TaqIYEI1brQuL6wwUjIHuK2Z5QOcnJL6LP6BhKKD8E8B8at63qKJi02dR400wdBTonh8";
-  await Stripe.instance.applySettings();
 
   final prefs = await SharedPreferences.getInstance();
   final userJson = prefs.getString('currentUser');
