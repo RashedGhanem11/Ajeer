@@ -223,6 +223,7 @@ class LanguageNotifier extends ChangeNotifier {
       'am': 'AM',
       'pm': 'PM',
       'jod': 'JOD',
+      'USD': 'USD', // Added USD
       'confirm': 'Confirm',
       'back': 'Back',
       'cancel': 'Cancel',
@@ -544,6 +545,7 @@ class LanguageNotifier extends ChangeNotifier {
       'am': 'صباحاً',
       'pm': 'مساءً',
       'jod': 'دينار',
+      'USD': 'دولار', // Added USD Translation
       'confirm': 'تأكيد',
       'back': 'رجوع',
       'cancel': 'إلغاء',

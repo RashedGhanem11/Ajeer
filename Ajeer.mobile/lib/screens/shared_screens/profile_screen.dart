@@ -115,8 +115,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         notifier.loadUserData();
       }
 
-      // Fetch subscription if provider
-      if (notifier.isProvider) {
+      // Fetch subscription if provider data exists (regardless of current mode)
+      // to ensure data is ready if they view the profile
+      if (notifier.isProviderSetupComplete) {
         _fetchSubscriptionStatus();
       }
     });
@@ -358,7 +359,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
     }
 
-    if (userNotifier.isProvider) {
+    if (userNotifier.isProviderSetupComplete) {
       _fetchSubscriptionStatus();
       if (userNotifier.providerData == null) {
         await userNotifier.loadUserData();
@@ -716,13 +717,15 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   Widget build(BuildContext context) {
     final userNotifier = Provider.of<UserNotifier>(context);
-    if (userNotifier.isProvider &&
+    // Fetch if needed, regardless of mode if setup is complete
+    if (userNotifier.isProviderSetupComplete &&
         _subscriptionStatus == null &&
         !_isFetchingStatus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _fetchSubscriptionStatus();
       });
     }
+
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
@@ -1141,10 +1144,15 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildSubscriptionSection() {
-    if (!_isProviderMode) return const SizedBox.shrink();
+    // UPDATED: No longer hides just because we are in customer mode.
+    // Instead, it relies on the same logic as ProviderInfoSection (userNotifier.isProviderSetupComplete check in build method)
 
     final lang = _languageNotifier;
     final bool isDark = widget.themeNotifier.isDarkMode;
+
+    // Use isEnabled to grey out the section if in Customer Mode
+    final bool isEnabled = _isProviderMode;
+
     if (_subscriptionStatus == null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 20.0),
@@ -1158,109 +1166,116 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     final bool hasActive = _subscriptionStatus!.hasActiveSubscription;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            lang.translate('providerSubscription'),
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 15),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? _subtleLighterDark : Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(
-                color: hasActive ? Colors.green : Colors.orange,
-                width: 1.5,
+    // UPDATED: Wrapped in Opacity to grey out when disabled (Customer Mode)
+    return Opacity(
+      opacity: isEnabled ? 1.0 : 0.5,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              lang.translate('providerSubscription'),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      hasActive
-                          ? Icons.check_circle
-                          : Icons.warning_amber_rounded,
-                      color: hasActive ? Colors.green : Colors.orange,
-                      size: 30,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            hasActive
-                                ? (_subscriptionStatus!.planName != null
-                                      ? lang.translate(
-                                          _subscriptionStatus!.planName!,
-                                        ) // Translate active plan name
-                                      : 'Active Plan')
-                                : lang.translate('noActivePlan'),
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          if (hasActive &&
-                              _subscriptionStatus!.expiryDate != null)
+            const SizedBox(height: 15),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color.fromARGB(255, 28, 37, 51)
+                    : Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: hasActive ? Colors.green : Colors.orange,
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        hasActive
+                            ? Icons.check_circle
+                            : Icons.warning_amber_rounded,
+                        color: hasActive ? Colors.green : Colors.orange,
+                        size: 30,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              "${lang.translate('expiresOn')}: ${lang.getNumericDate(_subscriptionStatus!.expiryDate!)}", // Use getNumericDate
+                              hasActive
+                                  ? (_subscriptionStatus!.planName != null
+                                        ? lang.translate(
+                                            _subscriptionStatus!.planName!,
+                                          ) // Translate active plan name
+                                        : 'Active Plan')
+                                  : lang.translate('noActivePlan'),
                               style: TextStyle(
-                                color: isDark ? Colors.grey : Colors.black54,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: isDark ? Colors.white : Colors.black87,
                               ),
                             ),
-                        ],
+                            if (hasActive &&
+                                _subscriptionStatus!.expiryDate != null)
+                              Text(
+                                "${lang.translate('expiresOn')}: ${lang.getNumericDate(_subscriptionStatus!.expiryDate!)}", // Use getNumericDate
+                                style: TextStyle(
+                                  color: isDark ? Colors.grey : Colors.black54,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoadingSubscription
-                        ? null
-                        : _showPlanSelectionSheet,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _primaryBlue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: _isLoadingSubscription
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            lang.translate('renewOrUpgrade'),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 15),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: (isEnabled && !_isLoadingSubscription)
+                          ? _showPlanSelectionSheet
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _primaryBlue,
+                        shape: const StadiumBorder(),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 24,
+                        ),
+                      ),
+                      child: _isLoadingSubscription
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              lang.translate('renewOrUpgrade'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
-import 'screens/customer_screens/login_screen.dart';
+import 'screens/shared_screens/app_launcher_screen.dart';
 import 'themes/app_themes.dart';
 import 'themes/theme_notifier.dart';
 import 'notifiers/user_notifier.dart';
@@ -11,7 +10,6 @@ import 'notifiers/language_notifier.dart';
 import 'services/auth_service.dart';
 import 'services/user_service.dart';
 import 'services/subscription_service.dart';
-import 'screens/shared_screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +26,6 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LanguageNotifier()),
         Provider(create: (_) => AuthService()),
         Provider(create: (_) => UserService()),
-        // 2. Register the SubscriptionService so the UI can find it
         Provider(create: (_) => SubscriptionService()),
       ],
       child: MyApp(isLoggedIn: isLoggedIn),
@@ -78,9 +75,10 @@ class MyApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: isLoggedIn
-              ? ProfileScreen(themeNotifier: themeNotifier)
-              : const LoginScreen(),
+          home: AppLauncherScreen(
+            isLoggedIn: isLoggedIn,
+            themeNotifier: themeNotifier,
+          ),
         );
       },
     );
