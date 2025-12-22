@@ -5,18 +5,22 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_stripe/flutter_stripe.dart'; // Added Stripe
+
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import '../../widgets/shared_widgets/settings_menu.dart';
 import '../../themes/theme_notifier.dart';
 import '../../notifiers/user_notifier.dart';
 import '../../notifiers/language_notifier.dart';
 import '../../models/provider_data.dart';
+import '../../models/subscription_models.dart'; // Added Models
 import '../../config/app_config.dart';
 import '../customer_screens/bookings_screen.dart';
 import '../customer_screens/home_screen.dart';
 import 'chat_screen.dart';
 import '../service_provider_screens/services_screen.dart';
 import '../../services/user_service.dart';
+import '../../services/subscription_service.dart'; // Added Service
 import '../../models/change_password_request.dart';
 import '../service_provider_screens/bookings_screen.dart' as provider_screens;
 import 'dart:ui';
@@ -88,6 +92,12 @@ class _ProfileScreenState extends State<ProfileScreen>
   IconData? _overlayIcon;
   Color? _overlayIconColor;
 
+  // --- NEW SUBSCRIPTION STATE VARIABLES ---
+  SubscriptionStatus? _subscriptionStatus;
+  bool _isLoadingSubscription = false;
+  bool _isFetchingStatus = false;
+  // ----------------------------------------
+
   @override
   void initState() {
     super.initState();
@@ -97,11 +107,195 @@ class _ProfileScreenState extends State<ProfileScreen>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
+
+    // Updated init logic to include subscription fetch
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notifier = Provider.of<UserNotifier>(context, listen: false);
-      if (!notifier.isProviderSetupComplete) notifier.loadUserData();
+      if (!notifier.isProviderSetupComplete) {
+        notifier.loadUserData();
+      }
+
+      // Fetch subscription if provider
+      if (notifier.isProvider) {
+        _fetchSubscriptionStatus();
+      }
     });
   }
+
+  // --- NEW SUBSCRIPTION HELPER METHODS ---
+
+  Future<void> _fetchSubscriptionStatus() async {
+    // Prevent multiple simultaneous fetches
+    if (_isFetchingStatus) return;
+
+    _isFetchingStatus = true;
+
+    try {
+      final status = await Provider.of<SubscriptionService>(
+        context,
+        listen: false,
+      ).getStatus();
+      if (mounted) {
+        setState(() {
+          _subscriptionStatus = status;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading subscription: $e");
+      // On error, stop the spinner by setting a default empty status
+      if (mounted) {
+        setState(() {
+          _subscriptionStatus = SubscriptionStatus(
+            hasActiveSubscription: false,
+            isProviderActive: false,
+          );
+        });
+      }
+    } finally {
+      // Reset the flag so we can try again later if needed
+      _isFetchingStatus = false;
+    }
+  }
+
+  Future<void> _handlePayment(SubscriptionPlan plan) async {
+    setState(() => _isLoadingSubscription = true);
+    try {
+      final service = Provider.of<SubscriptionService>(context, listen: false);
+
+      // 1. Get Keys (ClientSecret & PublishableKey) from Backend
+      final paymentData = await service.createPaymentIntent(plan.id);
+
+      // 2. Set the Key Dynamically
+      Stripe.publishableKey = paymentData.publishableKey;
+      await Stripe.instance.applySettings();
+
+      // 3. Initialize Stripe Sheet
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: paymentData.clientSecret,
+          merchantDisplayName: 'Ajeer',
+          style: widget.themeNotifier.isDarkMode
+              ? ThemeMode.dark
+              : ThemeMode.light,
+          appearance: PaymentSheetAppearance(
+            colors: PaymentSheetAppearanceColors(primary: _primaryBlue),
+          ),
+        ),
+      );
+
+      // 4. Open the Payment Page
+      await Stripe.instance.presentPaymentSheet();
+
+      // 5. Success
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_languageNotifier.translate('paymentSuccess')),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _fetchSubscriptionStatus(); // Refresh UI
+      }
+    } on StripeException catch (e) {
+      if (mounted && e.error.code != FailureCode.Canceled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Payment failed: ${e.error.localizedMessage}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingSubscription = false);
+    }
+  }
+
+  void _showPlanSelectionSheet() async {
+    try {
+      final plans = await Provider.of<SubscriptionService>(
+        context,
+        listen: false,
+      ).getPlans();
+      if (!mounted) return;
+
+      final bool isDark = widget.themeNotifier.isDarkMode;
+
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: isDark ? _subtleDark : Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (ctx) => Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _languageNotifier.translate('choosePlan'),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (plans.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Text(
+                    "No plans available",
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ),
+              ...plans.map(
+                (plan) => ListTile(
+                  title: Text(
+                    plan.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  subtitle: Text(
+                    "${plan.durationInDays} days",
+                    style: TextStyle(
+                      color: isDark ? Colors.grey : Colors.black54,
+                    ),
+                  ),
+                  trailing: Text(
+                    "${plan.price} SAR",
+                    style: TextStyle(
+                      color: _primaryBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _handlePayment(plan);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Failed to load plans")));
+    }
+  }
+
+  // ---------------------------------------
 
   void _initializeControllers() {
     _fullNameController = TextEditingController();
@@ -149,8 +343,12 @@ class _ProfileScreenState extends State<ProfileScreen>
         });
       }
     }
-    if (userNotifier.isProvider && userNotifier.providerData == null) {
-      await userNotifier.loadUserData();
+
+    if (userNotifier.isProvider) {
+      _fetchSubscriptionStatus();
+      if (userNotifier.providerData == null) {
+        await userNotifier.loadUserData();
+      }
     }
   }
 
@@ -442,6 +640,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       await _overlayController.forward(from: 0.0);
       await Future.delayed(const Duration(milliseconds: 150));
       userNotifier.toggleUserMode();
+      // Fetch subscription status if we just switched to Provider
+      if (userNotifier.isProvider) {
+        _fetchSubscriptionStatus();
+      }
       _overlayController.reset();
       setState(() {
         _showOverlay = false;
@@ -500,6 +702,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   Widget build(BuildContext context) {
     final userNotifier = Provider.of<UserNotifier>(context);
+    if (userNotifier.isProvider &&
+        _subscriptionStatus == null &&
+        !_isFetchingStatus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fetchSubscriptionStatus();
+      });
+    }
     final bool isDarkMode = widget.themeNotifier.isDarkMode;
     SystemChrome.setSystemUIOverlayStyle(
       isDarkMode
@@ -891,7 +1100,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       ),
                       if (userNotifier.isProviderSetupComplete &&
-                          userNotifier.providerData != null)
+                          userNotifier.providerData != null) ...[
                         _ProviderInfoSection(
                           providerData: userNotifier.providerData!,
                           isEnabled: userNotifier.isProvider,
@@ -903,6 +1112,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           primaryColor: _primaryBlue,
                           languageNotifier: _languageNotifier,
                         ),
+                        // --- SUBSCRIPTION SECTION ADDED HERE ---
+                        _buildSubscriptionSection(),
+                      ],
                     ],
                   ),
                 ),
@@ -910,6 +1122,128 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionSection() {
+    if (!_isProviderMode) return const SizedBox.shrink();
+
+    final lang = _languageNotifier;
+    final bool isDark = widget.themeNotifier.isDarkMode;
+    if (_subscriptionStatus == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20.0),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: isDark ? Colors.white : _primaryBlue,
+          ),
+        ),
+      );
+    }
+
+    final bool hasActive = _subscriptionStatus!.hasActiveSubscription;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            lang.translate('providerSubscription'),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 15),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? _subtleLighterDark : Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: hasActive ? Colors.green : Colors.orange,
+                width: 1.5,
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      hasActive
+                          ? Icons.check_circle
+                          : Icons.warning_amber_rounded,
+                      color: hasActive ? Colors.green : Colors.orange,
+                      size: 30,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            hasActive
+                                ? (_subscriptionStatus!.planName ??
+                                      'Active Plan')
+                                : lang.translate('noActivePlan'),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          if (hasActive &&
+                              _subscriptionStatus!.expiryDate != null)
+                            Text(
+                              "${lang.translate('expiresOn')}: ${_subscriptionStatus!.expiryDate.toString().split(' ')[0]}",
+                              style: TextStyle(
+                                color: isDark ? Colors.grey : Colors.black54,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoadingSubscription
+                        ? null
+                        : _showPlanSelectionSheet,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primaryBlue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: _isLoadingSubscription
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            lang.translate('renewOrUpgrade'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

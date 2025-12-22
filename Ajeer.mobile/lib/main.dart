@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 import 'screens/customer_screens/login_screen.dart';
 import 'themes/app_themes.dart';
@@ -10,10 +11,15 @@ import 'notifiers/user_notifier.dart';
 import 'notifiers/language_notifier.dart';
 import 'services/auth_service.dart';
 import 'services/user_service.dart';
+import 'services/subscription_service.dart';
 import 'screens/shared_screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  Stripe.publishableKey =
+      "pk_test_51SgWRICeptElWFBSuHw44bWvQ4vPDAwkdejnyYRntF925jBSnBIvI3dxQ1dJvbnCr8bjaqBqdDc7FUaIsG6BU3gx009CXda1cq";
+  await Stripe.instance.applySettings();
 
   final prefs = await SharedPreferences.getInstance();
   final userJson = prefs.getString('currentUser');
@@ -27,6 +33,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LanguageNotifier()),
         Provider(create: (_) => AuthService()),
         Provider(create: (_) => UserService()),
+        // 2. Register the SubscriptionService so the UI can find it
+        Provider(create: (_) => SubscriptionService()),
       ],
       child: MyApp(isLoggedIn: isLoggedIn),
     ),

@@ -13,8 +13,8 @@ POST {{host}}/api/auth/login
 Content-Type: {{contentType}}
 
 {
-    "identifier": "majed@gmail.com",
-    "password": "Password@123"
+    "identifier": "yaser@example.com",
+    "password": "Password"
 }
 ###
 @tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiItMiIsInVuaXF1ZV9uYW1lIjoiU2FyYSBBaG1hZCIsImVtYWlsIjoic2FyYUBleGFtcGxlLmNvbSIsInJvbGUiOiJDdXN0b21lciIsIm5iZiI6MTc2NDUzMDExOCwiZXhwIjoxNzY0NjE2NTE3LCJpYXQiOjE3NjQ1MzAxMTgsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.63RHyCNH2vCz_GnenEpQkBCGyYjbRZ2mDH-Krj8hNKM
@@ -273,7 +273,7 @@ Content-Type: {{contentType}}
     ]
 }
 ###
-@tokenProvider = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwidW5pcXVlX25hbWUiOiJNYWplZCBBaG1lZCIsImVtYWlsIjoibWFqZWRAZXhhbXBsZS5jb20iLCJyb2xlIjoiU2VydmljZVByb3ZpZGVyIiwibmJmIjoxNzY2MzQ0NDc1LCJleHAiOjE3NjY0MzA4NzUsImlhdCI6MTc2NjM0NDQ3NSwiaXNzIjoiQWplZXJCYWNrZW5kQVBJIiwiYXVkIjoiQWplZXJDbGllbnRzIn0.aa1Tnnx3_jxV6JBNFtcBFPp4IA31_M0YimEMsjPFUqU
+@tokenProvider = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyMDAyIiwidW5pcXVlX25hbWUiOiJZYXNlciBBbGkiLCJlbWFpbCI6Inlhc2VyQGV4YW1wbGUuY29tIiwicm9sZSI6IlNlcnZpY2VQcm92aWRlciIsIm5iZiI6MTc2NjQwNTgyMywiZXhwIjoxNzY2NDkyMjIzLCJpYXQiOjE3NjY0MDU4MjMsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.5YMVY0y5xVbEXNYeu72EgdzSy-E1Q95sZyxpSDc1Q1A
 ### 2.2 Verify New Role (Should see "ServiceProvider")
 # Using the NEW token from the provider registration response.
 GET {{host}}/api/auth/test-auth
