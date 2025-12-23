@@ -655,52 +655,59 @@ class _LocationScreenState extends State<LocationScreen> {
             Positioned(
               top: 15,
               right: 15,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isEditingLocation)
+              // Force LTR direction here to keep buttons anchored right in correct order
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isEditingLocation)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: FloatingActionButton(
+                          mini: true,
+                          backgroundColor: Colors.green,
+                          onPressed: () async {
+                            setState(() {
+                              _customerLocation = _mapCenterDuringEdit!;
+                              _isEditingLocation = false;
+                            });
+                            await _resolveAddressFromCoordinates(
+                              _customerLocation!,
+                            );
+                          },
+                          child: const Icon(Icons.check, color: Colors.white),
+                        ),
+                      ),
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: FloatingActionButton(
                         mini: true,
-                        backgroundColor: Colors.green,
-                        onPressed: () async {
+                        backgroundColor: _primaryBlue,
+                        onPressed: () {
                           setState(() {
-                            _customerLocation = _mapCenterDuringEdit!;
-                            _isEditingLocation = false;
+                            _isEditingLocation = true;
+                            _mapCenterDuringEdit = _customerLocation;
+                            _mapController.move(_customerLocation!, 15.0);
                           });
-                          await _resolveAddressFromCoordinates(
-                            _customerLocation!,
-                          );
                         },
-                        child: const Icon(Icons.check, color: Colors.white),
+                        child: const Icon(
+                          Icons.edit_location_alt,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: FloatingActionButton(
+                    FloatingActionButton(
                       mini: true,
                       backgroundColor: _primaryBlue,
-                      onPressed: () {
-                        setState(() {
-                          _isEditingLocation = true;
-                          _mapCenterDuringEdit = _customerLocation;
-                          _mapController.move(_customerLocation!, 15.0);
-                        });
-                      },
+                      onPressed: () => _showMaximizedMap(context, isDarkMode),
                       child: const Icon(
-                        Icons.edit_location_alt,
+                        Icons.open_in_full,
                         color: Colors.white,
                       ),
                     ),
-                  ),
-                  FloatingActionButton(
-                    mini: true,
-                    backgroundColor: _primaryBlue,
-                    onPressed: () => _showMaximizedMap(context, isDarkMode),
-                    child: const Icon(Icons.open_in_full, color: Colors.white),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -840,48 +847,52 @@ class _MaximizedMapDialogState extends State<_MaximizedMapDialog> {
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
             right: 10,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_isEditing)
+            // Force LTR direction here as well
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isEditing)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: FloatingActionButton(
+                        mini: true,
+                        backgroundColor: Colors.green,
+                        onPressed: () {
+                          Navigator.of(context).pop(_editingCenter);
+                        },
+                        child: const Icon(Icons.check, color: Colors.white),
+                      ),
+                    ),
                   Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: FloatingActionButton(
                       mini: true,
-                      backgroundColor: Colors.green,
+                      backgroundColor: widget.primaryColor,
                       onPressed: () {
-                        Navigator.of(context).pop(_editingCenter);
+                        setState(() {
+                          _isEditing = true;
+                          _editingCenter = widget.customerLocation;
+                        });
                       },
-                      child: const Icon(Icons.check, color: Colors.white),
+                      child: const Icon(
+                        Icons.edit_location_alt,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: FloatingActionButton(
+                  FloatingActionButton(
                     mini: true,
                     backgroundColor: widget.primaryColor,
-                    onPressed: () {
-                      setState(() {
-                        _isEditing = true;
-                        _editingCenter = widget.customerLocation;
-                      });
-                    },
+                    onPressed: () => Navigator.of(context).pop(),
                     child: const Icon(
-                      Icons.edit_location_alt,
+                      Icons.close_fullscreen,
                       color: Colors.white,
                     ),
                   ),
-                ),
-                FloatingActionButton(
-                  mini: true,
-                  backgroundColor: widget.primaryColor,
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Icon(
-                    Icons.close_fullscreen,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

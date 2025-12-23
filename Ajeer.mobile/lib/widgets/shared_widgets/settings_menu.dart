@@ -6,6 +6,8 @@ import '../../themes/theme_notifier.dart';
 import '../../notifiers/user_notifier.dart';
 import '../../notifiers/language_notifier.dart';
 import '../../screens/customer_screens/login_screen.dart';
+import '../../services/notification_service.dart';
+import '../../models/notification_model.dart';
 
 class SettingsMenu extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -24,9 +26,10 @@ class _SettingsMenuState extends State<SettingsMenu>
   late Animation<double> _bellAnimation;
   OverlayEntry? _overlayEntry;
 
-  final List<Map<String, dynamic>> _notifications = [];
+  List<NotificationModel> _notifications = [];
   final Set<int> _selectedNotifications = {};
   bool _isDeleting = false;
+  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
@@ -57,6 +60,46 @@ class _SettingsMenuState extends State<SettingsMenu>
       TweenSequenceItem(tween: Tween(begin: 0.04, end: 0.0), weight: 1),
       TweenSequenceItem(tween: ConstantTween(0.0), weight: 15),
     ]).animate(CurvedAnimation(parent: _bellController, curve: Curves.linear));
+
+    _loadNotifications();
+    _subscribeToNotifications();
+  }
+
+  void _loadNotifications() async {
+    try {
+      final history = await _notificationService.fetchNotifications();
+      if (mounted) {
+        setState(() {
+          _notifications = history;
+        });
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  void _subscribeToNotifications() {
+    _notificationService.initSignalR();
+    _notificationService.notificationStream.listen((notification) {
+      if (mounted) {
+        setState(() {
+          _notifications.insert(0, notification);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(notification.message),
+            backgroundColor: _getIconColor(notification.type),
+            behavior: SnackBarBehavior.fixed,
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -66,6 +109,32 @@ class _SettingsMenuState extends State<SettingsMenu>
     _overlayEntry?.remove();
     _overlayEntry = null;
     super.dispose();
+  }
+
+  IconData _getIconData(int type) {
+    switch (type) {
+      case 1:
+        return Icons.check_circle_outline;
+      case 2:
+        return Icons.warning_amber_rounded;
+      case 3:
+        return Icons.error_outline;
+      default:
+        return Icons.notifications_none;
+    }
+  }
+
+  Color _getIconColor(int type) {
+    switch (type) {
+      case 1:
+        return Colors.green;
+      case 2:
+        return Colors.orange;
+      case 3:
+        return Colors.red;
+      default:
+        return Colors.blue;
+    }
   }
 
   void _toggleNotificationSelection(int index) {
@@ -354,7 +423,7 @@ class _SettingsMenuState extends State<SettingsMenu>
               horizontal: 16.0,
               vertical: 2.0,
             ),
-            visualDensity: const VisualDensity(vertical: -2),
+            visualDensity: const VisualDensity(vertical: -4),
             leading: Icon(
               Icons.language,
               color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -384,7 +453,7 @@ class _SettingsMenuState extends State<SettingsMenu>
               horizontal: 16.0,
               vertical: 6.0,
             ),
-            visualDensity: const VisualDensity(vertical: -2),
+            visualDensity: const VisualDensity(vertical: -4),
             title: Text(
               lang.translate('darkMode'),
               style: TextStyle(color: textColor),
@@ -498,8 +567,9 @@ class _SettingsMenuState extends State<SettingsMenu>
                                     onLongPress: () =>
                                         _toggleNotificationSelection(index),
                                     onTap: () {
-                                      if (_isDeleting)
+                                      if (_isDeleting) {
                                         _toggleNotificationSelection(index);
+                                      }
                                     },
                                     child: Container(
                                       margin: const EdgeInsets.only(
@@ -538,9 +608,10 @@ class _SettingsMenuState extends State<SettingsMenu>
                                               ),
                                             ),
                                           Icon(
-                                            notification['icon'] as IconData,
-                                            color:
-                                                notification['color'] as Color,
+                                            _getIconData(notification.type),
+                                            color: _getIconColor(
+                                              notification.type,
+                                            ),
                                             size: 20,
                                           ),
                                           const SizedBox(width: 10),
@@ -550,8 +621,7 @@ class _SettingsMenuState extends State<SettingsMenu>
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  notification['title']
-                                                      as String,
+                                                  notification.title,
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 14,
@@ -559,8 +629,7 @@ class _SettingsMenuState extends State<SettingsMenu>
                                                   ),
                                                 ),
                                                 Text(
-                                                  notification['subtitle']
-                                                      as String,
+                                                  notification.message,
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     color: textColor

@@ -144,33 +144,36 @@ class _AppLauncherScreenState extends State<AppLauncherScreen>
                 );
               },
             ),
-
             const SizedBox(height: 15),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_text.length, (index) {
-                return AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return Opacity(
-                      opacity: _letterOpacityAnimations[index].value,
-                      child: SlideTransition(
-                        position: _letterSlideAnimations[index],
-                        child: Text(
-                          _text[index],
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                            color: primaryBlue,
-                            letterSpacing: 1.5,
-                            fontFamily: 'font',
+            // Added Directionality widget here to force LTR layout
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(_text.length, (index) {
+                  return AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _letterOpacityAnimations[index].value,
+                        child: SlideTransition(
+                          position: _letterSlideAnimations[index],
+                          child: Text(
+                            _text[index],
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              color: primaryBlue,
+                              letterSpacing: 1.5,
+                              fontFamily: 'font',
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              }),
+                      );
+                    },
+                  );
+                }),
+              ),
             ),
           ],
         ),

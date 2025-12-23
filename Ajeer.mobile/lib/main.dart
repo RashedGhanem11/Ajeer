@@ -11,6 +11,7 @@ import 'services/auth_service.dart';
 import 'services/user_service.dart';
 import 'services/subscription_service.dart';
 import 'services/notification_service.dart';
+import 'models/notification_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -115,10 +116,13 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> {
     });
   }
 
-  void _showToast(Map<String, dynamic> data) {
+  // UPDATED: Now accepts NotificationModel instead of Map
+  void _showToast(NotificationModel data) {
     if (!mounted) return;
-    final String title = data['title'] ?? 'Notification';
-    final String message = data['message'] ?? '';
+
+    // UPDATED: Access properties directly from the model
+    final String title = data.title;
+    final String message = data.message;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
