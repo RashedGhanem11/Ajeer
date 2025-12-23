@@ -7,6 +7,7 @@ using Ajeer.Api.Services.Bookings;
 using Ajeer.Api.Services.Chats;
 using Ajeer.Api.Services.Files;
 using Ajeer.Api.Services.Formatting;
+using Ajeer.Api.Services.Notifications;
 using Ajeer.Api.Services.Reviews;
 using Ajeer.Api.Services.ServiceAreas;
 using Ajeer.Api.Services.ServiceCategories;
@@ -118,6 +119,7 @@ public static class DependencyInjection
         services.AddScoped<IChatService, ChatService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IFormattingService, FormattingService>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IServiceAreaService, ServiceAreaService>();
         services.AddScoped<IServiceCategoryService, ServiceCategoryService>();

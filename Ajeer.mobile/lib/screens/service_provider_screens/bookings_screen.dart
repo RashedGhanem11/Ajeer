@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:ui';
+import 'package:ajeer_mobile/notifiers/app_state_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +16,7 @@ import '../../models/review_models.dart';
 import '../../services/booking_service.dart';
 import '../../services/review_service.dart';
 import '../../services/chat_service.dart';
+import '../../services/notification_service.dart';
 import '../shared_screens/chat_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import '../../notifiers/language_notifier.dart';
@@ -66,6 +69,8 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
   bool _isLoading = true;
   List<BookingListItem> _allBookings = [];
   late LanguageNotifier _languageNotifier;
+  StreamSubscription? _updateSubscription;
+  final _notificationService = NotificationService();
 
   @override
   void didChangeDependencies() {
@@ -102,11 +107,22 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
         setState(() {});
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AppStateNotifier>(context, listen: false).setBookingScreenActive(true);
+    });
+
     _fetchBookings();
+    _setupRealtime();
   }
 
   @override
   void dispose() {
+    try {
+      Provider.of<AppStateNotifier>(context, listen: false).setBookingScreenActive(false);
+    } catch (_) {}
+
+    _updateSubscription?.cancel();
     _tabController.dispose();
     super.dispose();
   }
@@ -134,6 +150,15 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
         _isLoading = false;
       });
     }
+  }
+
+  void _setupRealtime() async {
+    await _notificationService.initSignalR();
+    _updateSubscription = _notificationService.bookingUpdateStream.listen((bookingId) {
+      _fetchBookings();
+
+      HapticFeedback.lightImpact();
+    });
   }
 
   Future<void> _handleAction(int id, String actionType) async {

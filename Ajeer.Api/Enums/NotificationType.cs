@@ -2,10 +2,11 @@ namespace Ajeer.Api.Enums;
 
 public enum NotificationType
 {
+    BookingCreated,
     BookingAccepted,
-    BookingRejected,
-    BookingCancelled,
-    ServiceProviderApproved,
-    ServiceProviderRejected,
-    Chat
+    BookingCancelledByUser,
+    BookingCompleted,
+    BookingReassignedAfterBeingRejected,
+    BookingReassignedAfterBeingCancelled,
+    BookingReviewed
 }

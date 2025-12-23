@@ -2,11 +2,12 @@ using Ajeer.Api.Data;
 using Ajeer.Api.DTOs.Reviews;
 using Ajeer.Api.Enums;
 using Ajeer.Api.Models;
+using Ajeer.Api.Services.Notifications;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ajeer.Api.Services.Reviews;
 
-public class ReviewService(AppDbContext _context) : IReviewService
+public class ReviewService(AppDbContext _context, INotificationService _notificationService) : IReviewService
 {
     public async Task AddReviewAsync(int userId, CreateReviewRequest dto)
     {
@@ -50,6 +51,12 @@ public class ReviewService(AppDbContext _context) : IReviewService
         provider.Rating = newTotalScore / newCount;
 
         await _context.SaveChangesAsync();
+
+        await _notificationService.CreateNotificationAsync(
+            provider.UserId,
+            NotificationType.BookingReviewed,
+            booking.Id
+        );
     }
 
     public async Task<ReviewResponse?> GetReviewByBookingIdAsync(int userId, int bookingId)

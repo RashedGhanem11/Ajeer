@@ -26,4 +26,5 @@ public class Booking
     public ICollection<BookingServiceItem> BookingServiceItems { get; set; } = new List<BookingServiceItem>();
     public ICollection<Message> Messages { get; set; } = new List<Message>();
     public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 }

@@ -5,12 +5,13 @@ using Ajeer.Api.Enums;
 using Ajeer.Api.Models;
 using Ajeer.Api.Services.Files;
 using Ajeer.Api.Services.Formatting;
+using Ajeer.Api.Services.Notifications;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ajeer.Api.Services.Bookings;
 
 public class BookingService(AppDbContext _context, IFileService _fileService,
-                            IFormattingService _formattingService) : IBookingService
+    IFormattingService _formattingService, INotificationService _notificationService) : IBookingService
 {
     private async Task<Models.ServiceProvider> FindProviderForBooking(
         int serviceAreaId,
@@ -98,6 +99,12 @@ public class BookingService(AppDbContext _context, IFileService _fileService,
 
         _context.Bookings.Add(booking);
         await _context.SaveChangesAsync();
+
+        await _notificationService.CreateNotificationAsync(
+            suitableProvider.UserId,
+            NotificationType.BookingCreated,
+            booking.Id
+        );
 
         return booking.Id;
     }
@@ -244,6 +251,12 @@ public class BookingService(AppDbContext _context, IFileService _fileService,
 
         booking.Status = BookingStatus.Active;
         await _context.SaveChangesAsync();
+
+        await _notificationService.CreateNotificationAsync(
+            booking.UserId,
+            NotificationType.BookingAccepted,
+            bookingId
+        );
     }
 
     public async Task RejectBookingAsync(int providerId, int bookingId)
@@ -272,6 +285,18 @@ public class BookingService(AppDbContext _context, IFileService _fileService,
 
         booking.ServiceProviderId = newProvider.UserId;
         await _context.SaveChangesAsync();
+
+        await _notificationService.CreateNotificationAsync(
+            newProvider.UserId,
+            NotificationType.BookingCreated,
+            bookingId
+        );
+
+        await _notificationService.CreateNotificationAsync(
+            booking.UserId,
+            NotificationType.BookingReassignedAfterBeingRejected,
+            bookingId
+        );
     }
 
     public async Task CompleteBookingAsync(int providerId, int bookingId)
@@ -287,6 +312,12 @@ public class BookingService(AppDbContext _context, IFileService _fileService,
 
         booking.Status = BookingStatus.Completed;
         await _context.SaveChangesAsync();
+
+        await _notificationService.CreateNotificationAsync(
+            booking.UserId,
+            NotificationType.BookingCompleted,
+            bookingId
+        );
     }
 
     public async Task CancelBookingAsync(int userId, int bookingId)
@@ -309,9 +340,17 @@ public class BookingService(AppDbContext _context, IFileService _fileService,
         if (isCustomer)
         {
             booking.Status = BookingStatus.Cancelled;
+            await _context.SaveChangesAsync();
+
+            await _notificationService.CreateNotificationAsync(
+                booking.ServiceProviderId,
+                NotificationType.BookingCancelledByUser,
+                bookingId
+            );
         }
         else if (isProvider)
         {
+            string oldProviderName = booking.ServiceProvider.User.Name;
             var serviceIds = booking.BookingServiceItems.Select(i => i.ServiceId).ToList();
 
             try
@@ -331,8 +370,23 @@ public class BookingService(AppDbContext _context, IFileService _fileService,
             {
                 throw new Exception("You cannot cancel, no replacement found");
             }
-        }
 
-        await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
+
+            // Notify New Provider
+            await _notificationService.CreateNotificationAsync(
+                booking.ServiceProviderId,
+                NotificationType.BookingCreated,
+                bookingId
+            );
+
+            // Notify Customer (Because status changed Active -> Pending)
+            await _notificationService.CreateNotificationAsync(
+                booking.UserId,
+                NotificationType.BookingReassignedAfterBeingCancelled,
+                bookingId,
+                oldProviderName
+            );
+        }
     }
 }
