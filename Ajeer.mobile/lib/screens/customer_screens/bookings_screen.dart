@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:ajeer_mobile/notifiers/app_state_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -104,20 +103,12 @@ class _BookingsScreenState extends State<BookingsScreen>
       if (!_tabController.indexIsChanging) setState(() {});
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AppStateNotifier>(context, listen: false).setBookingScreenActive(true);
-    });
-
     _fetchBookings();
     _setupRealtime();
   }
 
   @override
   void dispose() {
-      try {
-      Provider.of<AppStateNotifier>(context, listen: false).setBookingScreenActive(false);
-      } catch (_) {}
-
     _updateSubscription?.cancel();
     _tabController.dispose();
     super.dispose();
@@ -150,7 +141,9 @@ class _BookingsScreenState extends State<BookingsScreen>
 
   void _setupRealtime() async {
     await _notificationService.initSignalR();
-    _updateSubscription = _notificationService.bookingUpdateStream.listen((bookingId) {
+    _updateSubscription = _notificationService.bookingUpdateStream.listen((
+      bookingId,
+    ) {
       _fetchBookings();
 
       HapticFeedback.lightImpact();
