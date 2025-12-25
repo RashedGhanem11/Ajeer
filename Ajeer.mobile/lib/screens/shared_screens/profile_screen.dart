@@ -88,6 +88,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       _emailController,
       _passwordController;
   late AnimationController _overlayController;
+  late AnimationController _heartbeatController;
+  late Animation<double> _heartbeatAnimation;
   bool _showOverlay = false;
   IconData? _overlayIcon;
   Color? _overlayIconColor;
@@ -107,16 +109,20 @@ class _ProfileScreenState extends State<ProfileScreen>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
+    _heartbeatController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
 
-    // Updated init logic to include subscription fetch
+    _heartbeatAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _heartbeatController, curve: Curves.easeInOut),
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notifier = Provider.of<UserNotifier>(context, listen: false);
       if (!notifier.isProviderSetupComplete) {
         notifier.loadUserData();
       }
-
-      // Fetch subscription if provider data exists (regardless of current mode)
-      // to ensure data is ready if they view the profile
       if (notifier.isProviderSetupComplete) {
         _fetchSubscriptionStatus();
       }
@@ -374,6 +380,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _overlayController.dispose();
+    _heartbeatController.dispose();
     super.dispose();
   }
 
@@ -855,48 +862,62 @@ class _ProfileScreenState extends State<ProfileScreen>
     UserNotifier userNotifier,
   ) {
     final bool isSetupComplete = userNotifier.isProviderSetupComplete;
-    String label = !isSetupComplete
+
+    // Check if the user is in the "Become an Ajeer" state
+    final bool isBecomeAjeer = !isSetupComplete;
+
+    // Determine Label
+    String label = isBecomeAjeer
         ? _languageNotifier.translate('becomeAjeer')
         : (userNotifier.isProvider
               ? _languageNotifier.translate('switchToCustomer')
               : _languageNotifier.translate('switchToProvider'));
-    IconData icon = !isSetupComplete
+
+    // Determine Icon
+    IconData icon = isBecomeAjeer
         ? Icons.rocket_launch
         : (userNotifier.isProvider ? Icons.person : Icons.handyman);
+
+    // Determine Colors
+    final backgroundColor = isBecomeAjeer
+        ? const Color(0xFFFFD700) // Gold Color
+        : (isDarkMode ? _subtleDark : Colors.grey.shade300);
+
+    final foregroundColor = isBecomeAjeer
+        ? Colors.black
+        : (isDarkMode ? Colors.white : _primaryBlue);
+
+    final borderSide = isBecomeAjeer
+        ? const BorderSide(color: Color.fromARGB(255, 255, 119, 0), width: 2.0)
+        : BorderSide.none;
+
+    Widget button = ElevatedButton.icon(
+      onPressed: () {},
+      icon: Icon(icon, size: 20),
+      label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: backgroundColor,
+        foregroundColor: foregroundColor,
+        side: borderSide,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30.0),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        elevation: 8,
+      ),
+    );
+    Widget content = _Bounceable(
+      onTap: () => _handleSwitchModeTap(userNotifier),
+      child: isBecomeAjeer
+          ? ScaleTransition(scale: _heartbeatAnimation, child: button)
+          : button,
+    );
+
     return Positioned(
       top: MediaQuery.of(context).padding.top + 70,
       left: 0,
       right: 0,
-      child: Center(
-        child: SizedBox(
-          width: 260.0,
-          child: _Bounceable(
-            onTap: () => _handleSwitchModeTap(userNotifier),
-            child: ElevatedButton.icon(
-              onPressed: () {},
-              icon: Icon(icon, size: 20),
-              label: Text(
-                label,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isDarkMode
-                    ? _subtleDark
-                    : Colors.grey.shade300,
-                foregroundColor: isDarkMode ? Colors.white : _primaryBlue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                elevation: 8,
-              ),
-            ),
-          ),
-        ),
-      ),
+      child: Center(child: content),
     );
   }
 

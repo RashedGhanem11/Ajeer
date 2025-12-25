@@ -64,6 +64,7 @@ public class NotificationService(AppDbContext _context, IFormattingService _form
             booking = await _context.Bookings
                 .Include(b => b.User)
                 .Include(b => b.ServiceProvider).ThenInclude(sp => sp.User)
+                .Include(b => b.Review)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(b => b.Id == bookingId);
         }

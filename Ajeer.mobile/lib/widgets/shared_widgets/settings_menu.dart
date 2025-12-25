@@ -86,9 +86,14 @@ class _SettingsMenuState extends State<SettingsMenu>
           _notifications.insert(0, notification);
         });
 
+        // Translate the snackbar message
+        final lang = Provider.of<LanguageNotifier>(context, listen: false);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(notification.message),
+            content: Text(
+              lang.translateNotificationMessage(notification.message),
+            ),
             backgroundColor: _getIconColor(notification.type),
             behavior: SnackBarBehavior.fixed,
             action: SnackBarAction(
@@ -111,19 +116,7 @@ class _SettingsMenuState extends State<SettingsMenu>
     super.dispose();
   }
 
-  IconData _getIconData(int type) {
-    switch (type) {
-      case 1:
-        return Icons.check_circle_outline;
-      case 2:
-        return Icons.warning_amber_rounded;
-      case 3:
-        return Icons.error_outline;
-      default:
-        return Icons.notifications_none;
-    }
-  }
-
+  // Used for SnackBar color
   Color _getIconColor(int type) {
     switch (type) {
       case 1:
@@ -607,21 +600,16 @@ class _SettingsMenuState extends State<SettingsMenu>
                                                 size: 20,
                                               ),
                                             ),
-                                          Icon(
-                                            _getIconData(notification.type),
-                                            color: _getIconColor(
-                                              notification.type,
-                                            ),
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 10),
+                                          // Notification Icon Removed Here
                                           Expanded(
                                             child: Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  notification.title,
+                                                  lang.translateNotificationMessage(
+                                                    notification.title,
+                                                  ),
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 14,
@@ -629,7 +617,9 @@ class _SettingsMenuState extends State<SettingsMenu>
                                                   ),
                                                 ),
                                                 Text(
-                                                  notification.message,
+                                                  lang.translateNotificationMessage(
+                                                    notification.message,
+                                                  ),
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     color: textColor

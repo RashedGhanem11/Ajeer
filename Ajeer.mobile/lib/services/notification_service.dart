@@ -39,7 +39,6 @@ class NotificationService {
       );
 
       if (response.statusCode == 200) {
-        // DEBUG PRINT: Check this in your console to see what the server sent
         print('NOTIFICATIONS JSON: ${response.body}');
 
         final List<dynamic> data = json.decode(response.body);
@@ -75,13 +74,7 @@ class NotificationService {
     _hubConnection!.on('ReceiveNotification', (arguments) {
       try {
         if (arguments != null && arguments.isNotEmpty) {
-          final rawData =
-              arguments[0]
-                  as Map<
-                    String,
-                    dynamic
-                  >; // SignalR often sends Map<Object?, Object?>
-          // Convert safely to Map<String, dynamic>
+          final rawData = arguments[0] as Map<String, dynamic>;
           final safeMap = Map<String, dynamic>.from(rawData);
           final notification = NotificationModel.fromJson(safeMap);
           _notificationController.add(notification);

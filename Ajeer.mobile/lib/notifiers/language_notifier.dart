@@ -70,7 +70,6 @@ class LanguageNotifier extends ChangeNotifier {
     return '$month $day، $year';
   }
 
-  // NEW: Helper for dd-MM-yyyy with number conversion
   String getNumericDate(DateTime date) {
     final formatter = DateFormat('dd-MM-yyyy');
     String formatted = formatter.format(date);
@@ -223,7 +222,7 @@ class LanguageNotifier extends ChangeNotifier {
       'am': 'AM',
       'pm': 'PM',
       'jod': 'JOD',
-      'USD': 'USD', // Added USD
+      'USD': 'USD',
       'confirm': 'Confirm',
       'back': 'Back',
       'cancel': 'Cancel',
@@ -522,6 +521,29 @@ class LanguageNotifier extends ChangeNotifier {
       '1 Month Plan': '1 Month Plan',
       '3 Month Plan': '3 Month Plan',
       'days_duration': 'days',
+
+      // Notifications
+      'notifNewRequestTitle': 'New Booking Request',
+      'notifNewRequestMsg': 'You have received a new booking request.',
+      'notifAcceptedTitle': 'Booking Accepted',
+      'notifAcceptedMsg': 'Your booking has been accepted.',
+      'notifAcceptedByMsg': 'Your booking has been accepted by {name}.',
+      'notifCancelledTitle': 'Booking Cancelled',
+      'notifCancelledMsg': 'The booking was cancelled by the customer.',
+      'notifCancelledByMsg': 'Booking cancelled by {name}.',
+      'notifReassignedTitle': 'Booking Reassigned',
+      'notifReassignedMsg': 'We found a new provider for your request.',
+      'notifReassignedAutoMsg':
+          'Your provider {name} cancelled. We found a new provider for you automatically.',
+      'notifCompletedTitle': 'Booking Completed',
+      'notifCompletedMsg':
+          'Your service has been completed. Please leave a review!',
+      'notifReviewTitle': 'New Review Received!',
+      'notifReviewMsg': 'A customer has left a review for your service.',
+      'notifReviewStarsMsg':
+          'A customer has rated your service. You received {rating} stars!',
+      'notifDefaultTitle': 'Notification',
+      'notifDefaultMsg': 'You have a new notification.',
     },
     'ar': {
       'settings': 'الإعدادات',
@@ -545,7 +567,7 @@ class LanguageNotifier extends ChangeNotifier {
       'am': 'صباحاً',
       'pm': 'مساءً',
       'jod': 'دينار',
-      'USD': 'دولار', // Added USD Translation
+      'USD': 'دولار',
       'confirm': 'تأكيد',
       'back': 'رجوع',
       'cancel': 'إلغاء',
@@ -840,10 +862,107 @@ class LanguageNotifier extends ChangeNotifier {
       '1 Month Plan': 'خطة ١ شهر',
       '3 Month Plan': 'خطة ٣ شهر',
       'days_duration': 'يوم',
+
+      // Notifications
+      'notifNewRequestTitle': 'طلب حجز جديد',
+      'notifNewRequestMsg': 'لقد تلقيت طلب حجز جديد.',
+      'notifAcceptedTitle': 'تم قبول الحجز',
+      'notifAcceptedMsg': 'تم قبول حجزك.',
+      'notifAcceptedByMsg': 'تم قبول حجزك من قبل {name}.',
+      'notifCancelledTitle': 'تم إلغاء الحجز',
+      'notifCancelledMsg': 'تم إلغاء الحجز من قبل العميل.',
+      'notifCancelledByMsg': 'تم إلغاء الحجز من قبل {name}.',
+      'notifReassignedTitle': 'إعادة تعيين الحجز',
+      'notifReassignedMsg': 'لقد وجدنا مزود خدمة جديد لطلبك.',
+      'notifReassignedAutoMsg':
+          'قام المزود {name} بالإلغاء. وجدنا لك مزوداً جديداً تلقائياً.',
+      'notifCompletedTitle': 'اكتمل الحجز',
+      'notifCompletedMsg': 'تم إكمال خدمتك. يرجى ترك تقييم!',
+      'notifReviewTitle': 'تم استلام تقييم جديد!',
+      'notifReviewMsg': 'قام عميل بترك تقييم لخدمتك.',
+      'notifReviewStarsMsg': 'قام عميل بتقييم خدمتك. حصلت على {rating} نجوم!',
+      'notifDefaultTitle': 'إشعار',
+      'notifDefaultMsg': 'لديك إشعار جديد.',
     },
   };
 
   String translate(String key) {
     return _localizedValues[_appLocale.languageCode]![key] ?? key;
+  }
+
+  // NEW: Helper to parse dynamic backend notification messages
+  String translateNotificationMessage(String message) {
+    if (!isArabic) return message;
+
+    // 1. Handle Review: "A customer has rated your service. You received [X] stars!"
+    // We use startsWith/endsWith instead of Regex to be safer against decimals or missing numbers
+    const String reviewPrefix =
+        'A customer has rated your service. You received ';
+    const String reviewSuffix = ' stars!';
+
+    if (message.startsWith(reviewPrefix) && message.endsWith(reviewSuffix)) {
+      // Extract whatever is between the prefix and suffix
+      String rating = message.substring(
+        reviewPrefix.length,
+        message.length - reviewSuffix.length,
+      );
+      return translate(
+        'notifReviewStarsMsg',
+      ).replaceAll('{rating}', convertNumbers(rating.trim()));
+    }
+
+    // 2. Handle dynamic names: "Booking cancelled by [Name]."
+    if (message.startsWith('Booking cancelled by ')) {
+      String name = message
+          .replaceFirst('Booking cancelled by ', '')
+          .replaceAll('.', '');
+      return translate('notifCancelledByMsg').replaceAll('{name}', name);
+    }
+
+    // 3. Handle dynamic names: "Your booking has been accepted by [Name]."
+    if (message.startsWith('Your booking has been accepted by ')) {
+      String name = message
+          .replaceFirst('Your booking has been accepted by ', '')
+          .replaceAll('.', '');
+      return translate('notifAcceptedByMsg').replaceAll('{name}', name);
+    }
+
+    // 4. Handle: "Your provider [Name] cancelled. We found a new provider for you automatically."
+    if (message.startsWith('Your provider ') &&
+        message.contains(
+          ' cancelled. We found a new provider for you automatically.',
+        )) {
+      String name = message.substring(
+        'Your provider '.length,
+        message.indexOf(' cancelled.'),
+      );
+      return translate('notifReassignedAutoMsg').replaceAll('{name}', name);
+    }
+
+    // 5. Handle specific static messages
+    Map<String, String> staticMap = {
+      "New Booking Request": "notifNewRequestTitle",
+      "You have received a new booking request.": "notifNewRequestMsg",
+      "Booking Accepted": "notifAcceptedTitle",
+      "Your booking has been accepted.": "notifAcceptedMsg",
+      "Booking Cancelled": "notifCancelledTitle",
+      "The booking was cancelled by the customer.": "notifCancelledMsg",
+      "Booking Reassigned": "notifReassignedTitle",
+      "We found a new provider for your request.": "notifReassignedMsg",
+      "Booking Completed": "notifCompletedTitle",
+      "Your service has been completed. Please leave a review!":
+          "notifCompletedMsg",
+      "New Review Received!": "notifReviewTitle",
+      "A customer has left a review for your service.": "notifReviewMsg",
+      "Notification": "notifDefaultTitle",
+      "You have a new notification.": "notifDefaultMsg",
+    };
+
+    if (staticMap.containsKey(message)) {
+      return translate(staticMap[message]!);
+    }
+
+    // Fallback
+    return message;
   }
 }

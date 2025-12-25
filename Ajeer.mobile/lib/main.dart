@@ -116,17 +116,13 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> {
     });
   }
 
-  // UPDATED: Now accepts NotificationModel instead of Map
   void _showToast(NotificationModel data) {
     if (!mounted) return;
-
-    // UPDATED: Access properties directly from the model
     final String title = data.title;
     final String message = data.message;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.blueAccent,
         content: Column(
           mainAxisSize: MainAxisSize.min,
