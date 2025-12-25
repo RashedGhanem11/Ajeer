@@ -8,6 +8,8 @@ import '../../models/notification_model.dart';
 
 class NotificationService {
   HubConnection? _hubConnection;
+  Future<void>? _starting;
+  bool _handlersRegistered = false;
   final String _hubUrl = AppConfig.notificationHubUrl;
   final String _apiUrl = AppConfig.apiUrl;
 
@@ -56,20 +58,48 @@ class NotificationService {
   }
 
   Future<void> initSignalR() async {
-    if (_hubConnection?.state == HubConnectionState.connected) {
+    if (_starting != null) return _starting!;
+
+    final state = _hubConnection?.state;
+    if (state == HubConnectionState.connected ||
+        state == HubConnectionState.connecting ||
+        state == HubConnectionState.reconnecting) {
       return;
     }
 
     final token = await _getToken();
     if (token == null) return;
-
+    await _hubConnection?.stop();
     _hubConnection = HubConnectionBuilder()
         .withUrl(
           _hubUrl,
-          HttpConnectionOptions(accessTokenFactory: () async => token),
+          HttpConnectionOptions(
+            accessTokenFactory: () async => (await _getToken()) ?? token,
+          ),
         )
         .withAutomaticReconnect()
         .build();
+
+    _registerHandlersOnce();
+
+    _starting = _hubConnection!
+        .start()
+        ?.then((_) {
+          print("SignalR Connected");
+        })
+        .catchError((e) {
+          print("SignalR Connection Error: $e");
+        })
+        .whenComplete(() {
+          _starting = null;
+        });
+
+    return _starting!;
+  }
+
+  void _registerHandlersOnce() {
+    if (_handlersRegistered) return;
+    _handlersRegistered = true;
 
     _hubConnection!.on('ReceiveNotification', (arguments) {
       try {
@@ -90,17 +120,15 @@ class NotificationService {
         _bookingUpdateController.add(bookingId);
       }
     });
-
-    try {
-      await _hubConnection!.start();
-      print("SignalR Connected");
-    } catch (e) {
-      print("SignalR Connection Error: $e");
-    }
   }
 
-  void disconnectSignalR() {
-    _hubConnection?.stop();
+  Future<void> disconnectSignalR() async {
+    _starting = null;
+    if (_hubConnection == null) return;
+
+    await _hubConnection!.stop();
+    _hubConnection = null;
+    _handlersRegistered = false;
   }
 
   void dispose() {

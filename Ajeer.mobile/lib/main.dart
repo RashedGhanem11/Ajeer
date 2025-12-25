@@ -1,3 +1,4 @@
+import 'dart:async'; // Required for StreamSubscription
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +12,7 @@ import 'services/auth_service.dart';
 import 'services/user_service.dart';
 import 'services/subscription_service.dart';
 import 'services/notification_service.dart';
-import 'models/notification_model.dart';
+import 'models/notification_model.dart'; // Import the model
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,6 +80,7 @@ class MyApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
+          // Wrapper keeps the listener alive
           builder: (context, child) {
             return GlobalNotificationWrapper(child: child!);
           },
@@ -102,6 +104,9 @@ class GlobalNotificationWrapper extends StatefulWidget {
 }
 
 class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> {
+  StreamSubscription? _subscription; // Variable to hold the listener
+  String? _lastToken; // Prevents reconnecting on every rebuild
+
   @override
   void initState() {
     super.initState();
@@ -109,15 +114,26 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> {
       context,
       listen: false,
     );
-    notificationService.initSignalR();
 
-    notificationService.notificationStream.listen((data) {
+    // Subscribe and store the subscription so we can cancel it later
+    _subscription = notificationService.notificationStream.listen((data) {
       _showToast(data);
     });
   }
 
+  // --- FIX 1: Dispose cancels the listener ---
+  @override
+  void dispose() {
+    _subscription?.cancel(); // Stops "Ghost" listeners
+    super.dispose();
+  }
+
   void _showToast(NotificationModel data) {
     if (!mounted) return;
+
+    // --- FIX 2: Logic removed (Toasts always show) ---
+    // The AppStateNotifier check is gone.
+
     final String title = data.title;
     final String message = data.message;
 
@@ -144,6 +160,31 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return widget.child;
+    // --- FIX 3: Watch UserNotifier to Connect/Disconnect ---
+    return Consumer<UserNotifier>(
+      builder: (context, userNotifier, child) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          final notificationService = Provider.of<NotificationService>(
+            context,
+            listen: false,
+          );
+
+          final prefs = await SharedPreferences.getInstance();
+          final token = prefs.getString('authToken');
+
+          // ✅ Fix 1: Only connect/disconnect when the token actually changes
+          if (token == _lastToken) return;
+          _lastToken = token;
+
+          if (token != null && token.isNotEmpty) {
+            notificationService.initSignalR();
+          } else {
+            notificationService.disconnectSignalR();
+          }
+        });
+
+        return widget.child;
+      },
+    );
   }
 }
