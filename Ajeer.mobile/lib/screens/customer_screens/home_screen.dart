@@ -28,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _overlayAnimationController;
   late AnimationController _gridAnimationController;
   ServiceCategory? _selectedCategoryForAnimation;
+  late LanguageNotifier _languageNotifier;
 
   @override
   void initState() {
@@ -41,6 +42,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 1800),
     );
     _fetchCategories();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _languageNotifier = Provider.of<LanguageNotifier>(context);
   }
 
   @override
@@ -67,9 +74,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       setState(() {
         _isFetching = false;
       });
+      final String rawError = e.toString().replaceAll('Exception: ', '').trim();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
+          content: Text(
+            '${_languageNotifier.translate('error')}${_languageNotifier.translateAuthError(rawError)}',
+            style: const TextStyle(color: Colors.white),
+          ),
           backgroundColor: Colors.red,
         ),
       );

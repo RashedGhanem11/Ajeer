@@ -152,7 +152,10 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(lang.translate('selectAtLeastOne')),
+          content: Text(
+            lang.translate('selectAtLeastOne'),
+            style: const TextStyle(color: Colors.white),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -367,7 +370,16 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _errorMessage != null
-                  ? Center(child: Text("Error: $_errorMessage"))
+                  ? Center(
+                      child: Text(
+                        '${lang.translate('error')}${lang.translateAuthError(_errorMessage!.replaceAll('Exception: ', '').trim())}',
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white70 : Colors.black87,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
                   : _availableServices.isEmpty
                   ? Center(child: Text(lang.translate('noUnitsAvailable')))
                   : _UnitTypeListView(

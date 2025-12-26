@@ -183,6 +183,26 @@ class LanguageNotifier extends ChangeNotifier {
     return convertNumbers(translateTimeRange(translated));
   }
 
+  String translateAuthError(String message) {
+    if (!isArabic) return message;
+
+    if (message.contains("Invalid identifier or password")) {
+      return translate('invalidCredentials');
+    }
+    if (message.contains("User with this email or phone already exists")) {
+      return translate('userAlreadyExists');
+    }
+    if (message.contains("User with this email or phone already exists")) {
+      return translate('userAlreadyExists');
+    }
+    if (message.contains("SocketConnection failed") ||
+        message.contains("Network is unreachable")) {
+      return translate('networkError');
+    }
+
+    return message;
+  }
+
   static final Map<int, String> _arabicMonths = {
     1: 'يناير',
     2: 'فبراير',
@@ -200,6 +220,11 @@ class LanguageNotifier extends ChangeNotifier {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
+      'networkError':
+          'Could not connect to server. Please check your internet connection.',
+      'invalidCredentials': 'Login failed: Invalid identifier or password.',
+      'userAlreadyExists':
+          'Registration failed: User with this email or phone already exists.',
       'settings': 'Settings',
       'language': 'Language',
       'darkMode': 'Dark Mode',
@@ -545,6 +570,11 @@ class LanguageNotifier extends ChangeNotifier {
       'notifDefaultMsg': 'You have a new notification.',
     },
     'ar': {
+      'networkError': 'تعذر الاتصال بالخادم. يرجى التأكد من اتصالك بالإنترنت.',
+      'invalidCredentials':
+          'فشل تسجيل الدخول: اسم المستخدم أو كلمة المرور غير صحيحة',
+      'userAlreadyExists':
+          'فشل التسجيل: المستخدم موجود بالفعل بهذا البريد أو الهاتف',
       'settings': 'الإعدادات',
       'language': 'اللغة',
       'darkMode': 'الوضع الليلي',

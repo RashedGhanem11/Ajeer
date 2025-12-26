@@ -212,7 +212,7 @@ Content-Type: {{contentType}}
     "password": "Password@123"
 }
 ###
-@tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwidW5pcXVlX25hbWUiOiJNYWplZCBBaG1lZCIsImVtYWlsIjoibWFqZWRAZXhhbXBsZS5jb20iLCJyb2xlIjoiQ3VzdG9tZXIiLCJuYmYiOjE3NjYzNDMwMTIsImV4cCI6MTc2NjQyOTQxMiwiaWF0IjoxNzY2MzQzMDEyLCJpc3MiOiJBamVlckJhY2tlbmRBUEkiLCJhdWQiOiJBamVlckNsaWVudHMifQ.hkV5rzmVCLVoxsCk370xqMdNuWXOTQgAxzaN9CnegrE
+@tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIzMDA0IiwidW5pcXVlX25hbWUiOiJNYWplZCBBaG1lZCIsImVtYWlsIjoibWFqZWRAZXhhbXBsZS5jb20iLCJyb2xlIjoiQ3VzdG9tZXIiLCJuYmYiOjE3NjY3ODMzMDgsImV4cCI6MTc2Njg2OTcwOCwiaWF0IjoxNzY2NzgzMzA4LCJpc3MiOiJBamVlckJhY2tlbmRBUEkiLCJhdWQiOiJBamVlckNsaWVudHMifQ.nDIIrEknOnPHB6MA-YS574D3y4hH57zYayyFngql0IU
 
 
 ### 1.2 Verify Jane's Initial Role (Should see "Customer")
@@ -273,7 +273,7 @@ Content-Type: {{contentType}}
     ]
 }
 ###
-@tokenProvider = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyMDAyIiwidW5pcXVlX25hbWUiOiJZYXNlciBBbGkiLCJlbWFpbCI6Inlhc2VyQGV4YW1wbGUuY29tIiwicm9sZSI6IlNlcnZpY2VQcm92aWRlciIsIm5iZiI6MTc2NjQwNTgyMywiZXhwIjoxNzY2NDkyMjIzLCJpYXQiOjE3NjY0MDU4MjMsImlzcyI6IkFqZWVyQmFja2VuZEFQSSIsImF1ZCI6IkFqZWVyQ2xpZW50cyJ9.5YMVY0y5xVbEXNYeu72EgdzSy-E1Q95sZyxpSDc1Q1A
+@tokenProvider = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIzMDA0IiwidW5pcXVlX25hbWUiOiJNYWplZCBBaG1lZCIsImVtYWlsIjoibWFqZWRAZXhhbXBsZS5jb20iLCJyb2xlIjoiU2VydmljZVByb3ZpZGVyIiwibmJmIjoxNzY2NzgzMzU3LCJleHAiOjE3NjY4Njk3NTcsImlhdCI6MTc2Njc4MzM1NywiaXNzIjoiQWplZXJCYWNrZW5kQVBJIiwiYXVkIjoiQWplZXJDbGllbnRzIn0.p7R4Ec5ZhlzPWB1Gqg_axCkqlNC-CSgF1NNLGcLYIB0
 ### 2.2 Verify New Role (Should see "ServiceProvider")
 # Using the NEW token from the provider registration response.
 GET {{host}}/api/auth/test-auth
@@ -290,7 +290,7 @@ Authorization: Bearer {{tokenProvider}}
 # Areas: Keep -1 (Khalda)
 # Schedule: Change to ONLY Friday 10-4
 PUT {{host}}/api/serviceProviders/profile
-Authorization: Bearer {{tokenPro1}}
+Authorization: Bearer {{tokenProvider}}
 Content-Type: {{contentType}}
 
 {

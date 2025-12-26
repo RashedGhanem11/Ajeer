@@ -6,6 +6,7 @@ import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import '../../services/auth_service.dart';
 import '../shared_screens/profile_screen.dart';
+import '../../notifiers/language_notifier.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -114,10 +115,15 @@ class _LoginScreenState extends State<LoginScreen>
       );
     } catch (e) {
       if (!mounted) return;
+      String rawError = e.toString().replaceAll('Exception: ', '').trim();
+      String translatedMessage = _languageNotifier.translateAuthError(rawError);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
+          content: Text(
+            translatedMessage,
+            style: const TextStyle(color: Colors.white),
+          ),
           backgroundColor: Colors.redAccent,
         ),
       );

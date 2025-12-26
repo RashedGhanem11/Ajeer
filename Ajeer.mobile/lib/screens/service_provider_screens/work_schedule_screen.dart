@@ -239,6 +239,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                               );
                             }
                           } catch (e) {
+                            debugPrint("🔥🔥🔥 RAW ERROR: $e");
                             if (mounted) {
                               Navigator.of(context).pop();
                               String errorMsg = e
@@ -253,9 +254,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                               }
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(
-                                    '${_languageNotifier.translate('error')}$errorMsg',
-                                  ),
+                                  content: Text("Raw Error: $e"),
                                   backgroundColor: kDeleteRed,
                                   duration: const Duration(seconds: 5),
                                 ),

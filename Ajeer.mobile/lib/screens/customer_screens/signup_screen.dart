@@ -78,7 +78,10 @@ class _SignUpScreenState extends State<SignUpScreen>
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_languageNotifier.translate('fullNameTooLong')),
+            content: Text(
+              _languageNotifier.translate('fullNameTooLong'),
+              style: const TextStyle(color: Colors.white),
+            ),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -104,7 +107,10 @@ class _SignUpScreenState extends State<SignUpScreen>
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_languageNotifier.translate('accountCreated')),
+            content: Text(
+              _languageNotifier.translate('accountCreated'),
+              style: const TextStyle(color: Colors.white),
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -112,9 +118,18 @@ class _SignUpScreenState extends State<SignUpScreen>
         Navigator.pop(context);
       } catch (e) {
         if (!mounted) return;
+        final String rawError = e
+            .toString()
+            .replaceAll('Exception: ', '')
+            .trim();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
+            content: Text(
+              _languageNotifier.translateAuthError(
+                rawError,
+              ), 
+              style: const TextStyle(color: Colors.white), 
+            ),
             backgroundColor: Colors.redAccent,
           ),
         );
