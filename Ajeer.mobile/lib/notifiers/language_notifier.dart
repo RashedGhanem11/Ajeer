@@ -438,8 +438,7 @@ class LanguageNotifier extends ChangeNotifier {
       'noVideos': 'No videos uploaded.',
       'noAudio': 'No audio uploaded.',
       'uploadMedia': 'Upload media',
-      'mediaDescription':
-          'Add a photo, video, or audio recording describing your problem',
+      'mediaDescription': 'Add a photo or a video describing your problem',
       'photo': 'Photo',
       'video': 'Video',
       'audio': 'Audio',
@@ -780,7 +779,7 @@ class LanguageNotifier extends ChangeNotifier {
       'noAudio': 'لا يوجد صوت مرفوع.',
       'instantBooking': 'حجز فوري',
       'uploadMedia': 'تحميل الوسائط',
-      'mediaDescription': 'أضف صورة أو فيديو أو تسجيل صوتي يصف مشكلتك',
+      'mediaDescription': 'أضف صورة أو فيديو يصف مشكلتك',
       'photo': 'صورة',
       'video': 'فيديو',
       'audio': 'صوت',

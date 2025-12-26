@@ -11,7 +11,8 @@ class SignUpScreen extends StatefulWidget {
   State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _SignUpScreenState extends State<SignUpScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
 
   final _firstNameController = TextEditingController();
@@ -31,6 +32,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
   static const Color _darkCardColor = Color(0xFF1E1E1E);
 
   late LanguageNotifier _languageNotifier;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.repeat(reverse: true);
+  }
 
   @override
   void didChangeDependencies() {
@@ -42,6 +58,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   void dispose() {
+    _animationController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
@@ -262,7 +279,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   _buildPasswordField(),
                   const SizedBox(height: 15.0),
                   _buildConfirmPasswordField(),
-                  const SizedBox(height: 25.0),
+                  const SizedBox(height: 37.0),
                   _buildSignUpButton(),
                   const SizedBox(height: 25.0),
                   _buildLoginLink(),
@@ -491,51 +508,54 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final Color shadowColor = _primaryBlue.withOpacity(_isDarkMode ? 0.8 : 0.5);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 80.0),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [_primaryBlue, _lightBlue],
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-          ),
-          border: Border.all(color: const Color(0xFF478eff), width: 2.0),
-          borderRadius: BorderRadius.circular(30.0),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor,
-              spreadRadius: 2,
-              blurRadius: 20,
-              offset: const Offset(0, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 95.0),
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [_primaryBlue, _lightBlue],
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _isLoading ? null : _handleSignUp,
+            border: Border.all(color: const Color(0xFF478eff), width: 2.0),
             borderRadius: BorderRadius.circular(30.0),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14.0),
-              child: Center(
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+            boxShadow: [
+              BoxShadow(
+                color: shadowColor,
+                spreadRadius: 2,
+                blurRadius: 10,
+                offset: const Offset(0, 0),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _isLoading ? null : _handleSignUp,
+              borderRadius: BorderRadius.circular(30.0),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: Center(
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          _languageNotifier.translate('signUpButton'),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      )
-                    : Text(
-                        _languageNotifier.translate('signUpButton'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                ),
               ),
             ),
           ),

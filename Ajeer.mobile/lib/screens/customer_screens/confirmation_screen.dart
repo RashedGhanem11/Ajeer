@@ -93,12 +93,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
   List<File> get _photoFiles => widget.pickedMediaFiles.where((file) {
     final path = file.path.toLowerCase();
     bool isVideo = path.endsWith('.mp4') || path.endsWith('.mov');
-    bool isAudio =
-        path.endsWith('.mp3') ||
-        path.endsWith('.m4a') ||
-        path.endsWith('.wav') ||
-        path.endsWith('.aac');
-    return !isVideo && !isAudio;
+    return !isVideo;
   }).toList();
 
   @override
@@ -484,7 +479,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
     IconData serviceIcon;
     switch (widget.serviceName) {
       case 'Cleaning':
-        serviceIcon = Icons.cleaning_services;
+        serviceIcon = Icons.cleaning_services_outlined;
         break;
       case 'Plumbing':
         serviceIcon = Icons.plumbing;
@@ -493,7 +488,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
         serviceIcon = Icons.electrical_services;
         break;
       default:
-        serviceIcon = Icons.home_repair_service;
+        serviceIcon = Icons.work_outline;
     }
 
     return SingleChildScrollView(
@@ -539,7 +534,6 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
           _MediaSummary(
             photoCount: _photoFiles.length,
             videoCount: _videoFiles.length,
-            audioCount: 0,
             currentView: _currentMediaView,
             onViewChange: (view) => setState(() => _currentMediaView = view),
             isDarkMode: isDarkMode,
@@ -572,13 +566,10 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
       currentFiles = _photoFiles;
       placeholderIcon = Icons.image_not_supported_outlined;
       placeholderText = languageNotifier.translate('noImages');
-    } else if (_currentMediaView == 'Video') {
+    } else {
       currentFiles = _videoFiles;
       placeholderIcon = Icons.videocam_off_outlined;
       placeholderText = languageNotifier.translate('noVideos');
-    } else {
-      placeholderIcon = Icons.mic_off_outlined;
-      placeholderText = languageNotifier.translate('noAudio');
     }
 
     final Color containerColor = isDarkMode
@@ -640,7 +631,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10.0),
                 child: Container(
-                  width: 100,
+                  width: 85,
                   color: isImage
                       ? Colors.grey.shade200
                       : _ConfirmationConstants.subtleDark,
@@ -931,7 +922,6 @@ class _DetailItem extends StatelessWidget {
 class _MediaSummary extends StatelessWidget {
   final int photoCount;
   final int videoCount;
-  final int audioCount;
   final String currentView;
   final ValueChanged<String> onViewChange;
   final bool isDarkMode;
@@ -940,7 +930,6 @@ class _MediaSummary extends StatelessWidget {
   const _MediaSummary({
     required this.photoCount,
     required this.videoCount,
-    required this.audioCount,
     required this.currentView,
     required this.onViewChange,
     required this.isDarkMode,
@@ -962,7 +951,7 @@ class _MediaSummary extends StatelessWidget {
         ),
         const SizedBox(height: 10.0),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _BouncingMediaTab(
               label: languageNotifier.translate('photo'),
@@ -973,6 +962,7 @@ class _MediaSummary extends StatelessWidget {
               isDarkMode: isDarkMode,
               onTap: () => onViewChange('Photo'),
             ),
+            const SizedBox(width: 45),
             _BouncingMediaTab(
               label: languageNotifier.translate('video'),
               type: 'Video',
@@ -981,15 +971,6 @@ class _MediaSummary extends StatelessWidget {
               isSelected: currentView == 'Video',
               isDarkMode: isDarkMode,
               onTap: () => onViewChange('Video'),
-            ),
-            _BouncingMediaTab(
-              label: languageNotifier.translate('audio'),
-              type: 'Audio',
-              icon: Icons.mic_none,
-              count: audioCount,
-              isSelected: currentView == 'Audio',
-              isDarkMode: isDarkMode,
-              onTap: () => onViewChange('Audio'),
             ),
           ],
         ),
@@ -1061,7 +1042,7 @@ class _BouncingMediaTabState extends State<_BouncingMediaTab>
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
-          width: MediaQuery.of(context).size.width / 4.2,
+          width: MediaQuery.of(context).size.width / 5.0,
           padding: const EdgeInsets.symmetric(vertical: 10.0),
           decoration: BoxDecoration(
             color: containerColor,

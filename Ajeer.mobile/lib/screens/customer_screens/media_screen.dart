@@ -72,7 +72,6 @@ class _MediaScreenState extends State<MediaScreen> {
 
   final List<File> _photoFiles = [];
   final List<File> _videoFiles = [];
-  final List<File> _audioFiles = [];
 
   late LanguageNotifier _languageNotifier;
 
@@ -99,7 +98,6 @@ class _MediaScreenState extends State<MediaScreen> {
   List<File> get _currentMediaFiles {
     if (_selectedMediaType == 'Photo') return _photoFiles;
     if (_selectedMediaType == 'Video') return _videoFiles;
-    if (_selectedMediaType == 'Audio') return _audioFiles;
     return [];
   }
 
@@ -167,7 +165,7 @@ class _MediaScreenState extends State<MediaScreen> {
           selectedTime: widget.selectedTime,
           selectionMode: widget.selectionMode,
           userDescription: _userDescription,
-          pickedMediaFiles: [..._photoFiles, ..._videoFiles, ..._audioFiles],
+          pickedMediaFiles: [..._photoFiles, ..._videoFiles],
           totalTimeMinutes: widget.totalTimeMinutes,
           totalPrice: widget.totalPrice,
           resolvedCityArea: widget.resolvedCityArea,
@@ -194,20 +192,6 @@ class _MediaScreenState extends State<MediaScreen> {
     } else if (_selectedMediaType == 'Video') {
       final XFile? videoFile = await _picker.pickVideo(source: source);
       if (videoFile != null) pickedFiles.add(videoFile);
-    } else if (_selectedMediaType == 'Audio') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _languageNotifier.translate(
-              source == ImageSource.gallery
-                  ? 'audioNotImplemented'
-                  : 'audioSimulated',
-            ),
-          ),
-        ),
-      );
-      Navigator.of(context).pop();
-      return;
     }
 
     if (pickedFiles.isNotEmpty) {
@@ -216,8 +200,6 @@ class _MediaScreenState extends State<MediaScreen> {
           _photoFiles.addAll(pickedFiles.map((x) => File(x.path)));
         } else if (_selectedMediaType == 'Video') {
           _videoFiles.addAll(pickedFiles.map((x) => File(x.path)));
-        } else {
-          _audioFiles.addAll(pickedFiles.map((x) => File(x.path)));
         }
       });
     }
@@ -230,8 +212,6 @@ class _MediaScreenState extends State<MediaScreen> {
         _photoFiles.removeAt(index);
       } else if (_selectedMediaType == 'Video') {
         _videoFiles.removeAt(index);
-      } else {
-        _audioFiles.removeAt(index);
       }
     });
   }
@@ -239,9 +219,7 @@ class _MediaScreenState extends State<MediaScreen> {
   void _showMediaUploadDialog(BuildContext context, bool isDarkMode) {
     String mediaTypeKey = _selectedMediaType == 'Photo'
         ? 'addPhoto'
-        : (_selectedMediaType == 'Video' ? 'addVideo' : 'addAudio');
-
-    bool isAudio = _selectedMediaType == 'Audio';
+        : 'addVideo';
 
     showModalBottomSheet(
       context: context,
@@ -271,31 +249,27 @@ class _MediaScreenState extends State<MediaScreen> {
                   ),
                 ),
                 const SizedBox(height: 15.0),
-                if (!isAudio)
-                  ListTile(
-                    leading: const Icon(
-                      Icons.photo_library,
-                      color: _primaryBlue,
-                    ),
-                    title: Text(
-                      _languageNotifier.translate('selectFromGallery'),
-                      style: TextStyle(
-                        color: isDarkMode
-                            ? Colors.white70
-                            : Colors.grey.shade700,
-                      ),
-                    ),
-                    onTap: () => _pickMedia(ImageSource.gallery),
-                  ),
+                // We always show gallery option now because Audio (which didn't have it) is gone
                 ListTile(
-                  leading: Icon(
-                    isAudio ? Icons.mic : Icons.camera_alt,
+                  leading: const Icon(Icons.photo_library, color: _primaryBlue),
+                  title: Text(
+                    _languageNotifier.translate('selectFromGallery'),
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
+                    ),
+                  ),
+                  onTap: () => _pickMedia(ImageSource.gallery),
+                ),
+                ListTile(
+                  leading: const Icon(
+                    // Removed check for isAudio
+                    Icons.camera_alt,
                     color: _primaryBlue,
                   ),
                   title: Text(
-                    isAudio
-                        ? _languageNotifier.translate('recordAudio')
-                        : _languageNotifier.translate('camera'),
+                    _languageNotifier.translate(
+                      'camera',
+                    ), // Removed check for isAudio
                     style: TextStyle(
                       color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                     ),
@@ -555,7 +529,7 @@ class _MediaScreenState extends State<MediaScreen> {
 
   Widget _buildMediaTabs(bool isDarkMode, LanguageNotifier languageNotifier) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _TabButton(
           type: languageNotifier.translate('photo'),
@@ -564,18 +538,12 @@ class _MediaScreenState extends State<MediaScreen> {
           isSelected: _selectedMediaType == 'Photo',
           isDarkMode: isDarkMode,
         ),
+        const SizedBox(width: 45.0),
         _TabButton(
           type: languageNotifier.translate('video'),
           icon: Icons.videocam_outlined,
           onTap: () => setState(() => _selectedMediaType = 'Video'),
           isSelected: _selectedMediaType == 'Video',
-          isDarkMode: isDarkMode,
-        ),
-        _TabButton(
-          type: languageNotifier.translate('audio'),
-          icon: Icons.mic_none,
-          onTap: () => setState(() => _selectedMediaType = 'Audio'),
-          isSelected: _selectedMediaType == 'Audio',
           isDarkMode: isDarkMode,
         ),
       ],
@@ -648,11 +616,9 @@ class _MediaScreenState extends State<MediaScreen> {
                   color: isPhoto ? Colors.grey.shade200 : Colors.black,
                   child: isPhoto
                       ? Image.file(file, fit: BoxFit.cover)
-                      : Center(
+                      : const Center(
                           child: Icon(
-                            _selectedMediaType == 'Audio'
-                                ? Icons.mic_rounded
-                                : Icons.play_circle_outline,
+                            Icons.play_circle_outline,
                             color: Colors.white,
                             size: 40,
                           ),

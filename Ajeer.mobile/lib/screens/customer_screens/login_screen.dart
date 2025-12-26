@@ -14,7 +14,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   bool _isPasswordVisible = false;
   bool _isLoading = false;
 
@@ -25,6 +26,21 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _passwordError;
 
   late LanguageNotifier _languageNotifier;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.repeat(reverse: true);
+  }
 
   @override
   void didChangeDependencies() {
@@ -41,6 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _animationController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -231,14 +248,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 _buildEmailField(),
                 const SizedBox(height: 20.0),
                 _buildPasswordField(),
-                const SizedBox(height: 10.0),
-                _buildForgotButton(),
-                const SizedBox(height: 30.0),
+                const SizedBox(height: 50.0),
                 _buildLoginButton(),
-                const SizedBox(height: 30.0),
+                const SizedBox(height: 40.0),
                 _buildSignUpLink(),
-                const SizedBox(height: 25.0),
-                _buildGoogleSignUpButton(),
                 const SizedBox(height: 20.0),
               ],
             ),
@@ -334,75 +347,58 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildForgotButton() {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: TextButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ForgotPasswordScreen(),
-            ),
-          );
-        },
-        child: Text(
-          _languageNotifier.translate('forgotPassword'),
-          style: const TextStyle(color: _primaryBlue, fontSize: 14.0),
-        ),
-      ),
-    );
-  }
-
   Widget _buildLoginButton() {
     final Color shadowColor = _primaryBlue.withOpacity(_isDarkMode ? 0.8 : 0.5);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 80.0),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [_primaryBlue, _lightBlue],
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-          ),
-          border: Border.all(color: const Color(0xFF478eff), width: 2.0),
-          borderRadius: BorderRadius.circular(30.0),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor,
-              spreadRadius: 2,
-              blurRadius: 20,
-              offset: const Offset(0, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 95.0),
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [_primaryBlue, _lightBlue],
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _isLoading ? null : _validateAndLogin,
+            border: Border.all(color: const Color(0xFF478eff), width: 2.0),
             borderRadius: BorderRadius.circular(30.0),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14.0),
-              child: Center(
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+            boxShadow: [
+              BoxShadow(
+                color: shadowColor,
+                spreadRadius: 2,
+                blurRadius: 10,
+                offset: const Offset(0, 0),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _isLoading ? null : _validateAndLogin,
+              borderRadius: BorderRadius.circular(30.0),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: Center(
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          _languageNotifier.translate('loginButton'),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      )
-                    : Text(
-                        _languageNotifier.translate('loginButton'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                ),
               ),
             ),
           ),
@@ -444,35 +440,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildGoogleSignUpButton() {
-    final Color buttonBackgroundColor = _isDarkMode
-        ? Colors.grey[800]!
-        : Colors.white;
-    final Color buttonBorderColor = _isDarkMode
-        ? Colors.grey[700]!
-        : Colors.grey[300]!;
-    final Color buttonLabelColor = _isDarkMode
-        ? Colors.white70
-        : Colors.black54;
-
-    return OutlinedButton.icon(
-      onPressed: () {},
-      style: OutlinedButton.styleFrom(
-        backgroundColor: buttonBackgroundColor,
-        minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30.0),
-        ),
-        side: BorderSide(color: buttonBorderColor, width: 2.5),
-      ),
-      icon: Image.asset('assets/image/google.png', height: 22.0),
-      label: Text(
-        _languageNotifier.translate('signUpGoogle'),
-        style: TextStyle(color: buttonLabelColor, fontWeight: FontWeight.w600),
-      ),
     );
   }
 }
