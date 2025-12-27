@@ -11,6 +11,7 @@ import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
 import '../../services/booking_service.dart';
 import '../../notifiers/language_notifier.dart';
+import '../../widgets/shared_widgets/snackbar.dart';
 
 class ConfirmationScreen extends StatefulWidget {
   final List<int> serviceIds;
@@ -195,12 +196,10 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
     });
 
     if (result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message),
-          backgroundColor: _ConfirmationConstants.confirmGreen,
-          duration: const Duration(seconds: 3),
-        ),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'bookingSuccess',
+        backgroundColor: _ConfirmationConstants.confirmGreen,
       );
 
       Navigator.pushAndRemoveUntil(
@@ -209,12 +208,21 @@ class _ConfirmationScreenState extends State<ConfirmationScreen>
         (route) => false,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-        ),
+      String translatedBackendMessage = _languageNotifier.translate(
+        result.message,
+      );
+
+      CustomSnackBar.show(
+        context,
+        messageKey: translatedBackendMessage != result.message
+            ? result.message
+            : 'bookingFailed',
+        dynamicText:
+            translatedBackendMessage == result.message &&
+                result.message != 'Failed to create booking'
+            ? result.message
+            : null,
+        backgroundColor: Colors.red,
       );
     }
   }

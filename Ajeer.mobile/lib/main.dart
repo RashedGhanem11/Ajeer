@@ -13,6 +13,7 @@ import 'services/user_service.dart';
 import 'services/subscription_service.dart';
 import 'services/notification_service.dart';
 import 'models/notification_model.dart'; // Import the model
+import 'widgets/shared_widgets/snackbar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,7 +81,6 @@ class MyApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          // Wrapper keeps the listener alive
           builder: (context, child) {
             return GlobalNotificationWrapper(child: child!);
           },
@@ -104,8 +104,8 @@ class GlobalNotificationWrapper extends StatefulWidget {
 }
 
 class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> {
-  StreamSubscription? _subscription; // Variable to hold the listener
-  String? _lastToken; // Prevents reconnecting on every rebuild
+  StreamSubscription? _subscription;
+  String? _lastToken;
 
   @override
   void initState() {
@@ -114,53 +114,33 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> {
       context,
       listen: false,
     );
-
-    // Subscribe and store the subscription so we can cancel it later
     _subscription = notificationService.notificationStream.listen((data) {
       _showToast(data);
     });
   }
 
-  // --- FIX 1: Dispose cancels the listener ---
   @override
   void dispose() {
-    _subscription?.cancel(); // Stops "Ghost" listeners
+    _subscription?.cancel();
     super.dispose();
   }
 
   void _showToast(NotificationModel data) {
     if (!mounted) return;
 
-    // --- FIX 2: Logic removed (Toasts always show) ---
-    // The AppStateNotifier check is gone.
-
-    final String title = data.title;
-    final String message = data.message;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.blueAccent,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            Text(message, style: const TextStyle(color: Colors.white)),
-          ],
-        ),
-      ),
+    final lang = Provider.of<LanguageNotifier>(context, listen: false);
+    String translatedTitle = lang.translateNotificationMessage(data.title);
+    String translatedMessage = lang.translateNotificationMessage(data.message);
+    CustomSnackBar.show(
+      context,
+      messageKey: translatedTitle,
+      dynamicText: translatedMessage,
+      backgroundColor: Colors.blueAccent,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // --- FIX 3: Watch UserNotifier to Connect/Disconnect ---
     return Consumer<UserNotifier>(
       builder: (context, userNotifier, child) {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -171,8 +151,6 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> {
 
           final prefs = await SharedPreferences.getInstance();
           final token = prefs.getString('authToken');
-
-          // ✅ Fix 1: Only connect/disconnect when the token actually changes
           if (token == _lastToken) return;
           _lastToken = token;
 

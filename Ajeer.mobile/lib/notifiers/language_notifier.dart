@@ -220,6 +220,8 @@ class LanguageNotifier extends ChangeNotifier {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
+      'paymentFailed': 'Payment failed. Please try again.',
+      'failedToLoadPlans': 'Failed to load subscription plans.',
       'networkError':
           'Could not connect to server. Please check your internet connection.',
       'invalidCredentials': 'Login failed: Invalid identifier or password.',
@@ -568,8 +570,82 @@ class LanguageNotifier extends ChangeNotifier {
           'A customer has rated your service. You received {rating} stars!',
       'notifDefaultTitle': 'Notification',
       'notifDefaultMsg': 'You have a new notification.',
+      'sendFailed': 'Failed to send message',
+      'reviewSubmitted': 'Review submitted successfully!',
+      'reviewFailed': 'Failed to submit review.',
+      'noReviewFound': 'No review found for this booking.',
+      'searchService': 'Search for a service',
+      'loadServicesFailed':
+          'Failed to load services. Please check your connection.',
+      'selectUnitTypesFor': 'Select unit type(s) for',
+      'locationError': 'Error loading location data',
+      'fetchingServiceAreas': 'Fetching available service areas...',
+      'startTimeError': 'Start time must be before end time.',
+      'overlapError': 'The selected time slot overlaps with an existing one.',
+      'unexpectedError': 'An unexpected error occurred. Please try again.',
+      'fetchingError': 'Error fetching services:',
+      'selectAtLeastOne': 'Please select at least one unit type first.',
+      'custom': 'Custom',
+      'instant': 'Instant',
+      'selectDate': 'Select Date',
+      'selectTime': 'Select Time',
+      'instantBookingMsg':
+          'An Ajeer will be assigned to you as soon as possible based on availability.',
+      'errorValidating': 'Error validating area selection.',
+      'bookingSuccess': 'Your booking has been created successfully!',
+      'bookingFailed': 'Failed to create booking. Please try again.',
+      'serviceAreaUnavailable': 'The requested Service Area is not available.',
+      'noProvidersAvailable':
+          'No service providers are currently available for these services in your area at this time.',
+      'bookingNotFound': 'Booking not found.',
+      'unauthorizedBookingView':
+          'You are not authorized to view these booking details.',
+      'noReplacementFound': 'You cannot cancel, no replacement found',
+      'The requested Service Area is not available.':
+          'The requested Service Area is not available.',
+      'No service providers are currently available for these services in your area at this time.':
+          'No service providers are currently available for these services in your area at this time.',
+      'selectFutureTime': 'Please select a future time',
+      'timeErrorTitle': 'Time Error',
     },
     'ar': {
+      'selectFutureTime': 'يرجى اختيار وقت في المستقبل',
+      'timeErrorTitle': 'خطأ في الوقت',
+      'The requested Service Area is not available.':
+          'منطقة الخدمة المطلوبة غير متوفرة حالياً.',
+      'No service providers are currently available for these services in your area at this time.':
+          'لا يوجد مزودو خدمة متاحون لهذه الخدمات في منطقتك في الوقت الحالي.',
+      'serviceAreaUnavailable': 'منطقة الخدمة المطلوبة غير متوفرة حالياً.',
+      'noProvidersAvailable':
+          'لا يوجد مزودو خدمة متاحون لهذه الخدمات في منطقتك في الوقت الحالي.',
+      'bookingNotFound': 'تعذر العثور على الحجز.',
+      'unauthorizedBookingView': 'ليس لديك صلاحية لعرض تفاصيل هذا الحجز.',
+      'noReplacementFound': 'لا يمكن الإلغاء، لم يتم العثور على مزود بديل.',
+      'bookingSuccess': 'تم إنشاء حجزك بنجاح!',
+      'bookingFailed': 'فشل إنشاء الحجز. يرجى المحاولة مرة أخرى.',
+      'errorValidating': 'خطأ في التحقق من اختيار المنطقة.',
+      'custom': 'مخصص',
+      'instant': 'فوري',
+      'selectDate': 'اختر التاريخ',
+      'selectTime': 'اختر الوقت',
+      'instantBookingMsg':
+          'سيتم تعيين أجير لك في أقرب وقت ممكن بناءً على التوفر.',
+      'selectAtLeastOne': 'الرجاء اختيار نوع وحدة واحد على الأقل.',
+      'fetchingError': 'خطأ في جلب الخدمات:',
+      'startTimeError': 'يجب أن يكون وقت البدء قبل وقت الانتهاء.',
+      'overlapError': 'الفترة الزمنية المختارة تتداخل مع فترة موجودة.',
+      'unexpectedError': 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+      'locationError': 'خطأ في تحميل بيانات الموقع',
+      'fetchingServiceAreas': 'جاري جلب مناطق الخدمة المتاحة...',
+      'searchService': 'ابحث عن خدمة',
+      'loadServicesFailed': 'فشل تحميل الخدمات. يرجى التحقق من الاتصال.',
+      'selectUnitTypesFor': 'اختر أنواع الوحدات لـ',
+      'noReviewFound': 'لم يتم العثور على تقييم لهذا الحجز.',
+      'reviewSubmitted': 'تم إرسال التقييم بنجاح!',
+      'reviewFailed': 'فشل إرسال التقييم.',
+      'sendFailed': 'فشل إرسال الرسالة',
+      'paymentFailed': 'فشلت عملية الدفع. يرجى المحاولة مرة أخرى.',
+      'failedToLoadPlans': 'فشل تحميل خطط الاشتراك.',
       'networkError': 'تعذر الاتصال بالخادم. يرجى التأكد من اتصالك بالإنترنت.',
       'invalidCredentials':
           'فشل تسجيل الدخول: اسم المستخدم أو كلمة المرور غير صحيحة',

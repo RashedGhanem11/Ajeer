@@ -9,6 +9,7 @@ import 'package:flutter_stripe/flutter_stripe.dart'; // Added Stripe
 
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
 import '../../widgets/shared_widgets/settings_menu.dart';
+import '../../widgets/shared_widgets/snackbar.dart';
 import '../../themes/theme_notifier.dart';
 import '../../notifiers/user_notifier.dart';
 import '../../notifiers/language_notifier.dart';
@@ -200,27 +201,29 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       // 5. Success
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_languageNotifier.translate('paymentSuccess')),
-            backgroundColor: Colors.green,
-          ),
+        CustomSnackBar.show(
+          context,
+          messageKey: 'paymentSuccess',
+          backgroundColor: Colors.green,
         );
         _fetchSubscriptionStatus(); // Refresh UI
       }
     } on StripeException catch (e) {
       if (mounted && e.error.code != FailureCode.Canceled) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Payment failed: ${e.error.localizedMessage}"),
-            backgroundColor: Colors.red,
-          ),
+        CustomSnackBar.show(
+          context,
+          messageKey: 'paymentFailed',
+          dynamicText: e.error.localizedMessage,
+          backgroundColor: Colors.red,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        CustomSnackBar.show(
+          context,
+          messageKey: 'error',
+          dynamicText: e.toString().replaceAll("Exception:", ""),
+          backgroundColor: Colors.red,
         );
       }
     } finally {
@@ -310,9 +313,11 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(
+      CustomSnackBar.show(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Failed to load plans")));
+        messageKey: 'failedToLoadPlans',
+        backgroundColor: Colors.red,
+      );
     }
   }
 
@@ -428,23 +433,20 @@ class _ProfileScreenState extends State<ProfileScreen>
           _dataHasChanged = false;
           _isEditing = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_languageNotifier.translate('profileUpdated')),
-            backgroundColor: Colors.green[700],
-          ),
+        CustomSnackBar.show(
+          context,
+          messageKey: 'profileUpdated',
+          backgroundColor: const Color(0xFF388E3C), // This is green[700]
         );
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${_languageNotifier.translate('updateFailed')}${e.toString().replaceAll("Exception:", "")}',
-            ),
-            backgroundColor: Colors.red,
-          ),
+        CustomSnackBar.show(
+          context,
+          messageKey: 'updateFailed',
+          dynamicText: e.toString().replaceAll("Exception:", ""),
+          backgroundColor: Colors.red,
         );
       }
     }
@@ -571,27 +573,23 @@ class _ProfileScreenState extends State<ProfileScreen>
                               );
                               if (context.mounted) {
                                 Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      _languageNotifier.translate(
-                                        'passwordChanged',
-                                      ),
-                                    ),
-                                    backgroundColor: Colors.green,
-                                  ),
+                                CustomSnackBar.show(
+                                  context,
+                                  messageKey: 'passwordChanged',
+                                  backgroundColor: Colors.green,
                                 );
                               }
                             } catch (e) {
                               setState(() => isLoading = false);
                               if (context.mounted)
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      '${_languageNotifier.translate('error')}${e.toString().replaceAll("Exception:", "")}',
-                                    ),
-                                    backgroundColor: Colors.red,
+                                CustomSnackBar.show(
+                                  context,
+                                  messageKey: 'error',
+                                  dynamicText: e.toString().replaceAll(
+                                    "Exception:",
+                                    "",
                                   ),
+                                  backgroundColor: Colors.red,
                                 );
                             }
                           }

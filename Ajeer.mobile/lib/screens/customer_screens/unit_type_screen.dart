@@ -12,6 +12,7 @@ import '../../notifiers/language_notifier.dart';
 import '../../config/app_config.dart';
 import '../../models/service_models.dart';
 import '../../services/unit_type_service.dart';
+import '../../widgets/shared_widgets/snackbar.dart';
 
 class UnitTypeScreen extends StatefulWidget {
   final ServiceCategory category;
@@ -150,14 +151,10 @@ class _UnitTypeScreenState extends State<UnitTypeScreen>
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            lang.translate('selectAtLeastOne'),
-            style: const TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.red,
-        ),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'selectAtLeastOne',
+        backgroundColor: Colors.red,
       );
     }
   }

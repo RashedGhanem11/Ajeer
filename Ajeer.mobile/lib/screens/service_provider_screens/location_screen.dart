@@ -9,6 +9,7 @@ import '../../notifiers/language_notifier.dart';
 import 'work_schedule_screen.dart';
 import '../../models/provider_data.dart';
 import '../../config/app_config.dart';
+import '../../widgets/shared_widgets/snackbar.dart';
 
 class AreaResponse {
   final int id;
@@ -120,10 +121,24 @@ class _LocationScreenState extends State<LocationScreen> {
           });
         }
       } else {
-        if (mounted) setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+          CustomSnackBar.show(
+            context,
+            messageKey: 'locationError',
+            backgroundColor: Colors.red,
+          );
+        }
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        CustomSnackBar.show(
+          context,
+          messageKey: 'networkError',
+          backgroundColor: Colors.red,
+        );
+      }
     }
   }
 
@@ -185,6 +200,12 @@ class _LocationScreenState extends State<LocationScreen> {
             initialData: widget.initialData,
           ),
         ),
+      );
+    } else {
+      CustomSnackBar.show(
+        context,
+        messageKey: 'selectAreaWarning',
+        backgroundColor: Colors.orange,
       );
     }
   }

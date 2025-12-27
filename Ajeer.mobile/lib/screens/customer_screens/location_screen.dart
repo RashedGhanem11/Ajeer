@@ -17,6 +17,7 @@ import '../shared_screens/profile_screen.dart';
 import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
 import '../../notifiers/language_notifier.dart';
+import '../../widgets/shared_widgets/snackbar.dart';
 
 class LocationScreen extends StatefulWidget {
   final List<int> serviceIds;
@@ -235,12 +236,10 @@ class _LocationScreenState extends State<LocationScreen> {
   void _onNextTap() {
     final lang = Provider.of<LanguageNotifier>(context, listen: false);
     if (!_isNextEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(lang.translate('selectAreaWarning')),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'selectAreaWarning',
+        backgroundColor: Colors.red,
       );
       return;
     }
@@ -251,8 +250,10 @@ class _LocationScreenState extends State<LocationScreen> {
       final areaObj = cityObj.areas.firstWhere((a) => a.name == _selectedArea);
       selectedAreaId = areaObj.id;
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(lang.translate('errorValidating'))),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'errorValidating',
+        backgroundColor: Colors.red,
       );
       return;
     }

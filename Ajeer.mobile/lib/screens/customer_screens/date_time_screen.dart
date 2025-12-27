@@ -11,6 +11,7 @@ import '../shared_screens/profile_screen.dart';
 import '../shared_screens/chat_screen.dart';
 import 'home_screen.dart';
 import 'dart:ui';
+import '../../widgets/shared_widgets/snackbar.dart';
 
 class DateTimeScreen extends StatefulWidget {
   final List<int> serviceIds;
@@ -242,7 +243,29 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       },
     );
 
-    if (pickedTime != null && pickedTime != _selectedTime) {
+    if (pickedTime != null) {
+      final now = DateTime.now();
+      bool isToday =
+          _selectedDate.year == now.year &&
+          _selectedDate.month == now.month &&
+          _selectedDate.day == now.day;
+
+      if (isToday) {
+        final pickedMinutes = pickedTime.hour * 60 + pickedTime.minute;
+        final currentMinutes = now.hour * 60 + now.minute;
+
+        if (pickedMinutes <= currentMinutes) {
+          if (mounted) {
+            CustomSnackBar.show(
+              context,
+              messageKey: 'selectFutureTime',
+              backgroundColor: Colors.red,
+            );
+          }
+          return;
+        }
+      }
+
       setState(() {
         _selectedTime = pickedTime;
       });

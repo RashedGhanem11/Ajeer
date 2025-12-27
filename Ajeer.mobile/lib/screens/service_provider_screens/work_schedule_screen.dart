@@ -8,6 +8,7 @@ import '../../notifiers/user_notifier.dart';
 import '../../notifiers/language_notifier.dart';
 import '../shared_screens/profile_screen.dart';
 import 'dart:ui';
+import '../../widgets/shared_widgets/snackbar.dart';
 
 const Color kPrimaryBlue = Color(0xFF2f6cfa);
 const Color kLightBlue = Color(0xFFa2bdfc);
@@ -239,25 +240,18 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                               );
                             }
                           } catch (e) {
-                            debugPrint("🔥🔥🔥 RAW ERROR: $e");
                             if (mounted) {
                               Navigator.of(context).pop();
-                              String errorMsg = e
-                                  .toString()
-                                  .replaceAll("Exception:", "")
-                                  .trim();
-                              if (errorMsg.startsWith('{')) {
-                                errorMsg = extractErrorMessage(
-                                  e,
-                                  _languageNotifier,
-                                );
-                              }
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text("Raw Error: $e"),
-                                  backgroundColor: kDeleteRed,
-                                  duration: const Duration(seconds: 5),
-                                ),
+                              String errorMsg = extractErrorMessage(
+                                e,
+                                _languageNotifier,
+                              );
+
+                              CustomSnackBar.show(
+                                context,
+                                messageKey: 'error',
+                                dynamicText: errorMsg,
+                                backgroundColor: kDeleteRed,
                               );
                             }
                           }
@@ -395,21 +389,19 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
     final endMinutes = _timeToMinutes(_endTime);
 
     if (startMinutes >= endMinutes) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_languageNotifier.translate('startTimeError')),
-          backgroundColor: kDeleteRed,
-        ),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'startTimeError',
+        backgroundColor: kDeleteRed,
       );
       return;
     }
 
     if (_isOverlapping(newSlot)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_languageNotifier.translate('overlapError')),
-          backgroundColor: kDeleteRed,
-        ),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'overlapError',
+        backgroundColor: kDeleteRed,
       );
       return;
     }

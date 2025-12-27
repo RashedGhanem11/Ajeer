@@ -12,6 +12,7 @@ import '../customer_screens/bookings_screen.dart';
 import '../customer_screens/home_screen.dart';
 import '../../config/app_config.dart';
 import '../service_provider_screens/bookings_screen.dart' as provider_screens;
+import '../../widgets/shared_widgets/snackbar.dart';
 
 class _ChatConstants {
   static const Color subtleLighterDark = Color(0xFF2C2C2C);
@@ -610,12 +611,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${_languageNotifier.translate('error')}${e.toString()}',
-            ),
-          ),
+        CustomSnackBar.show(
+          context,
+          messageKey: 'error',
+          dynamicText: e.toString().replaceAll("Exception:", ""),
+          backgroundColor: Colors.red,
         );
       }
     }
@@ -648,8 +648,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_languageNotifier.translate('sendFailed'))),
+        CustomSnackBar.show(
+          context,
+          messageKey: 'sendFailed',
+          backgroundColor: Colors.red,
         );
       }
     }
@@ -666,8 +668,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_languageNotifier.translate('deleteFailed'))),
+        CustomSnackBar.show(
+          context,
+          messageKey: 'deleteFailed',
+          backgroundColor: Colors.red,
         );
       }
     }
@@ -685,8 +689,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   void _copyMessage(String text) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_languageNotifier.translate('messageCopied'))),
+    CustomSnackBar.show(
+      context,
+      messageKey: 'messageCopied',
+      backgroundColor: Colors.green,
     );
     setState(() => _selectedMessageId = null);
   }

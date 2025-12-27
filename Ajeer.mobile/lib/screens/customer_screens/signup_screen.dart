@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../models/auth_models.dart';
 import '../../notifiers/language_notifier.dart';
+import '../../widgets/shared_widgets/snackbar.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -105,33 +106,25 @@ class _SignUpScreenState extends State<SignUpScreen>
 
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _languageNotifier.translate('accountCreated'),
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.green,
-          ),
+        CustomSnackBar.show(
+          context,
+          messageKey: 'accountCreated',
+          backgroundColor: Colors.green,
         );
 
         Navigator.pop(context);
       } catch (e) {
         if (!mounted) return;
-        final String rawError = e
-            .toString()
-            .replaceAll('Exception: ', '')
-            .trim();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _languageNotifier.translateAuthError(
-                rawError,
-              ), 
-              style: const TextStyle(color: Colors.white), 
-            ),
-            backgroundColor: Colors.redAccent,
-          ),
+        String rawError = e.toString().replaceAll('Exception: ', '').trim();
+        String translatedMessage = _languageNotifier.translateAuthError(
+          rawError,
+        );
+
+        CustomSnackBar.show(
+          context,
+          messageKey: 'error',
+          dynamicText: translatedMessage,
+          backgroundColor: Colors.redAccent,
         );
       } finally {
         if (mounted) {

@@ -7,6 +7,7 @@ import 'forgot_password_screen.dart';
 import '../../services/auth_service.dart';
 import '../shared_screens/profile_screen.dart';
 import '../../notifiers/language_notifier.dart';
+import '../../widgets/shared_widgets/snackbar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -118,14 +119,11 @@ class _LoginScreenState extends State<LoginScreen>
       String rawError = e.toString().replaceAll('Exception: ', '').trim();
       String translatedMessage = _languageNotifier.translateAuthError(rawError);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            translatedMessage,
-            style: const TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.redAccent,
-        ),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'error',
+        dynamicText: translatedMessage,
+        backgroundColor: Colors.redAccent,
       );
     } finally {
       if (mounted) {

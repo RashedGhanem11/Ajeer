@@ -10,6 +10,7 @@ import 'package:video_player/video_player.dart';
 import '../../config/app_config.dart';
 import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
+import '../../widgets/shared_widgets/snackbar.dart';
 import '../../models/booking_models.dart';
 import '../../models/review_models.dart';
 import '../../services/booking_service.dart';
@@ -183,15 +184,23 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen>
 
     if (success) {
       _fetchBookings();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.green),
-      );
+      if (success) {
+        _fetchBookings();
+        CustomSnackBar.show(
+          context,
+          messageKey: actionType == 'accept'
+              ? 'bookingActionAccepted'
+              : (actionType == 'reject'
+                    ? 'bookingActionRejected'
+                    : 'bookingActionCompleted'),
+          backgroundColor: Colors.green,
+        );
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_languageNotifier.translate('actionFailed')),
-          backgroundColor: Colors.red,
-        ),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'actionFailed',
+        backgroundColor: Colors.red,
       );
     }
   }
@@ -540,8 +549,10 @@ class _BookingCardState extends State<_BookingCard>
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No review found for this booking.')),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'noReviewFound',
+        backgroundColor: _Consts.primaryBlue, // Using the screen's constant
       );
     }
   }

@@ -11,6 +11,7 @@ import '../../notifiers/language_notifier.dart';
 import '../../config/app_config.dart';
 import '../../models/service_models.dart';
 import '../../services/service_category_service.dart';
+import '../../widgets/shared_widgets/snackbar.dart';
 
 class HomeScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -76,14 +77,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
       final String rawError = e.toString().replaceAll('Exception: ', '').trim();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${_languageNotifier.translate('error')}${_languageNotifier.translateAuthError(rawError)}',
-            style: const TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.red,
-        ),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'fetchingError',
+        dynamicText: _languageNotifier.translateAuthError(rawError),
+        backgroundColor: Colors.red,
       );
     }
   }

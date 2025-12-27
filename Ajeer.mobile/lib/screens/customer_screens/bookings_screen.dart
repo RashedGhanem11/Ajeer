@@ -10,6 +10,7 @@ import 'package:latlong2/latlong.dart';
 import '../../config/app_config.dart';
 import '../../themes/theme_notifier.dart';
 import '../../widgets/shared_widgets/custom_bottom_nav_bar.dart';
+import '../../widgets/shared_widgets/snackbar.dart';
 import 'home_screen.dart';
 import '../shared_screens/profile_screen.dart';
 import '../shared_screens/chat_screen.dart';
@@ -157,14 +158,16 @@ class _BookingsScreenState extends State<BookingsScreen>
     Navigator.pop(context);
     if (success) {
       _fetchBookings();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_languageNotifier.translate('bookingCancelled')),
-        ),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'bookingCancelled',
+        backgroundColor: Colors.green,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_languageNotifier.translate('cancelFailed'))),
+      CustomSnackBar.show(
+        context,
+        messageKey: 'cancelFailed',
+        backgroundColor: Colors.red,
       );
     }
   }
@@ -887,11 +890,10 @@ class _ReviewDialogState extends State<_ReviewDialog> {
     if (!mounted) return;
     setState(() => _isSubmitting = false);
     Navigator.pop(context, true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(res.message),
-        backgroundColor: res.success ? Colors.green : Colors.red,
-      ),
+    CustomSnackBar.show(
+      context,
+      messageKey: res.success ? 'reviewSubmitted' : 'reviewFailed',
+      backgroundColor: res.success ? Colors.green : Colors.red,
     );
   }
 

@@ -9,6 +9,7 @@ import '../../config/app_config.dart';
 import 'location_screen.dart';
 import '../../../models/provider_data.dart';
 import '../../notifiers/language_notifier.dart';
+import '../../widgets/shared_widgets/snackbar.dart';
 import 'dart:ui';
 
 class ServicesScreen extends StatefulWidget {
@@ -76,7 +77,14 @@ class _ServicesScreenState extends State<ServicesScreen> {
             _categoryItems[category.id] = items;
           } catch (e) {
             _categoryItems[category.id] = [];
-            debugPrint('Error fetching items for ${category.name}: $e');
+            if (mounted) {
+              CustomSnackBar.show(
+                context,
+                messageKey: 'fetchingError',
+                dynamicText: _languageNotifier.translate(category.name),
+                backgroundColor: Colors.red,
+              );
+            }
           }
         }),
       );
