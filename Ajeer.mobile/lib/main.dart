@@ -7,6 +7,7 @@ import 'screens/shared_screens/app_launcher_screen.dart';
 import 'themes/app_themes.dart';
 import 'themes/theme_notifier.dart';
 import 'notifiers/user_notifier.dart';
+import 'notifiers/notification_notifier.dart';
 import 'notifiers/language_notifier.dart';
 import 'services/auth_service.dart';
 import 'services/user_service.dart';
@@ -28,6 +29,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         ChangeNotifierProvider(create: (_) => UserNotifier()),
         ChangeNotifierProvider(create: (_) => LanguageNotifier()),
+        ChangeNotifierProvider(create: (_) => AppNotificationNotifier()),
 
         Provider(create: (_) => AuthService()),
         Provider(create: (_) => UserService()),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../notifiers/user_notifier.dart';
 import '../../notifiers/language_notifier.dart';
+import '../../notifiers/notification_notifier.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final List<Map<String, dynamic>> items;
@@ -19,6 +20,7 @@ class CustomBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final userNotifier = Provider.of<UserNotifier>(context);
     final languageNotifier = Provider.of<LanguageNotifier>(context);
+    final notificationNotifier = Provider.of<AppNotificationNotifier>(context);
     final bool isProvider = userNotifier.isProvider;
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -77,7 +79,6 @@ class CustomBottomNavBar extends StatelessWidget {
           children: List.generate(items.length, (index) {
             final Map<String, dynamic> item = items[index];
             final bool isSelected = index == selectedIndex;
-            final bool hasNotification = (item['notificationCount'] ?? 0) > 0;
             final Color itemColor = isSelected
                 ? selectedColor
                 : defaultIconTextColor;
@@ -98,19 +99,33 @@ class CustomBottomNavBar extends StatelessWidget {
                           size: iconSize,
                           color: itemColor,
                         ),
-                        if (hasNotification)
-                          Positioned(
-                            top: -2,
-                            right: -4,
-                            child: Container(
-                              width: notificationSize,
-                              height: notificationSize,
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
+                        Builder(
+                          builder: (context) {
+                            bool showDot = false;
+                            if (index == 1 &&
+                                notificationNotifier.unreadChatCount > 0) {
+                              showDot = true;
+                            } else if (index == 2 &&
+                                notificationNotifier.activeBookingsCount > 0) {
+                              showDot = true;
+                            }
+
+                            if (!showDot) return const SizedBox.shrink();
+
+                            return Positioned(
+                              top: -2,
+                              right: -4,
+                              child: Container(
+                                width: notificationSize,
+                                height: notificationSize,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                     const SizedBox(height: 2),

@@ -13,6 +13,7 @@ import '../customer_screens/home_screen.dart';
 import '../../config/app_config.dart';
 import '../service_provider_screens/bookings_screen.dart' as provider_screens;
 import '../../widgets/shared_widgets/snackbar.dart';
+import '../../notifiers/notification_notifier.dart';
 
 class _ChatConstants {
   static const Color subtleLighterDark = Color(0xFF2C2C2C);
@@ -61,10 +62,26 @@ class _ChatScreenState extends State<ChatScreen> {
     _loadConversations();
   }
 
-  void _loadConversations() {
+  Future<void> _loadConversations() async {
+    final future = _chatService.getConversations();
+
     setState(() {
-      _conversationsFuture = _chatService.getConversations();
+      _conversationsFuture = future;
     });
+
+    try {
+      final conversations = await future;
+      int unreadCount = conversations.where((c) => c.unreadCount > 0).length;
+
+      if (mounted) {
+        Provider.of<AppNotificationNotifier>(
+          context,
+          listen: false,
+        ).updateUnreadChats(unreadCount);
+      }
+    } catch (e) {
+      debugPrint("Error updating unread count: $e");
+    }
   }
 
   List<ChatConversation> _filterConversations(

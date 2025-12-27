@@ -21,6 +21,7 @@ import '../../services/chat_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/review_service.dart';
 import '../../notifiers/language_notifier.dart';
+import '../../notifiers/notification_notifier.dart';
 
 class BookingsScreen extends StatefulWidget {
   const BookingsScreen({super.key});
@@ -131,12 +132,32 @@ class _BookingsScreenState extends State<BookingsScreen>
   Future<void> _fetchBookings() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    final bookings = await _bookingService.getBookings();
-    if (mounted) {
-      setState(() {
-        _allBookings = bookings;
-        _isLoading = false;
-      });
+
+    try {
+      final bookings = await _bookingService.getBookings();
+
+      if (mounted) {
+        setState(() {
+          _allBookings = bookings;
+          _isLoading = false;
+        });
+        int activeAndPendingCount = bookings
+            .where(
+              (b) =>
+                  b.status == BookingStatus.pending ||
+                  b.status == BookingStatus.accepted ||
+                  b.status == BookingStatus.inProgress,
+            )
+            .length;
+        Provider.of<AppNotificationNotifier>(
+          context,
+          listen: false,
+        ).updateActiveBookings(activeAndPendingCount);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -278,7 +299,6 @@ class _BookingsScreenState extends State<BookingsScreen>
             'label': _languageNotifier.translate('bookings'),
             'icon': Icons.book_outlined,
             'activeIcon': Icons.book,
-            'notificationCount': 3,
           },
           {
             'label': _languageNotifier.translate('home'),
