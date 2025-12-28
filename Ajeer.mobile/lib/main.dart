@@ -1,4 +1,4 @@
-import 'dart:async'; // Required for StreamSubscription
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,7 +13,7 @@ import 'services/auth_service.dart';
 import 'services/user_service.dart';
 import 'services/subscription_service.dart';
 import 'services/notification_service.dart';
-import 'models/notification_model.dart'; // Import the model
+import 'models/notification_model.dart';
 import 'widgets/shared_widgets/snackbar.dart';
 
 void main() async {
