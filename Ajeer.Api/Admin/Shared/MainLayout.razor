@@ -1,0 +1,171 @@
+@inherits LayoutComponentBase
+@inject NavigationManager _navManager
+
+<MudThemeProvider Theme="MyCustomTheme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+
+<div class="admin-background">
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pt-4 px-4 h-100">
+        
+        <MudPaper Elevation="4" Class="rounded-xl px-4 py-2 d-flex align-center gap-4 mb-6" Style="background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);">
+            
+            <div class="d-flex align-center" style="width: 200px;"> <MudIcon Icon="@Icons.Material.Rounded.Dashboard" Color="Color.Primary" Size="Size.Large" Class="ml-2" />
+                <MudText Typo="Typo.h5" Style="font-weight: 800; color: #1E293B;" Class="ml-2">Ajeer</MudText>
+            </div>
+
+            <MudSpacer />
+
+            <div class="d-none d-md-flex gap-2">
+                <MudButton Href="/admin" 
+                           Variant="Variant.Text" 
+                           StartIcon="@Icons.Material.Rounded.Home" 
+                           Class="@GetActiveClass("/admin", true)"
+                           Color="Color.Inherit">
+                    Dashboard
+                </MudButton>
+                
+                <MudButton Href="/admin/providers" 
+                           Variant="Variant.Text" 
+                           StartIcon="@Icons.Material.Rounded.Engineering" 
+                           Class="@GetActiveClass("/admin/providers")"
+                           Color="Color.Inherit">
+                    Providers
+                </MudButton>
+                
+                <MudButton Href="/admin/services" 
+                           Variant="Variant.Text" 
+                           StartIcon="@Icons.Material.Rounded.DesignServices" 
+                           Class="@GetActiveClass("/admin/services")"
+                           Color="Color.Inherit">
+                    Services
+                </MudButton>
+                
+                <MudButton Href="/admin/areas" 
+                           Variant="Variant.Text" 
+                           StartIcon="@Icons.Material.Rounded.Map" 
+                           Class="@GetActiveClass("/admin/areas")"
+                           Color="Color.Inherit">
+                    Areas
+                </MudButton>
+            </div>
+
+            <MudSpacer />
+
+            <div style="width: 200px;"></div>
+
+        </MudPaper>
+
+        <div class="content-fade-in">
+            @Body
+        </div>
+
+    </MudContainer>
+</div>
+
+<style>
+    /* Background */
+    .admin-background {
+        background-color: #F3F4F6;
+        background-image: 
+            radial-gradient(at 0% 0%, hsla(253,16%,7%,0) 0, hsla(253,16%,7%,0) 50%), 
+            radial-gradient(at 50% 0%, hsla(225,39%,30%,0) 0, hsla(225,39%,30%,0) 50%), 
+            radial-gradient(at 100% 0%, hsla(339,49%,30%,0) 0, hsla(339,49%,30%,0) 50%);
+        background: linear-gradient(135deg, #e0eafe 0%, #f0fdf4 50%, #fefce8 100%);
+        min-height: 100vh;
+        width: 100%;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* Base Pill Style */
+    .nav-pill {
+        border-radius: 12px !important;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        color: #64748B; /* Default gray text */
+    }
+
+    /* Hover State */
+    .nav-pill:hover {
+        background-color: rgba(37, 99, 235, 0.05) !important;
+        color: #2563EB !important;
+    }
+
+    /* Active State (The "Clicked" Look) */
+    .active-pill {
+        background-color: rgba(37, 99, 235, 0.1) !important; /* Light blue bg */
+        color: #2563EB !important; /* Strong blue text */
+        font-weight: 700 !important;
+    }
+
+    /* Smooth Fade In */
+    .content-fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+@code {
+    // 1. Hook into navigation events to refresh the UI when URL changes
+    protected override void OnInitialized()
+    {
+        _navManager.LocationChanged += (s, e) => StateHasChanged();
+    }
+
+    // 2. Logic to decide if a button is "Active"
+    private string GetActiveClass(string href, bool exact = false)
+    {
+        // Get the current path relative to base (e.g., "admin/providers")
+        var relativePath = _navManager.ToBaseRelativePath(_navManager.Uri);
+        
+        // Handle the root/dashboard case specially
+        // Ensure leading slash consistency
+        var currentUrl = "/" + relativePath; 
+        
+        // Sometimes relative path is empty string for root
+        if (string.IsNullOrWhiteSpace(relativePath)) currentUrl = "/admin"; 
+
+        bool isActive;
+        if (exact)
+        {
+            // For Dashboard, match exactly "/admin" or "/"
+            isActive = currentUrl.Equals(href, StringComparison.OrdinalIgnoreCase) || (href == "/admin" && currentUrl == "/");
+        }
+        else
+        {
+            // For others, check if it starts with the href (e.g. /admin/providers/details matches /admin/providers)
+            isActive = currentUrl.StartsWith(href, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Return the base class + optional active class
+        return isActive ? "rounded-lg nav-pill active-pill" : "rounded-lg nav-pill";
+    }
+
+    private MudTheme MyCustomTheme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#2563EB", 
+            Secondary = "#64748B",
+            TextPrimary = "#1E293B",
+            ActionDefault = "#475569",
+        },
+        LayoutProperties = new LayoutProperties()
+        {
+            DefaultBorderRadius = "12px"
+        },
+        Typography = new Typography()
+        {
+            Default = {
+                FontFamily = new[] { "Poppins", "Roboto", "Helvetica", "Arial", "sans-serif" },
+                FontSize = "0.875rem",
+                FontWeight = "500"
+            }
+        }
+    };
+}

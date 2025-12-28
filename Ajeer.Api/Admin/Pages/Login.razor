@@ -1,0 +1,100 @@
+@page "/login"
+@layout LoginLayout
+@using Ajeer.Api.DTOs.Auth
+@using Ajeer.Api.Services.Auth
+@using Ajeer.Api.Enums
+@inject IAuthService _authService
+@inject NavigationManager _navManager
+@inject AuthenticationStateProvider _authStateProvider
+@inject ISnackbar _snackbar
+
+<MudGrid Justify="Justify.Center" AlignItems="AlignItems.Center" Style="height: 100vh; background: #F3F4F6;">
+    <MudItem xs="12" sm="8" md="4">
+        <MudPaper Class="pa-8 rounded-xl" Elevation="4">
+            
+            <div class="d-flex flex-column align-center mb-6">
+                <MudIcon Icon="@Icons.Material.Rounded.Dashboard" Color="Color.Primary" Size="Size.Large" Style="width: 60px; height: 60px;" />
+                <MudText Typo="Typo.h5" Style="font-weight: 700; color: #1E293B;" Class="mt-2">Admin Portal</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Sign in to manage Ajeer</MudText>
+            </div>
+
+            <MudForm @ref="_form">
+                <MudTextField @bind-Value="_request.Identifier" 
+                              Label="Email or Phone" 
+                              Variant="Variant.Outlined" 
+                              Adornment="Adornment.Start" 
+                              AdornmentIcon="@Icons.Material.Rounded.Person" 
+                              Class="mb-4"
+                              Required="true"/>
+
+                <MudTextField @bind-Value="_request.Password" 
+                              Label="Password" 
+                              Variant="Variant.Outlined" 
+                              InputType="InputType.Password"
+                              Adornment="Adornment.Start" 
+                              AdornmentIcon="@Icons.Material.Rounded.Lock" 
+                              Class="mb-6"
+                              Required="true"/>
+
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           Size="Size.Large" 
+                           FullWidth="true" 
+                           OnClick="Submit"
+                           Class="py-2"
+                           Style="font-weight: 600;"
+                           Disabled="@_isLoading">
+                    @if(_isLoading) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/> }
+                    Sign In
+                </MudButton>
+            </MudForm>
+
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private LoginRequest _request = new();
+    private MudForm _form = default!;
+    private bool _isLoading = false;
+
+    private async Task Submit()
+    {
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        _isLoading = true;
+        try
+        {
+            // 1. REUSE: Call existing service
+            var response = await _authService.LoginAsync(_request);
+            //Console.WriteLine($"User: {response?.Email}, Role Value: {(int)response.Role}, Role Name: {response.Role}");
+            if (response == null)
+            {
+                _snackbar.Add("Invalid credentials", Severity.Error);
+            }
+            // 2. CHECK ROLE: Ensure user is Admin
+            else if (response.Role.ToString() != UserRole.Admin.ToString()) 
+            {
+                _snackbar.Add("Access Denied: You are not an administrator.", Severity.Error);
+            }
+            else
+            {
+                // 3. SUCCESS: Save token & Redirect
+                var customAuthState = (CustomAuthStateProvider)_authStateProvider;
+                await customAuthState.Login(response.Token);
+                
+                // Force reload to apply auth state freshly
+                _navManager.NavigateTo("/", true); 
+            }
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add($"Login error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

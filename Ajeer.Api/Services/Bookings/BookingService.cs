@@ -1,4 +1,5 @@
 using Ajeer.Api.Data;
+using Ajeer.Api.DTOs.Admin.Dashboard;
 using Ajeer.Api.DTOs.Attachments;
 using Ajeer.Api.DTOs.Bookings;
 using Ajeer.Api.Enums;
@@ -311,6 +312,7 @@ public class BookingService(AppDbContext _context, IFileService _fileService,
             throw new Exception("Only active bookings can be completed.");
 
         booking.Status = BookingStatus.Completed;
+        booking.CompletedDate = DateTime.Now;
         await _context.SaveChangesAsync();
 
         await _notificationService.CreateNotificationAsync(
@@ -388,5 +390,52 @@ public class BookingService(AppDbContext _context, IFileService _fileService,
                 oldProviderName
             );
         }
+    }
+
+    public async Task<DashboardResponse> GetDashboardStatisticsAsync()
+    {
+        var stats = new DashboardResponse();
+
+        stats.TotalUsers = await _context.Users.CountAsync();
+        stats.ActiveProviders = await _context.ServiceProviders.CountAsync(p => p.IsVerified);
+        stats.PendingProviders = await _context.ServiceProviders.CountAsync(p => !p.IsVerified);
+
+        var hasReviews = await _context.Reviews.AnyAsync();
+        if (hasReviews)
+        {
+            double avg = await _context.Reviews.AverageAsync(r => (double)r.Rating);
+            stats.AverageProviderRating = Math.Round(avg, 2);
+        }
+        else
+        {
+            stats.AverageProviderRating = 0.0;
+        }
+
+        stats.TotalRevenue = await _context.Bookings
+            .Where(b => b.Status == BookingStatus.Completed)
+            .SumAsync(b => b.TotalAmount);
+
+        var bookingStatusCounts = await _context.Bookings
+            .GroupBy(b => b.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        stats.TotalBookings = bookingStatusCounts.Sum(x => x.Count);
+        stats.PendingBookings = bookingStatusCounts.FirstOrDefault(x => x.Status == BookingStatus.Pending)?.Count ?? 0;
+        stats.ActiveBookings = bookingStatusCounts.FirstOrDefault(x => x.Status == BookingStatus.Active)?.Count ?? 0;
+        stats.CompletedBookings = bookingStatusCounts.FirstOrDefault(x => x.Status == BookingStatus.Completed)?.Count ?? 0;
+
+        var completed = await _context.Bookings
+            .Where(b => b.Status == BookingStatus.Completed && b.CompletedDate != null)
+            .Select(b => new { b.CompletedDate, b.ScheduledDate, b.EstimatedHours })
+            .ToListAsync();
+
+        if (completed.Any())
+        {
+            int onTime = completed.Count(b => b.CompletedDate <= b.ScheduledDate.AddHours((double)b.EstimatedHours + 1));
+            stats.OnTimeRate = Math.Round((double)onTime / completed.Count * 100, 1);
+        }
+
+        return stats;
     }
 }

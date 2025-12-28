@@ -24,6 +24,10 @@ public class ServiceCategoryConfiguration : IEntityTypeConfiguration<ServiceCate
             .IsRequired()
             .HasMaxLength(250);
 
+        builder.Property(sc => sc.IsActive)
+            .IsRequired()
+            .HasDefaultValue(true);
+
         builder.HasMany(sc => sc.Services)
             .WithOne(s => s.Category)
             .HasForeignKey(s => s.CategoryId)

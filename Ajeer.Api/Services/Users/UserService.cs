@@ -57,6 +57,8 @@ public class UserService(AppDbContext _context, IFileService _fileService, IAuth
 
         string newToken = _authService.GenerateJwtToken(user);
 
+        bool hasApp = await _context.ServiceProviders.AnyAsync(sp => sp.UserId == user.Id);
+
         return new AuthResponse
         {
             Token = newToken,
@@ -65,7 +67,8 @@ public class UserService(AppDbContext _context, IFileService _fileService, IAuth
             Email = user.Email,
             Phone = user.Phone,
             Role = user.Role,
-            ProfilePictureUrl = _fileService.GetPublicUrl("profilePictures", user.ProfilePictureUrl)
+            ProfilePictureUrl = _fileService.GetPublicUrl("profilePictures", user.ProfilePictureUrl),
+            HasProviderApplication = hasApp
         };
     }
 

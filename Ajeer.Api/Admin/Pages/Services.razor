@@ -1,0 +1,265 @@
+@page "/services"
+@using Ajeer.Api.DTOs.Admin.Services
+@using Ajeer.Api.DTOs.Admin 
+@using Ajeer.Api.Services
+@using Ajeer.Api.Admin.Shared 
+@using Ajeer.Api.Services.ServiceCategories
+@using Ajeer.Api.Services.Services
+@using Ajeer.Api.Services.Files
+@inject IServiceCategoryService _categoryService
+@inject IServiceService _serviceService
+@inject IFileService _fileService
+@inject ISnackbar _snackbar
+@inject IDialogService _dialogService
+
+<MudText Typo="Typo.h5" Style="font-weight: 700; color: #1E293B;" Class="mb-6">Service Catalog</MudText>
+
+<MudGrid Spacing="4">
+    <MudItem xs="12" md="4">
+        <MudPaper Elevation="0" Class="rounded-xl border mud-border-lines-default overflow-hidden pa-4 h-100" Style="background-color: #fff;">
+            <div class="d-flex justify-space-between align-center mb-4 px-2">
+                 <MudText Typo="Typo.h6" Style="font-weight: 600; color: #334155;">Categories</MudText>
+                 <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Add" Size="Size.Small" Style="font-weight: 600;" OnClick="OpenCreateCategoryDialog">New</MudButton>
+            </div>
+           
+            @if (_categories.Any())
+            {
+                <MudList T="int" Clickable="true" SelectedValue="@_selectedCategoryId" SelectedValueChanged="OnCategorySelected" Color="Color.Primary" Class="rounded-lg">
+                    @foreach (var cat in _categories)
+                    {
+                        <MudListItem Value="@cat.Id" Class="rounded-lg mb-1 px-2">
+                            <div class="d-flex align-center width-100 py-1">
+                                @if(!string.IsNullOrEmpty(cat.IconUrl))
+                                {
+                                    <MudImage Src="@_fileService.GetPublicUrl("categories", cat.IconUrl)" Width="24" Height="24" Class="mr-4 object-cover rounded" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Rounded.FolderOpen" Color="Color.Primary" Class="mr-4" Size="Size.Medium" />
+                                }
+                                
+                                <MudText Typo="Typo.body1" Style="@GetCategoryStyle(cat)">@cat.Name</MudText>
+                                
+                                @if(!cat.IsActive)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text" Class="ml-2" Style="font-size:0.6rem; height:20px;">Inactive</MudChip>
+                                }
+
+                                <MudSpacer />
+                                
+                                <div @onclick:stopPropagation="true">
+                                    <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" Color="Color.Default" Style="opacity: 0.6;" OnClick="@(() => OpenEditCategoryDialog(cat))"/>
+                                </div>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+            else
+            {
+                 <div class="d-flex justify-center align-center h-100">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">No categories found.</MudText>
+                 </div>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="8">
+        <MudPaper Elevation="0" Class="rounded-xl border mud-border-lines-default overflow-hidden pa-4 h-100" Style="background-color: #fff;">
+             <div class="d-flex flex-wrap justify-space-between align-center mb-4 gap-2">
+                 <MudText Typo="Typo.h6" Style="font-weight: 600; color: #334155;">
+                     @(_selectedCategory?.Name ?? "Select a Category")
+                 </MudText>
+                 <div class="d-flex gap-2">
+                     <MudTextField @bind-Value="_searchString" Placeholder="Search services..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Style="background: #F8FAFC; max-width: 250px; border-radius: 8px;" Class="mt-0" />
+                     <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Add" Disabled="@(_selectedCategoryId == 0)" Style="font-weight: 600; border-radius: 8px;" OnClick="OpenCreateServiceDialog">New Service</MudButton>
+                 </div>
+            </div>
+
+            <MudTable Items="@_filteredServices" Hover="true" Elevation="0" Filter="new Func<Service,bool>(FilterFunc)" FixedHeader="true" Height="calc(100vh - 250px)" Class="pa-0">
+                <HeaderContent>
+                    <MudTh Style="color:#64748B; font-weight:600; border-bottom: none;">Service Name</MudTh>
+                    <MudTh Style="color:#64748B; font-weight:600; border-bottom: none;">Base Price</MudTh>
+                    <MudTh Style="color:#64748B; font-weight:600; border-bottom: none;">Est. Hours</MudTh>
+                    <MudTh Style="color:#64748B; font-weight:600; text-align:center; border-bottom: none;">Status</MudTh>
+                    <MudTh Style="color:#64748B; font-weight:600; text-align:right; border-bottom: none;">Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd Style="border-bottom: 1px solid #F1F5F9;"><MudText Typo="Typo.body2" Style="font-weight: 500; color: #334155;">@context.Name</MudText></MudTd>
+                    <MudTd Style="border-bottom: 1px solid #F1F5F9; color: #475569;">$@context.BasePrice.ToString("0.00")</MudTd>
+                    <MudTd Style="border-bottom: 1px solid #F1F5F9; color: #475569;">@context.EstimatedHours.ToString("0.0") hrs</MudTd>
+                    <MudTd Style="text-align:center; border-bottom: 1px solid #F1F5F9;">
+                        <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Error)" Variant="Variant.Text" Class="rounded-lg font-weight-bold">
+                            @(context.IsActive ? "Active" : "Inactive")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd Style="text-align:right; border-bottom: 1px solid #F1F5F9;">
+                        <div class="d-flex justify-end gap-3 align-center">
+                            <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" Color="Color.Default" Style="opacity: 0.6;" OnClick="@(() => OpenEditServiceDialog(context))" />
+                        </div>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <div class="d-flex justify-center align-center py-8">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @(_selectedCategoryId == 0 ? "Please select a category from the list." : "No services found for this category.")
+                        </MudText>
+                    </div>
+                </NoRecordsContent>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private List<ServiceCategory> _categories = new();
+    private List<Service> _allServices = new();
+    private List<Service> _filteredServices = new();
+    
+    // Explicitly using int
+    private int _selectedCategoryId = 0; 
+    
+    private ServiceCategory? _selectedCategory => _categories.FirstOrDefault(c => c.Id == _selectedCategoryId);
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _categories = await _categoryService.GetAdminCategoriesAsync();
+        _allServices = _categories.SelectMany(c => c.Services).ToList();
+
+        if (_categories.Any() && _selectedCategoryId == 0)
+        {
+            _selectedCategoryId = _categories.First().Id;
+        }
+        FilterServices();
+    }
+
+    private void OnCategorySelected(int id)
+    {
+        _selectedCategoryId = id;
+        FilterServices();
+    }
+
+    private void FilterServices()
+    {
+        if (_selectedCategoryId != 0)
+        {
+            _filteredServices = _allServices.Where(s => s.CategoryId == _selectedCategoryId).ToList();
+        }
+        else
+        {
+            _filteredServices = new();
+        }
+        StateHasChanged();
+    }
+
+    private string GetCategoryStyle(ServiceCategory cat)
+    {
+        return !cat.IsActive ? "font-weight: 500; color: #94a3b8; text-decoration: line-through;" : "font-weight: 500; color: #475569;";
+    }
+
+
+    private async Task OpenCreateServiceDialog()
+    {
+        var parameters = new DialogParameters { ["Categories"] = _categories };
+        // Pass a new clean model for creating
+        parameters.Add("Model", new UpdateServiceRequest { CategoryId = _selectedCategoryId, IsActive = true }); 
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await _dialogService.ShowAsync<ServiceDialog>("Create Service", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: UpdateServiceRequest req })
+        {
+            var createReq = new CreateServiceRequest 
+            { 
+                CategoryId = req.CategoryId, Name = req.Name, BasePrice = req.BasePrice, 
+                EstimatedHours = req.EstimatedHours, IsActive = req.IsActive 
+            };
+            
+            await _serviceService.CreateServiceAsync(createReq);
+            await LoadData();
+            _snackbar.Add("Service created.", Severity.Success);
+        }
+    }
+
+    private async Task OpenEditServiceDialog(Service service)
+    {
+        var request = new UpdateServiceRequest {
+            Id = service.Id, CategoryId = service.CategoryId, Name = service.Name,
+            BasePrice = service.BasePrice, EstimatedHours = service.EstimatedHours, IsActive = service.IsActive
+        };
+        
+        var parameters = new DialogParameters { 
+            ["Model"] = request, 
+            ["Categories"] = _categories 
+        };
+        
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await _dialogService.ShowAsync<ServiceDialog>("Edit Service", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: UpdateServiceRequest updatedReq })
+        {
+            await _serviceService.UpdateServiceAsync(updatedReq);
+            await LoadData();
+            _snackbar.Add("Service updated.", Severity.Success);
+        }
+    }
+
+    private async Task OpenCreateCategoryDialog()
+    {
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var parameters = new DialogParameters { ["Model"] = new UpdateCategoryRequest { IsActive = true } }; // Default new to active
+
+        var dialog = await _dialogService.ShowAsync<CategoryDialog>("Create Category", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: ValueTuple<UpdateCategoryRequest, IBrowserFile?> data })
+        {
+            var (dto, browserFile) = data;
+            Stream? stream = null;
+            string? name = null;
+            if (browserFile != null) {
+                stream = browserFile.OpenReadStream(5 * 1024 * 1024);
+                name = browserFile.Name;
+            }
+            await _categoryService.CreateCategoryAsync(new CreateCategoryRequest { Name = dto.Name, Description = dto.Description, IsActive = dto.IsActive }, stream, name);
+            if(stream != null) await stream.DisposeAsync();
+            await LoadData();
+            _snackbar.Add("Category created.", Severity.Success);
+        }
+    }
+
+    private async Task OpenEditCategoryDialog(ServiceCategory cat)
+    {
+        var request = new UpdateCategoryRequest { Id = cat.Id, Name = cat.Name, Description = cat.Description, IsActive = cat.IsActive };
+        var parameters = new DialogParameters { ["Model"] = request };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        
+        var dialog = await _dialogService.ShowAsync<CategoryDialog>("Edit Category", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: ValueTuple<UpdateCategoryRequest, IBrowserFile?> data })
+        {
+            var (updatedDto, browserFile) = data;
+            Stream? stream = null;
+            string? name = null;
+            if (browserFile != null) {
+                stream = browserFile.OpenReadStream(5 * 1024 * 1024);
+                name = browserFile.Name;
+            }
+            await _categoryService.UpdateCategoryAsync(updatedDto, stream, name);
+            if(stream != null) await stream.DisposeAsync();
+            await LoadData();
+            _snackbar.Add("Category updated.", Severity.Success);
+        }
+    }
+
+    private bool FilterFunc(Service element) => string.IsNullOrWhiteSpace(_searchString) || element.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+}

@@ -1,0 +1,102 @@
+@page "/"
+@using Ajeer.Api.DTOs.Admin.Dashboard
+@using Ajeer.Api.Services.Bookings
+@using Ajeer.Api.Admin.Shared 
+@inject IBookingService _bookingService
+
+<MudText Typo="Typo.h5" Style="font-weight: 700; color: #1E293B;" Class="mb-1">Dashboard</MudText>
+<MudText Typo="Typo.body2" Class="mb-8" Color="Color.Secondary">System Overview & Performance</MudText>
+
+@if (_isLoading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+}
+else
+{
+    <div class="d-flex flex-column gap-6">
+        
+        <div class="stats-grid">
+            <DashboardCard Title="Total Users" 
+                           Value="@_stats.TotalUsers.ToString()" 
+                           Icon="@Icons.Material.Rounded.People" 
+                           Color="Color.Primary" />
+            
+            <DashboardCard Title="Active Providers" 
+                           Value="@_stats.ActiveProviders.ToString()" 
+                           Icon="@Icons.Material.Rounded.VerifiedUser" 
+                           Color="Color.Success" />
+            
+            <DashboardCard Title="Pending Approvals" 
+                           Value="@_stats.PendingProviders.ToString()" 
+                           Icon="@Icons.Material.Rounded.PendingActions" 
+                           Color="Color.Warning" />
+            
+            <DashboardCard Title="Avg Provider Rating" 
+                           Value="@_stats.AverageProviderRating.ToString("0.0")" 
+                           Icon="@Icons.Material.Rounded.Star" 
+                           Color="Color.Warning" 
+                           IsRating="true" />
+            
+            <DashboardCard Title="Total Revenue" 
+                           Value="@($"${_stats.TotalRevenue:N0}")" 
+                           Icon="@Icons.Material.Rounded.AttachMoney" 
+                           Color="Color.Success" />
+        </div>
+
+        <div class="stats-grid">
+            <DashboardCard Title="Total Bookings" 
+                           Value="@_stats.TotalBookings.ToString()" 
+                           Icon="@Icons.Material.Rounded.Bookmark" 
+                           Color="Color.Primary" />
+
+            <DashboardCard Title="Pending Jobs" 
+                           Value="@_stats.PendingBookings.ToString()" 
+                           Icon="@Icons.Material.Rounded.HourglassEmpty" 
+                           Color="Color.Warning" />
+            
+            <DashboardCard Title="Active Jobs" 
+                           Value="@_stats.ActiveBookings.ToString()" 
+                           Icon="@Icons.Material.Rounded.Work" 
+                           Color="Color.Info" />
+            
+            <DashboardCard Title="Completed Jobs" 
+                           Value="@_stats.CompletedBookings.ToString()" 
+                           Icon="@Icons.Material.Rounded.CheckCircle" 
+                           Color="Color.Success" />
+            
+            <DashboardCard Title="On-Time Rate" 
+                           Value="@($"{_stats.OnTimeRate}%")" 
+                           Icon="@Icons.Material.Rounded.AccessTime" 
+                           Color="@(_stats.OnTimeRate > 80 ? Color.Success : Color.Error)" />
+        </div>
+
+    </div>
+}
+
+<style>
+    /* CSS Grid to handle 5 items perfectly responsive */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 24px;
+        width: 100%;
+    }
+    
+    /* Force 5 columns on large screens */
+    @@media (min-width: 1280px) {
+        .stats-grid {
+            grid-template-columns: repeat(5, 1fr);
+        }
+    }
+</style>
+
+@code {
+    private DashboardResponse _stats = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _stats = await _bookingService.GetDashboardStatisticsAsync();
+        _isLoading = false;
+    }
+}

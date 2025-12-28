@@ -1,19 +1,22 @@
 using Ajeer.Api.Data;
 using Ajeer.Api.DTOs.Auth;
+using Ajeer.Api.DTOs.Bookings;
 using Ajeer.Api.DTOs.ServiceAreas;
 using Ajeer.Api.DTOs.ServiceCategories;
 using Ajeer.Api.DTOs.ServiceProviders;
 using Ajeer.Api.DTOs.Services;
+using Ajeer.Api.DTOs.Subscriptions;
 using Ajeer.Api.Enums;
 using Ajeer.Api.Models;
 using Ajeer.Api.Services.Auth;
+using Ajeer.Api.Services.Emails;
 using Ajeer.Api.Services.Files;
 using Ajeer.Api.Services.Subscriptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ajeer.Api.Services.ServiceProviders;
 
-public class ServiceProviderService(AppDbContext _context, IAuthService _authService, IFileService _fileService, ISubscriptionService _subscriptionService) : IServiceProviderService
+public class ServiceProviderService(AppDbContext _context, IAuthService _authService, IFileService _fileService, ISubscriptionService _subscriptionService, IEmailService _emailService) : IServiceProviderService
 {
     public async Task<AuthResponse> BecomeProviderAsync(int userId, BecomeProviderRequest dto)
     {
@@ -26,14 +29,22 @@ public class ServiceProviderService(AppDbContext _context, IAuthService _authSer
             throw new Exception("User is already registered as a service provider.");
         }
 
+        string? idCardUrl = null;
+        if (dto.IdCardImage != null)
+        {
+            idCardUrl = await _fileService.SaveFileAsync(dto.IdCardImage, "idCards");
+        }
+
         var provider = new Models.ServiceProvider
         {
             UserId = userId,
             Bio = dto.Bio,
-            IsVerified = true,
+            IdCardUrl = idCardUrl,
+            IsVerified = false,
             Rating = 0,
             TotalReviews = 0,
-            IsActive = true
+            IsActive = true,
+            CreatedAt = DateTime.Now
         };
 
         foreach (var serviceId in dto.ServiceIds)
@@ -56,14 +67,9 @@ public class ServiceProviderService(AppDbContext _context, IAuthService _authSer
             });
         }
 
-        user.Role = UserRole.ServiceProvider;
-
         _context.ServiceProviders.Add(provider);
 
         await _context.SaveChangesAsync();
-
-        // free subscription for 30 days
-        await _subscriptionService.ActivateSubscriptionAsync(provider.UserId, -1);
 
         string newToken = _authService.GenerateJwtToken(user);
 
@@ -75,7 +81,8 @@ public class ServiceProviderService(AppDbContext _context, IAuthService _authSer
             Email = user.Email,
             Phone = user.Phone,
             Role = user.Role,
-            ProfilePictureUrl = _fileService.GetPublicUrl("profilePictures", user.ProfilePictureUrl)
+            ProfilePictureUrl = _fileService.GetPublicUrl("profilePictures", user.ProfilePictureUrl),
+            HasProviderApplication = true
         };
     }
 
@@ -224,4 +231,185 @@ public class ServiceProviderService(AppDbContext _context, IAuthService _authSer
 
         await _context.SaveChangesAsync();
     }
+
+    public async Task<List<ProviderSummaryResponse>> GetProvidersByStatusAsync(bool isVerified)
+    {
+        return await _context.ServiceProviders
+            .Where(sp => sp.IsVerified == isVerified)
+            .Include(sp => sp.User)
+            .Select(sp => new ProviderSummaryResponse
+            {
+                ServiceProviderId = sp.UserId,
+                FullName = sp.User.Name,
+                Email = sp.User.Email,
+                PhoneNumber = sp.User.Phone,
+                IsVerified = sp.IsVerified,
+                IsActive = sp.IsActive,
+                Rating = sp.Rating,
+                TotalReviews = sp.TotalReviews,
+                TotalBookings = sp.Bookings.Count(),
+                JoinedDate = sp.CreatedAt,
+                ProfilePictureUrl = _fileService.GetPublicUrl("profilePictures", sp.User.ProfilePictureUrl),
+                IdCardUrl = _fileService.GetPublicUrl("idCards", sp.IdCardUrl)
+            })
+            .ToListAsync();
+    }
+
+    public async Task<ProviderDetailResponse> GetProviderDetailsAsync(int providerId)
+    {
+        var sp = await _context.ServiceProviders
+            .Include(sp => sp.User)
+            .Include(sp => sp.ProviderServices).ThenInclude(ps => ps.Service)
+            .Include(sp => sp.Subscriptions).ThenInclude(s => s.SubscriptionPlan)
+            .FirstOrDefaultAsync(x => x.UserId == providerId);
+
+        if (sp == null) throw new Exception("Provider not found");
+
+        var bookings = await _context.Bookings
+            .Where(b => b.ServiceProviderId == providerId)
+            .OrderByDescending(b => b.CreatedAt)
+            .Select(b => new BookingSummaryResponse
+            {
+                Id = b.Id,
+                UserName = b.User.Name,
+                ScheduledDate = b.ScheduledDate,
+                CompletedDate = b.CompletedDate,
+                EstimatedHours = b.EstimatedHours,
+                Amount = b.TotalAmount,
+                Status = b.Status
+            })
+            .ToListAsync();
+
+        var reviews = await _context.Reviews
+            .Where(r => r.ServiceProviderId == providerId)
+            .OrderByDescending(r => r.ReviewDate)
+            .Select(r => new ReviewResponse
+            {
+                ReviewerName = r.User.Name,
+                Rating = r.Rating,
+                Comment = r.Comment,
+                ReviewDate = r.ReviewDate
+            })
+            .ToListAsync();
+
+        var activeSub = sp.Subscriptions.FirstOrDefault(s => s.EndDate > DateTime.UtcNow);
+
+        return new ProviderDetailResponse
+        {
+            ServiceProviderId = sp.UserId,
+            FullName = sp.User.Name,
+            Email = sp.User.Email,
+            PhoneNumber = sp.User.Phone,
+            Rating = sp.Rating,
+            TotalBookings = sp.Bookings.Count,
+            IsActive = sp.IsActive,
+            IsVerified = sp.IsVerified,
+            Bio = sp.Bio ?? "",
+            ProfilePictureUrl = _fileService.GetPublicUrl("profilePictures", sp.User.ProfilePictureUrl),
+
+            Services = sp.ProviderServices.Select(s => s.Service.Name).ToList(),
+            RecentBookings = bookings,
+            RecentReviews = reviews,
+
+            Subscription = new SubscriptionStatusResponse
+            {
+                HasActiveSubscription = activeSub != null,
+                PlanName = activeSub?.SubscriptionPlan.Name ?? "None",
+                ExpiryDate = activeSub?.EndDate,
+                IsProviderActive = sp.IsActive
+            }
+        };
+    }
+
+    public async Task ApproveProviderAsync(int providerId)
+    {
+        var provider = await _context.ServiceProviders
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.UserId == providerId);
+
+        if (provider == null) throw new Exception("Provider application not found.");
+
+        provider.IsVerified = true;
+        provider.User.Role = UserRole.ServiceProvider;
+
+        await _context.SaveChangesAsync();
+
+        // free subscription for 30 days
+        await _subscriptionService.ActivateSubscriptionAsync(provider.UserId, -1);
+
+        string body = $@"
+            <h3>Congratulations {provider.User.Name}!</h3>
+            <p>Your application to become a Service Provider on Ajeer has been <b>APPROVED</b>.</p>
+            <p>You have been granted a <b>30-Day Free Trial</b>.</p>
+            <p>Please log out and log back in to access your provider dashboard.</p>";
+
+        await _emailService.SendEmailAsync(provider.User.Email, "Welcome to Ajeer - Application Approved", body);
+    }
+
+    public async Task RejectProviderAsync(int providerId, string reason)
+    {
+        var provider = await _context.ServiceProviders
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.UserId == providerId);
+
+        if (provider == null) throw new Exception("Provider application not found.");
+
+        string email = provider.User.Email;
+        string name = provider.User.Name;
+
+        _context.ServiceProviders.Remove(provider);
+        provider.User.Role = UserRole.Customer;
+
+        await _context.SaveChangesAsync();
+
+        string body = $@"
+            <h3>Application Update</h3>
+            <p>Dear {name},</p>
+            <p>Unfortunately, your application to join Ajeer has been <b>REJECTED</b>.</p>
+            <p><b>Reason:</b> {reason}</p>
+            <p>You may fix the issues and apply again.</p>";
+
+        await _emailService.SendEmailAsync(email, "Ajeer Application Status", body);
+    }
+
+    public async Task ToggleProviderActiveStatusAsync(int providerId)
+    {
+        var provider = await _context.ServiceProviders
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.UserId == providerId);
+
+        if (provider == null) throw new Exception("Provider not found.");
+
+        provider.IsActive = !provider.IsActive;
+        await _context.SaveChangesAsync();
+
+        string status = provider.IsActive ? "ACTIVATED" : "DEACTIVATED";
+        string color = provider.IsActive ? "green" : "red";
+        string body = $@"
+            <h3>Account Status Update</h3>
+            <p>Dear {provider.User.Name},</p>
+            <p>Your service provider account has been <b style='color:{color}'>{status}</b> by the administrator.</p>
+            <p>If you believe this is a mistake, please contact support.</p>";
+
+        await _emailService.SendEmailAsync(provider.User.Email, $"Ajeer - Account {status}", body);
+    }
+
+    public async Task SendCustomEmailAsync(int providerId, string subject, string bodyContent)
+    {
+        var provider = await _context.ServiceProviders
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.UserId == providerId);
+
+        if (provider == null) throw new Exception("Provider not found.");
+
+        string htmlBody = $@"
+            <h3>Message from Ajeer Admin</h3>
+            <p>Dear {provider.User.Name},</p>
+            <p>{bodyContent}</p>
+            <br/>
+            <p>Regards,<br/>Ajeer Management</p>";
+
+        await _emailService.SendEmailAsync(provider.User.Email, subject, htmlBody);
+    }
+
 }

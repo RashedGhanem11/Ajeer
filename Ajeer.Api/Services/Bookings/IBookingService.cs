@@ -1,3 +1,4 @@
+using Ajeer.Api.DTOs.Admin.Dashboard;
 using Ajeer.Api.DTOs.Bookings;
 using Ajeer.Api.Enums;
 
@@ -18,4 +19,6 @@ public interface IBookingService
     Task CompleteBookingAsync(int providerId, int bookingId);
 
     Task CancelBookingAsync(int userId, int bookingId);
+
+    Task<DashboardResponse> GetDashboardStatisticsAsync();
 }

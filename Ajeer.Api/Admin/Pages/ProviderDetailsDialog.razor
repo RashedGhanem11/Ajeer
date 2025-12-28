@@ -1,0 +1,243 @@
+@using MudBlazor
+@using Ajeer.Api.DTOs.ServiceProviders
+@using Ajeer.Api.Services.ServiceProviders
+@using Ajeer.Api.Enums 
+@inject IServiceProviderService _providerService
+@inject IDialogService _dialogService
+@inject ISnackbar _snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_details is null)
+        {
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Class="d-block mx-auto my-4" />
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudPaper Elevation="0" Class="pa-4 border-r mud-border-lines-default h-100 d-flex flex-column">
+                        <div class="d-flex flex-column align-center mb-6">
+                            <MudAvatar Style="height:100px; width:100px;" Elevation="2" Class="mb-3">
+                                @if(!string.IsNullOrEmpty(_details.ProfilePictureUrl))
+                                {
+                                    <MudImage Src="@_details.ProfilePictureUrl" ObjectFit="ObjectFit.Cover" Style="width:100%; height:100%;"/>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.h4">@(_details.FullName.FirstOrDefault().ToString().ToUpper())</MudText>
+                                }
+                            </MudAvatar>
+                            
+                            <MudText Typo="Typo.h6" Align="Align.Center">@_details.FullName</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">@_details.Email</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-2">@_details.PhoneNumber</MudText>
+                            
+                            <MudChip T="string" Size="Size.Small" Color="@(_details.IsActive ? Color.Success : Color.Error)" Variant="Variant.Text">
+                                @(_details.IsActive ? "Active Account" : "Banned Account")
+                            </MudChip>
+                        </div>
+
+                        <MudDivider Class="my-4" />
+
+                        <MudText Typo="Typo.subtitle2" Class="mb-2"><b>Subscription</b></MudText>
+                        <div class="mb-4">
+                            @if (_details.Subscription.HasActiveSubscription)
+                            {
+                                <div class="d-flex align-center flex-wrap gap-2">
+                                    <MudChip T="string" Color="Color.Primary" Size="Size.Small" Class="ma-0">@_details.Subscription.PlanName</MudChip>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Expires: @_details.Subscription.ExpiryDate?.ToShortDateString()</MudText>
+                                </div>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Color="Color.Default" Size="Size.Small">Free / None</MudChip>
+                            }
+                        </div>
+
+                        <MudText Typo="Typo.subtitle2" Class="mb-2"><b>Services</b></MudText>
+                        <div class="d-flex flex-wrap gap-1 mt-1 mb-auto">
+                            @foreach(var s in @_details.Services) 
+                            { 
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@s</MudChip> 
+                            }
+                        </div>
+
+                        <MudDivider Class="my-4" />
+
+                        <MudStack Spacing="2">
+                            <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Rounded.Email" OnClick="OpenEmailDialog" FullWidth="true">Send Email</MudButton>
+                            
+                            @if(_details.IsActive)
+                            {
+                                <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Rounded.Block" OnClick="ToggleStatus" FullWidth="true">Deactivate</MudButton>
+                            }
+                            else
+                            {
+                                <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Rounded.CheckCircle" OnClick="ToggleStatus" FullWidth="true">Activate</MudButton>
+                            }
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="8">
+                    
+                    <div style="position: relative;">
+                        
+                        <MudTabs Elevation="0" ApplyEffectsToContainer="true" Rounded="true" PanelClass="mt-2" Color="Color.Transparent" SliderColor="Color.Primary">
+                            
+                            <MudTabPanel Text="@($"Bookings ({_details.RecentBookings.Count})")">
+                                <MudTable Items="@_details.RecentBookings" Elevation="0" Dense="true" Hover="true" Height="400px" FixedHeader="true">
+                                    <HeaderContent>
+                                        <MudTh>Status</MudTh>
+                                        <MudTh>Scheduled</MudTh>
+                                        <MudTh>Completed</MudTh>
+                                        <MudTh>Customer</MudTh>
+                                    </HeaderContent>
+                                    <RowTemplate>
+                                        <MudTd Style="@GetRowStyle(context)">
+                                            <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="Variant.Text">@context.Status</MudChip>
+                                        </MudTd>
+                                        <MudTd Style="@GetRowStyle(context)">@context.ScheduledDate.ToString("g")</MudTd>
+                                        <MudTd Style="@GetRowStyle(context)">
+                                            @if(context.CompletedDate.HasValue)
+                                            {
+                                                @context.CompletedDate.Value.ToString("g")
+                                            }
+                                            else
+                                            {
+                                                <span style="color:grey">-</span>
+                                            }
+                                        </MudTd>
+                                        <MudTd Style="@GetRowStyle(context)">@context.UserName</MudTd>
+                                    </RowTemplate>
+                                </MudTable>
+                            </MudTabPanel>
+                            
+                            <MudTabPanel Text="@($"Reviews ({_details.RecentReviews.Count})")">
+                                <MudPaper Elevation="0" Class="pa-0 overflow-hidden" Style="height: 400px;">
+                                    @if(_details.RecentReviews.Any())
+                                    {
+                                        <MudList T="string" Class="overflow-auto h-100">
+                                            @foreach(var r in _details.RecentReviews)
+                                            {
+                                                <MudListItem>
+                                                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                                                        <MudRating ReadOnly="true" SelectedValue="@((int)r.Rating)" Size="Size.Small" />
+                                                        <MudText Typo="Typo.subtitle2">@r.ReviewerName</MudText>
+                                                        <MudSpacer />
+                                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@r.ReviewDate.ToShortDateString()</MudText>
+                                                    </MudStack>
+                                                    <MudText Typo="Typo.body2" Class="mt-1">"@r.Comment"</MudText>
+                                                </MudListItem>
+                                                <MudDivider />
+                                            }
+                                        </MudList>
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex justify-center align-center h-100">
+                                            <MudText Color="Color.Secondary">No reviews yet.</MudText>
+                                        </div>
+                                    }
+                                </MudPaper>
+                            </MudTabPanel>
+                        </MudTabs>
+
+                        <div style="position: absolute; top: 12px; right: 0; display: flex; align-items: center; gap: 16px;">
+                            <div class="d-flex align-center gap-1">
+                                <MudIcon Icon="@Icons.Material.Rounded.Star" Color="Color.Warning" Size="Size.Small"/>
+                                <MudText Typo="Typo.body2"><b>@_details.Rating.ToString("0.0")</b></MudText>
+                            </div>
+                            
+                            <div class="d-flex align-center gap-1">
+                                <MudIcon Icon="@Icons.Material.Rounded.AccessTime" Color="Color.Primary" Size="Size.Small"/>
+                                <MudText Typo="Typo.caption" Style="font-weight:600;">@_onTimePercentage% On-Time</MudText>
+                            </div>
+                        </div>
+
+                    </div>
+                </MudItem>
+            </MudGrid>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public int ProviderId { get; set; }
+
+    private ProviderDetailResponse? _details;
+    private double _onTimePercentage = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _details = await _providerService.GetProviderDetailsAsync(ProviderId);
+        CalculateMetrics();
+    }
+
+    private void CalculateMetrics()
+    {
+        if (_details == null || !_details.RecentBookings.Any()) return;
+
+        var completed = _details.RecentBookings.Where(b => b.Status == BookingStatus.Completed).ToList();
+        if (!completed.Any()) return;
+
+        // Logic: On Time if CompletedDate <= ScheduledDate + EstimatedHours + 1 Hour Grace
+        int onTimeCount = completed.Count(b => 
+            b.CompletedDate.HasValue && 
+            b.CompletedDate.Value <= b.ScheduledDate.AddHours((double)b.EstimatedHours + 1)); 
+
+        _onTimePercentage = Math.Round((double)onTimeCount / completed.Count * 100, 1);
+    }
+
+    private string GetRowStyle(Ajeer.Api.DTOs.Bookings.BookingSummaryResponse b)
+    {
+        // Only color if completed
+        if (b.Status != BookingStatus.Completed || !b.CompletedDate.HasValue) return "";
+        
+        var deadline = b.ScheduledDate.AddHours((double)b.EstimatedHours);
+        
+        // Late = Red, On Time = Green
+        if (b.CompletedDate.Value > deadline) return "background-color: #FEF2F2;"; 
+        return "background-color: #F0FDF4;"; 
+    }
+
+    private Color GetStatusColor(BookingStatus status)
+    {
+        return status switch
+        {
+            BookingStatus.Pending => Color.Warning,
+            BookingStatus.Active => Color.Info,
+            BookingStatus.Completed => Color.Success,
+            BookingStatus.Cancelled => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private async Task ToggleStatus()
+    {
+        if (_details == null) return;
+        string action = _details.IsActive ? "Deactivate" : "Activate";
+        bool? result = await _dialogService.ShowMessageBox("Confirm", $"Are you sure you want to {action} this provider?", yesText: "Yes", cancelText: "Cancel");
+        if (result == true)
+        {
+            await _providerService.ToggleProviderActiveStatusAsync(_details.ServiceProviderId);
+            _details.IsActive = !_details.IsActive; 
+            _snackbar.Add($"Provider {action}d.", Severity.Success);
+        }
+    }
+
+    private async Task OpenEmailDialog()
+    {
+        var parameters = new DialogParameters();
+        parameters.Add("ProviderId", ProviderId); 
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        await _dialogService.ShowAsync<SendEmailDialog>("Compose Email", parameters, options);
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}

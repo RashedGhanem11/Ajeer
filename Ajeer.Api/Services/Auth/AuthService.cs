@@ -79,7 +79,8 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IFi
             Email = newUser.Email,
             Phone = newUser.Phone,
             Role = newUser.Role,
-            ProfilePictureUrl = null
+            ProfilePictureUrl = null,
+            HasProviderApplication = false
         };
     }
 
@@ -105,6 +106,8 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IFi
 
         string? profilePictureUrl = fileService.GetPublicUrl("profilePictures", user.ProfilePictureUrl);
 
+        bool hasApp = await context.ServiceProviders.AnyAsync(sp => sp.UserId == user.Id);
+
         return new AuthResponse
         {
             Token = token,
@@ -113,7 +116,8 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IFi
             Email = user.Email,
             Phone = user.Phone,
             Role = user.Role,
-            ProfilePictureUrl = profilePictureUrl
+            ProfilePictureUrl = profilePictureUrl,
+            HasProviderApplication = hasApp
         };
     }
 }

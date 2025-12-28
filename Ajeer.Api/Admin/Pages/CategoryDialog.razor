@@ -1,0 +1,75 @@
+@using MudBlazor
+@using Ajeer.Api.DTOs.Admin
+@using Ajeer.Api.DTOs.Admin.Services
+@inject ISnackbar _snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudTextField @bind-Value="_model.Name" Label="Category Name" Required="true" Variant="Variant.Outlined" Class="mb-3" />
+            
+            <MudTextField @bind-Value="_model.Description" Label="Description" Required="true" Variant="Variant.Outlined" Lines="3" Class="mb-3" />
+            
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3 pa-2 rounded" Style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                <MudText Typo="Typo.body2">Status:</MudText>
+                <MudSpacer />
+                <MudSwitch @bind-Value="_model.IsActive" Color="Color.Success" Label="@(_model.IsActive ? "Active" : "Inactive")" LabelPosition="LabelPosition.Start" />
+            </MudStack>
+
+            <MudFileUpload T="IBrowserFile" FilesChanged="UploadIcon">
+                <ActivatorContent>
+                    <MudButton Variant="Variant.Filled"
+                               Color="@(IconFile == null ? Color.Primary : Color.Success)"
+                               StartIcon="@Icons.Material.Filled.CloudUpload"
+                               FullWidth="true">
+                        @(IconFile == null ? (_model.Id == 0 ? "Upload Icon (Required)" : "Change Icon") : $"Selected: {IconFile.Name}")
+                    </MudButton>
+                </ActivatorContent>
+            </MudFileUpload>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public UpdateCategoryRequest Model { get; set; } = new();
+
+    private UpdateCategoryRequest _model = new();
+    private MudForm _form = default!;
+    private IBrowserFile? IconFile;
+
+    protected override void OnInitialized()
+    {
+        _model = new UpdateCategoryRequest
+        {
+            Id = Model.Id,
+            Name = Model.Name,
+            Description = Model.Description,
+            IsActive = Model.IsActive
+        };
+    }
+
+    private void UploadIcon(IBrowserFile file) => IconFile = file;
+
+    private void Submit()
+    {
+        _form.Validate();
+        if (!_form.IsValid) return;
+
+        // Validation: Icon is required for NEW categories (Id == 0)
+        if (_model.Id == 0 && IconFile == null)
+        {
+            _snackbar.Add("Please upload an icon for the new category.", Severity.Warning);
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok((_model, IconFile)));
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}

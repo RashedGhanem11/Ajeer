@@ -7,6 +7,7 @@ public class Service
     public string Name { get; set; } = null!;
     public decimal BasePrice { get; set; }
     public decimal EstimatedHours { get; set; }
+    public bool IsActive { get; set; } = true;
 
     public ServiceCategory Category { get; set; } = null!;
     public ICollection<ServiceProvider> ServiceProviders { get; set; } = new List<ServiceProvider>();

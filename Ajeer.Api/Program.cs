@@ -31,13 +31,7 @@ app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapHub<NotificationHub>("/hubs/notification");
 
-app.MapGet("/", (AppDbContext context) => {
-
-    Console.WriteLine($"Users: {context.Users.Count()}");
-    Console.WriteLine($"Providers: {context.ServiceProviders.Count()}");
-    Console.WriteLine($"Categories: {context.ServiceCategories.Count()}");
-    Console.WriteLine($"Bookings: {context.Bookings.Count()}");
-
-});
+app.MapBlazorHub("/admin/_blazor");
+app.MapFallbackToPage("/admin/{*catchall}", "/_Host");
 
 app.Run();

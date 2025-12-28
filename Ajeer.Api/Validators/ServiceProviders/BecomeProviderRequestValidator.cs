@@ -33,6 +33,10 @@ public class BecomeProviderRequestValidator : AbstractValidator<BecomeProviderRe
                 .LessThan(s => s.EndTime)
                 .WithMessage("Start time must be before end time.");
         });
+
+        RuleFor(x => x.IdCardImage)
+            .Must(file => file == null || (file.Length > 0 && file.Length <= 10 * 1024 * 1024))
+            .WithMessage("ID Card image must be less than 10 MB.");
     }
 
     private bool HaveNoOverlappingSlots(List<WorkScheduleDto> schedules)

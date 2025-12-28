@@ -1,0 +1,261 @@
+@page "/providers"
+@using Ajeer.Api.DTOs.ServiceProviders
+@using Ajeer.Api.Services.ServiceProviders
+@inject IServiceProviderService _providerService
+@inject IDialogService _dialogService
+@inject ISnackbar _snackbar
+
+<style>
+    /* Clean Tab Styling */
+    .mud-tab {
+        text-transform: none !important;
+        font-weight: 600 !important;
+        min-width: 200px;
+        margin-right: 8px;
+        border-radius: 8px 8px 0 0 !important;
+    }
+    .mud-tabs-slider {
+        height: 3px !important;
+        border-radius: 3px 3px 0 0;
+    }
+</style>
+
+<MudText Typo="Typo.h5" Style="font-weight: 700; color: #1E293B;" Class="mb-6">Provider Management</MudText>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
+}
+
+<MudPaper Elevation="0" Class="rounded-xl border mud-border-lines-default overflow-hidden">
+    
+    <MudTabs Elevation="0" ApplyEffectsToContainer="true" Color="Color.Transparent" SliderColor="Color.Primary" PanelClass="pa-0">
+        
+        <MudTabPanel BadgeData="@(_pendingProviders.Count > 0 ? _pendingProviders.Count : null)" BadgeColor="Color.Error">
+            <TabContent>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Rounded.PendingActions" Color="Color.Error" Size="Size.Small"/>
+                    <MudText>Verification Requests</MudText>
+                </MudStack>
+            </TabContent>
+
+            <ChildContent>
+                <MudTable Items="@_pendingProviders" 
+                          Hover="true" 
+                          Elevation="0" 
+                          FixedHeader="true" 
+                          Height="600px"
+                          Filter="new Func<ProviderSummaryResponse,bool>(FilterFuncPending)"
+                          Class="pa-4">
+                    
+                    <ToolBarContent>
+                        <MudTextField @bind-Value="searchStringPending" Placeholder="Search requests..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" IconSize="Size.Medium" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Style="background: white; max-width: 300px;" />
+                        <MudSpacer />
+                    </ToolBarContent>
+
+                    <HeaderContent>
+                        <MudTh Style="color:#64748B; font-weight:600;">Provider</MudTh>
+                        <MudTh Style="color:#64748B; font-weight:600;">Contact</MudTh>
+                        <MudTh Style="color:#64748B; font-weight:600;">Applied Date</MudTh>
+                        <MudTh Style="color:#64748B; font-weight:600;">Document</MudTh>
+                        <MudTh Style="text-align:right; color:#64748B; font-weight:600;">Actions</MudTh>
+                    </HeaderContent>
+                    
+                    <RowTemplate>
+                        <MudTd>
+                            <MudStack Row="true" AlignItems="AlignItems.Center">
+                                @if(!string.IsNullOrEmpty(context.ProfilePictureUrl))
+                                {
+                                    <MudAvatar Size="Size.Medium">
+                                        <MudImage Src="@context.ProfilePictureUrl" ObjectFit="ObjectFit.Cover"></MudImage>
+                                    </MudAvatar>
+                                }
+                                else
+                                {
+                                    <MudAvatar Size="Size.Medium" Color="Color.Primary">
+                                        @(string.IsNullOrEmpty(context.FullName) ? "?" : context.FullName[0].ToString().ToUpper())
+                                    </MudAvatar>
+                                }
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">@context.FullName</MudText>
+                            </MudStack>
+                        </MudTd>
+                        <MudTd>
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.caption">@context.Email</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PhoneNumber</MudText>
+                            </MudStack>
+                        </MudTd>
+                        <MudTd>@context.JoinedDate.ToShortDateString()</MudTd>
+                        <MudTd>
+                            @if (!string.IsNullOrEmpty(context.IdCardUrl))
+                            {
+                                <MudLink Href="@context.IdCardUrl" Target="_blank" Underline="Underline.None">
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Icon="@Icons.Material.Rounded.AttachFile" Variant="Variant.Outlined">View ID</MudChip>
+                                </MudLink>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text">Missing</MudChip>
+                            }
+                        </MudTd>
+                        <MudTd Style="text-align:right;">
+                             <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
+                                <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" Elevation="0" OnClick="@(() => VerifyProvider(context, true))">Approve</MudButton>
+                                <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" OnClick="@(() => VerifyProvider(context, false))">Reject</MudButton>
+                            </MudStack>
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                         <MudText Typo="Typo.body2" Class="pa-4" Color="Color.Secondary">No pending requests found.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+            </ChildContent>
+        </MudTabPanel>
+
+        <MudTabPanel>
+             <TabContent>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Rounded.PeopleAlt" Color="Color.Primary" Size="Size.Small"/>
+                    <MudText>All Providers</MudText>
+                </MudStack>
+            </TabContent>
+
+            <ChildContent>
+                <MudTable Items="@_activeProviders" 
+                          Hover="true" 
+                          Elevation="0" 
+                          OnRowClick="OpenProviderDetails" 
+                          T="ProviderSummaryResponse" 
+                          Filter="new Func<ProviderSummaryResponse,bool>(FilterFuncActive)"
+                          FixedHeader="true" 
+                          Height="600px"
+                          Class="pa-4">
+                    
+                    <ToolBarContent>
+                        <MudTextField @bind-Value="searchStringActive" Placeholder="Search providers..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" IconSize="Size.Medium" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Style="background: white; max-width: 300px;" />
+                        <MudSpacer />
+                    </ToolBarContent>
+
+                    <HeaderContent>
+                        <MudTh Style="color:#64748B; font-weight:600;">Provider</MudTh>
+                        <MudTh Style="color:#64748B; font-weight:600;">Contact Info</MudTh>
+                        <MudTh Style="color:#64748B; font-weight:600; text-align:center;">Rating</MudTh>
+                        <MudTh Style="color:#64748B; font-weight:600; text-align:center;">Status</MudTh>
+                        <MudTh Style="color:#64748B; font-weight:600; text-align:right;"></MudTh>
+                    </HeaderContent>
+                    
+                    <RowTemplate>
+                        <MudTd>
+                            <MudStack Row="true" AlignItems="AlignItems.Center">
+                                @if(!string.IsNullOrEmpty(context.ProfilePictureUrl))
+                                {
+                                    <MudAvatar Size="Size.Medium">
+                                        <MudImage Src="@context.ProfilePictureUrl" ObjectFit="ObjectFit.Cover"></MudImage>
+                                    </MudAvatar>
+                                }
+                                else
+                                {
+                                    <MudAvatar Size="Size.Medium" Color="Color.Primary">
+                                        @(string.IsNullOrEmpty(context.FullName) ? "?" : context.FullName[0].ToString().ToUpper())
+                                    </MudAvatar>
+                                }
+                                <MudText Typo="Typo.body2" Style="font-weight: 500;">@context.FullName</MudText>
+                            </MudStack>
+                        </MudTd>
+
+                        <MudTd>
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.body2">@context.Email</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PhoneNumber</MudText>
+                            </MudStack>
+                        </MudTd>
+
+                        <MudTd Style="text-align:center;">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="1">
+                                 <MudIcon Icon="@Icons.Material.Rounded.Star" Color="Color.Warning" Size="Size.Small"/>
+                                 <MudText Typo="Typo.body2" Style="font-weight:600;">@context.Rating.ToString("0.0")</MudText>
+                                 <MudText Typo="Typo.caption" Color="Color.Secondary">(@context.TotalReviews)</MudText>
+                            </MudStack>
+                        </MudTd>
+
+                        <MudTd Style="text-align:center;">
+                            <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Error)" Variant="Variant.Text" Class="rounded-lg">
+                                @(context.IsActive ? "Active" : "Banned")
+                            </MudChip>
+                        </MudTd>
+                        
+                        <MudTd Style="text-align:right;">
+                            <MudIconButton Icon="@Icons.Material.Rounded.ChevronRight" 
+                                           Size="Size.Small" 
+                                           Color="Color.Default" 
+                                           OnClick="@(() => OpenDetails(context))"/>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </ChildContent>
+        </MudTabPanel>
+    </MudTabs>
+</MudPaper>
+
+@code {
+    private List<ProviderSummaryResponse> _pendingProviders = new();
+    private List<ProviderSummaryResponse> _activeProviders = new();
+    private string _errorMessage = "";
+    
+    private string searchStringPending = "";
+    private string searchStringActive = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { await LoadData(); }
+        catch (Exception ex) { _errorMessage = $"Error: {ex.Message}"; }
+    }
+
+    private async Task LoadData()
+    {
+        _pendingProviders = await _providerService.GetProvidersByStatusAsync(isVerified: false);
+        _activeProviders = await _providerService.GetProvidersByStatusAsync(isVerified: true);
+    }
+
+    private bool FilterFuncPending(ProviderSummaryResponse element) => FilterGeneral(element, searchStringPending);
+    private bool FilterFuncActive(ProviderSummaryResponse element) => FilterGeneral(element, searchStringActive);
+
+    private bool FilterGeneral(ProviderSummaryResponse element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString)) return true;
+        if (element.FullName.Contains(searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        if (element.Email.Contains(searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        if (element.PhoneNumber.Contains(searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
+    private async Task VerifyProvider(ProviderSummaryResponse provider, bool approve)
+    {
+        if (approve)
+        {
+            await _providerService.ApproveProviderAsync(provider.ServiceProviderId);
+            _snackbar.Add($"{provider.FullName} approved!", Severity.Success);
+        }
+        else
+        {
+            await _providerService.RejectProviderAsync(provider.ServiceProviderId, "Documents unclear");
+            _snackbar.Add($"{provider.FullName} rejected.", Severity.Warning);
+        }
+        await LoadData();
+    }
+
+    private void OpenDetails(ProviderSummaryResponse item)
+    {
+        if( item == null) return;
+
+        var parameters = new DialogParameters();
+        parameters.Add("ProviderId", item.ServiceProviderId);
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        _dialogService.ShowAsync<ProviderDetailsDialog>("Provider Details", parameters, options);
+    }
+
+    private void OpenProviderDetails(TableRowClickEventArgs<ProviderSummaryResponse> args)
+    {
+        OpenDetails(args.Item);
+    }
+}

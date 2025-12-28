@@ -12,6 +12,13 @@ public class ServiceProviderConfiguration : IEntityTypeConfiguration<Models.Serv
 
         builder.HasKey(sp => sp.UserId);
 
+        builder.Property(sp => sp.IdCardUrl)
+            .IsRequired(false)
+            .HasMaxLength(500);
+
+        builder.Property(sp => sp.CreatedAt)
+            .HasDefaultValueSql("GETUTCDATE()");
+
         builder.Property(sp => sp.Bio)
             .IsRequired(false)
             .HasMaxLength(500);
@@ -33,12 +40,6 @@ public class ServiceProviderConfiguration : IEntityTypeConfiguration<Models.Serv
             .WithOne(u => u.ServiceProvider)
             .HasForeignKey<Models.ServiceProvider>(sp => sp.UserId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasOne(sp => sp.IdCardAttachment)
-            .WithOne()
-            .HasForeignKey<Models.ServiceProvider>(sp => sp.IdCardAttachmentId)
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.ClientSetNull);
 
         builder.HasMany(sp => sp.Bookings)
             .WithOne(b => b.ServiceProvider)

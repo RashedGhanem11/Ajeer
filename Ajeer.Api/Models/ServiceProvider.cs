@@ -3,15 +3,15 @@ namespace Ajeer.Api.Models;
 public class ServiceProvider
 {
     public int UserId { get; set; }
-    public int? IdCardAttachmentId { get; set; }
+    public string? IdCardUrl { get; set; }
     public string? Bio { get; set; }
     public decimal Rating { get; set; }
     public int TotalReviews { get; set; }
     public bool IsVerified { get; set; }
     public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; }
 
     public User User { get; set; } = null!;
-    public Attachment? IdCardAttachment { get; set; }
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     public ICollection<ProviderService> ProviderServices { get; set; } = new List<ProviderService>();
     public ICollection<ProviderServiceArea> ProviderServiceAreas { get; set; } = new List<ProviderServiceArea>();

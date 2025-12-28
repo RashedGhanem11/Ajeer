@@ -1,0 +1,74 @@
+@using MudBlazor
+@using Ajeer.Api.DTOs.Admin.Areas
+@inject ISnackbar _snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form">
+            
+            <div class="d-flex gap-2 align-center mb-3">
+                @if (_isAddingNewCity)
+                {
+                    <MudTextField @bind-Value="_model.CityName" Label="New City Name" Required="true" Variant="Variant.Outlined" Class="flex-grow-1" AutoFocus="true"/>
+                    <MudIconButton Icon="@Icons.Material.Rounded.Close" OnClick="@(() => _isAddingNewCity = false)" Color="Color.Error" Title="Cancel" />
+                }
+                else
+                {
+                    <MudSelect T="string" Label="City" @bind-Value="_model.CityName" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Required="true" Class="flex-grow-1">
+                        @foreach (var city in Cities)
+                        {
+                            <MudSelectItem Value="@city">@city</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudTooltip Text="Add New City">
+                        <MudIconButton Icon="@Icons.Material.Rounded.Add" OnClick="@(() => { _isAddingNewCity = true; _model.CityName = ""; })" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Small" />
+                    </MudTooltip>
+                }
+            </div>
+
+            <MudTextField @bind-Value="_model.AreaName" Label="Area Name" Required="true" Variant="Variant.Outlined" Class="mb-3" />
+            
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-4 pa-2 rounded" Style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                <MudText Typo="Typo.body2">Status:</MudText>
+                <MudSpacer />
+                <MudSwitch @bind-Value="_model.IsActive" Color="Color.Success" Label="@(_model.IsActive ? "Active" : "Inactive")" LabelPosition="LabelPosition.Start" />
+            </MudStack>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    
+    [Parameter] public UpdateAreaRequest Model { get; set; } = new();
+    [Parameter] public List<string> Cities { get; set; } = new();
+
+    private UpdateAreaRequest _model = new();
+    private MudForm _form = default!;
+    private bool _isAddingNewCity = false;
+
+    protected override void OnInitialized()
+    {
+        _model = new UpdateAreaRequest
+        {
+            Id = Model.Id,
+            AreaName = Model.AreaName,
+            CityName = Model.CityName,
+            IsActive = Model.IsActive
+        };
+        if (!Cities.Any()) _isAddingNewCity = true;
+    }
+
+    private void Submit()
+    {
+        _form.Validate();
+        if (!_form.IsValid) return;
+        MudDialog.Close(DialogResult.Ok(_model));
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Ajeer.Api.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class InitialDb : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,7 +20,8 @@ namespace Ajeer.Api.Data.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     AreaName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    CityName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
+                    CityName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
@@ -35,7 +36,8 @@ namespace Ajeer.Api.Data.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
-                    IconUrl = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false)
+                    IconUrl = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
@@ -87,7 +89,8 @@ namespace Ajeer.Api.Data.Migrations
                     CategoryId = table.Column<int>(type: "int", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     BasePrice = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
-                    EstimatedHours = table.Column<decimal>(type: "decimal(5,2)", nullable: false)
+                    EstimatedHours = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
@@ -101,72 +104,21 @@ namespace Ajeer.Api.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Notifications",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Type = table.Column<string>(type: "nvarchar(50)", nullable: false),
-                    Message = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    IsRead = table.Column<bool>(type: "bit", nullable: false, defaultValue: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Notifications", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Notifications_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Attachments",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    BookingId = table.Column<int>(type: "int", nullable: true),
-                    UploaderId = table.Column<int>(type: "int", nullable: false),
-                    FileUrl = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
-                    MimeType = table.Column<string>(type: "nvarchar(50)", nullable: false),
-                    FileType = table.Column<string>(type: "nvarchar(50)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Attachments", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Attachments_Users_UploaderId",
-                        column: x => x.UploaderId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ServiceProviders",
                 columns: table => new
                 {
                     UserId = table.Column<int>(type: "int", nullable: false),
-                    IdCardAttachmentId = table.Column<int>(type: "int", nullable: true),
+                    IdCardUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Bio = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Rating = table.Column<decimal>(type: "decimal(3,2)", nullable: false, defaultValue: 0m),
                     TotalReviews = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
                     IsVerified = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ServiceProviders", x => x.UserId);
-                    table.ForeignKey(
-                        name: "FK_ServiceProviders_Attachments_IdCardAttachmentId",
-                        column: x => x.IdCardAttachmentId,
-                        principalTable: "Attachments",
-                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ServiceProviders_Users_UserId",
                         column: x => x.UserId,
@@ -186,9 +138,10 @@ namespace Ajeer.Api.Data.Migrations
                     ServiceAreaId = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     ScheduledDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CompletedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     EstimatedHours = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
                     TotalAmount = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
-                    Address = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
+                    Address = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true, defaultValue: ""),
                     Latitude = table.Column<decimal>(type: "decimal(10,8)", nullable: false),
                     Longitude = table.Column<decimal>(type: "decimal(11,8)", nullable: false),
                     Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
@@ -318,6 +271,35 @@ namespace Ajeer.Api.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Attachments",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BookingId = table.Column<int>(type: "int", nullable: true),
+                    UploaderId = table.Column<int>(type: "int", nullable: false),
+                    FileUrl = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
+                    MimeType = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    FileType = table.Column<string>(type: "nvarchar(50)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Attachments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Attachments_Bookings_BookingId",
+                        column: x => x.BookingId,
+                        principalTable: "Bookings",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Attachments_Users_UploaderId",
+                        column: x => x.UploaderId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "BookingServiceItems",
                 columns: table => new
                 {
@@ -381,6 +363,37 @@ namespace Ajeer.Api.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    BookingId = table.Column<int>(type: "int", nullable: true),
+                    Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Type = table.Column<string>(type: "nvarchar(50)", nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false, defaultValue: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Bookings_BookingId",
+                        column: x => x.BookingId,
+                        principalTable: "Bookings",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Reviews",
                 columns: table => new
                 {
@@ -418,33 +431,33 @@ namespace Ajeer.Api.Data.Migrations
 
             migrationBuilder.InsertData(
                 table: "ServiceAreas",
-                columns: new[] { "Id", "AreaName", "CityName" },
+                columns: new[] { "Id", "AreaName", "CityName", "IsActive" },
                 values: new object[,]
                 {
-                    { -8, "Tla' Al-Ali", "Amman" },
-                    { -7, "Al-Bayader", "Amman" },
-                    { -6, "Al-Jubeiha", "Amman" },
-                    { -5, "Dabouq", "Amman" },
-                    { -4, "Al-Rabieh", "Amman" },
-                    { -3, "Shmeisani", "Amman" },
-                    { -2, "Jabal Al-Weibdeh", "Amman" },
-                    { -1, "Abdoun", "Amman" }
+                    { -8, "Tla' Al-Ali", "Amman", true },
+                    { -7, "Al-Bayader", "Amman", true },
+                    { -6, "Al-Jubeiha", "Amman", true },
+                    { -5, "Dabouq", "Amman", true },
+                    { -4, "Al-Rabieh", "Amman", true },
+                    { -3, "Shmeisani", "Amman", true },
+                    { -2, "Jabal Al-Weibdeh", "Amman", true },
+                    { -1, "Abdoun", "Amman", true }
                 });
 
             migrationBuilder.InsertData(
                 table: "ServiceCategories",
-                columns: new[] { "Id", "Description", "IconUrl", "Name" },
+                columns: new[] { "Id", "Description", "IconUrl", "IsActive", "Name" },
                 values: new object[,]
                 {
-                    { -9, "Home and office moving or furniture delivery.", "moving_and_delivery.png", "Moving & Delivery" },
-                    { -8, "Computer setup, repair, and software help.", "it_support.png", "IT Support" },
-                    { -7, "Lawn care, trimming, and garden design.", "gardening.png", "Gardening" },
-                    { -6, "Fixing washing machines, fridges, and ACs.", "appliance_repair.png", "Appliance Repair" },
-                    { -5, "Wood furniture and door repair or installation.", "carpentry.png", "Carpentry" },
-                    { -4, "Interior and exterior wall painting.", "painting.png", "Painting" },
-                    { -3, "Home, office, and carpet cleaning.", "cleaning.png", "Cleaning" },
-                    { -2, "Electrical repairs, wiring, and installations.", "electrical.png", "Electrical" },
-                    { -1, "Leak repair, pipe installation, and maintenance.", "plumbing.png", "Plumbing" }
+                    { -9, "Home and office moving or furniture delivery.", "moving_and_delivery.png", true, "Moving & Delivery" },
+                    { -8, "Computer setup, repair, and software help.", "it_support.png", true, "IT Support" },
+                    { -7, "Lawn care, trimming, and garden design.", "gardening.png", true, "Gardening" },
+                    { -6, "Fixing washing machines, fridges, and ACs.", "appliance_repair.png", true, "Appliance Repair" },
+                    { -5, "Wood furniture and door repair or installation.", "carpentry.png", true, "Carpentry" },
+                    { -4, "Interior and exterior wall painting.", "painting.png", true, "Painting" },
+                    { -3, "Home, office, and carpet cleaning.", "cleaning.png", true, "Cleaning" },
+                    { -2, "Electrical repairs, wiring, and installations.", "electrical.png", true, "Electrical" },
+                    { -1, "Leak repair, pipe installation, and maintenance.", "plumbing.png", true, "Plumbing" }
                 });
 
             migrationBuilder.InsertData(
@@ -458,32 +471,32 @@ namespace Ajeer.Api.Data.Migrations
 
             migrationBuilder.InsertData(
                 table: "Services",
-                columns: new[] { "Id", "BasePrice", "CategoryId", "EstimatedHours", "Name" },
+                columns: new[] { "Id", "BasePrice", "CategoryId", "EstimatedHours", "IsActive", "Name" },
                 values: new object[,]
                 {
-                    { -23, 30m, -9, 2m, "Furniture Delivery" },
-                    { -22, 100m, -9, 10m, "Office Relocation" },
-                    { -21, 80m, -9, 8m, "Home Moving" },
-                    { -20, 10m, -8, 1m, "Software Installation" },
-                    { -19, 30m, -8, 3m, "Network Setup" },
-                    { -18, 15m, -8, 1.5m, "Laptop Repair" },
-                    { -17, 50m, -7, 5m, "Garden Design" },
-                    { -16, 20m, -7, 2m, "Grass Cutting" },
-                    { -15, 20m, -6, 2m, "Washing Machine Repair" },
-                    { -14, 15m, -6, 1.5m, "Fridge Maintenance" },
-                    { -13, 20m, -6, 2m, "AC Repair" },
-                    { -12, 20m, -5, 2m, "Furniture Repair" },
-                    { -11, 30m, -5, 3m, "Door Installation" },
-                    { -10, 80m, -4, 8m, "Exterior Painting" },
-                    { -9, 60m, -4, 6m, "Interior Painting" },
-                    { -8, 20m, -3, 2m, "Carpet Cleaning" },
-                    { -7, 30m, -3, 3m, "Office Cleaning" },
-                    { -6, 40m, -3, 4m, "Home Deep Cleaning" },
-                    { -5, 30m, -2, 2.5m, "Wiring Maintenance" },
-                    { -4, 10m, -2, 1m, "Light Fixture Installation" },
-                    { -3, 15m, -1, 2m, "Drain Cleaning" },
-                    { -2, 25m, -1, 3m, "Pipe Installation" },
-                    { -1, 10m, -1, 1.5m, "Leak Repair" }
+                    { -23, 30m, -9, 2m, true, "Furniture Delivery" },
+                    { -22, 100m, -9, 10m, true, "Office Relocation" },
+                    { -21, 80m, -9, 8m, true, "Home Moving" },
+                    { -20, 10m, -8, 1m, true, "Software Installation" },
+                    { -19, 30m, -8, 3m, true, "Network Setup" },
+                    { -18, 15m, -8, 1.5m, true, "Laptop Repair" },
+                    { -17, 50m, -7, 5m, true, "Garden Design" },
+                    { -16, 20m, -7, 2m, true, "Grass Cutting" },
+                    { -15, 20m, -6, 2m, true, "Washing Machine Repair" },
+                    { -14, 15m, -6, 1.5m, true, "Fridge Maintenance" },
+                    { -13, 20m, -6, 2m, true, "AC Repair" },
+                    { -12, 20m, -5, 2m, true, "Furniture Repair" },
+                    { -11, 30m, -5, 3m, true, "Door Installation" },
+                    { -10, 80m, -4, 8m, true, "Exterior Painting" },
+                    { -9, 60m, -4, 6m, true, "Interior Painting" },
+                    { -8, 20m, -3, 2m, true, "Carpet Cleaning" },
+                    { -7, 30m, -3, 3m, true, "Office Cleaning" },
+                    { -6, 40m, -3, 4m, true, "Home Deep Cleaning" },
+                    { -5, 30m, -2, 2.5m, true, "Wiring Maintenance" },
+                    { -4, 10m, -2, 1m, true, "Light Fixture Installation" },
+                    { -3, 15m, -1, 2m, true, "Drain Cleaning" },
+                    { -2, 25m, -1, 3m, true, "Pipe Installation" },
+                    { -1, 10m, -1, 1.5m, true, "Leak Repair" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -537,6 +550,11 @@ namespace Ajeer.Api.Data.Migrations
                 column: "SenderId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Notifications_BookingId",
+                table: "Notifications",
+                column: "BookingId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Notifications_UserId",
                 table: "Notifications",
                 column: "UserId");
@@ -573,13 +591,6 @@ namespace Ajeer.Api.Data.Migrations
                 column: "ServiceProviderId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ServiceProviders_IdCardAttachmentId",
-                table: "ServiceProviders",
-                column: "IdCardAttachmentId",
-                unique: true,
-                filter: "[IdCardAttachmentId] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Services_CategoryId",
                 table: "Services",
                 column: "CategoryId");
@@ -605,22 +616,13 @@ namespace Ajeer.Api.Data.Migrations
                 table: "Users",
                 column: "Phone",
                 unique: true);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Attachments_Bookings_BookingId",
-                table: "Attachments",
-                column: "BookingId",
-                principalTable: "Bookings",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Attachments_Bookings_BookingId",
-                table: "Attachments");
+            migrationBuilder.DropTable(
+                name: "Attachments");
 
             migrationBuilder.DropTable(
                 name: "BookingServiceItems");
@@ -650,22 +652,19 @@ namespace Ajeer.Api.Data.Migrations
                 name: "Services");
 
             migrationBuilder.DropTable(
+                name: "Bookings");
+
+            migrationBuilder.DropTable(
                 name: "SubscriptionPlans");
 
             migrationBuilder.DropTable(
                 name: "ServiceCategories");
 
             migrationBuilder.DropTable(
-                name: "Bookings");
-
-            migrationBuilder.DropTable(
                 name: "ServiceAreas");
 
             migrationBuilder.DropTable(
                 name: "ServiceProviders");
-
-            migrationBuilder.DropTable(
-                name: "Attachments");
 
             migrationBuilder.DropTable(
                 name: "Users");

@@ -1,0 +1,87 @@
+@using MudBlazor
+@using Ajeer.Api.DTOs.Admin.Services
+@inject ISnackbar _snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudSelect T="int" Label="Category" @bind-Value="_model.CategoryId" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Class="mb-3" Required="true">
+                @foreach (var cat in Categories)
+                {
+                    <MudSelectItem Value="@cat.Id">@cat.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudTextField @bind-Value="_model.Name" Label="Service Name" Required="true" Variant="Variant.Outlined" Class="mb-3" />
+
+            <MudGrid>
+                <MudItem xs="6">
+                    <MudNumericField T="decimal" @bind-Value="_model.BasePrice" Label="Price ($)" Variant="Variant.Outlined" Min="0.0M" Required="true" RequiredError="Price is required"/>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudNumericField T="decimal" @bind-Value="_model.EstimatedHours" Label="Est. Hours" Variant="Variant.Outlined" Min="0.1M" Step="0.5M" Required="true" RequiredError="Hours required"/>
+                </MudItem>
+            </MudGrid>
+
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-4 pa-2 rounded" Style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                <MudText Typo="Typo.body2">Service Status:</MudText>
+                <MudSpacer />
+                <MudSwitch @bind-Value="_model.IsActive" Color="Color.Success" Label="@(_model.IsActive ? "Active" : "Inactive")" LabelPosition="LabelPosition.Start" />
+            </MudStack>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public UpdateServiceRequest Model { get; set; } = new();
+    [Parameter] public List<ServiceCategory> Categories { get; set; } = new();
+
+    private UpdateServiceRequest _model = new();
+    private MudForm _form = default!;
+
+    protected override void OnInitialized()
+    {
+        _model = new UpdateServiceRequest
+        {
+            Id = Model.Id,
+            CategoryId = Model.CategoryId,
+            Name = Model.Name,
+            BasePrice = Model.BasePrice,
+            EstimatedHours = Model.EstimatedHours,
+            IsActive = Model.IsActive
+        };
+
+        // Default to first category if creating new
+        if (_model.CategoryId == 0 && Categories.Any())
+        {
+            _model.CategoryId = Categories.First().Id;
+        }
+    }
+
+    private void Submit()
+    {
+        _form.Validate();
+        if (!_form.IsValid) return;
+
+        if (_model.BasePrice <= 0) 
+        {
+            _snackbar.Add("Price must be greater than 0", Severity.Warning);
+            return;
+        }
+        if (_model.EstimatedHours <= 0)
+        {
+            _snackbar.Add("Estimated hours must be greater than 0", Severity.Warning);
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(_model));
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}

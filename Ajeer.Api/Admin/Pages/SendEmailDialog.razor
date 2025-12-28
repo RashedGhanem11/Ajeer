@@ -1,0 +1,54 @@
+@using MudBlazor
+@using Ajeer.Api.Services.ServiceProviders
+@inject IServiceProviderService _providerService
+@inject ISnackbar _snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="Subject" Label="Subject" Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField @bind-Value="Body" Label="Message" Variant="Variant.Outlined" Lines="5" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Send" Disabled="@_sending">
+            @if (_sending) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/> }
+            Send
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public int ProviderId { get; set; }
+
+    private string Subject { get; set; } = "";
+    private string Body { get; set; } = "";
+    private bool _sending = false;
+
+    private async Task Send()
+    {
+        if (string.IsNullOrWhiteSpace(Subject) || string.IsNullOrWhiteSpace(Body))
+        {
+            _snackbar.Add("Please fill in both subject and message.", Severity.Warning);
+            return;
+        }
+
+        _sending = true;
+        try
+        {
+            await _providerService.SendCustomEmailAsync(ProviderId, Subject, Body);
+            _snackbar.Add("Email sent successfully.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add($"Failed to send: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _sending = false;
+        }
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}

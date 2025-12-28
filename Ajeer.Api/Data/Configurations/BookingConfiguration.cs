@@ -20,6 +20,9 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.Property(b => b.ScheduledDate)
             .IsRequired();
 
+        builder.Property(b => b.CompletedDate)
+            .IsRequired(false);
+
         builder.Property(b => b.EstimatedHours)
             .IsRequired()
             .HasColumnType("decimal(5,2)");
@@ -29,8 +32,9 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .HasColumnType("decimal(10,2)");
 
         builder.Property(b => b.Address)
-            .IsRequired()
-            .HasMaxLength(300);
+            .IsRequired(false)
+            .HasMaxLength(300)
+            .HasDefaultValue(string.Empty);
 
         builder.Property(b => b.Latitude)
             .IsRequired()

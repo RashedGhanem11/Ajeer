@@ -6,4 +6,5 @@ public class BecomeProviderRequest
     public List<int> ServiceIds { get; set; } = new();
     public List<int> ServiceAreaIds { get; set; } = new();
     public List<WorkScheduleDto> Schedules { get; set; } = new();
+    public IFormFile? IdCardImage { get; set; }
 }

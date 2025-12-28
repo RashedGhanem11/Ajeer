@@ -11,4 +11,5 @@ public class AuthResponse
     public string Phone { get; set; } = null!;
     public UserRole Role { get; set; }
     public string? ProfilePictureUrl { get; set; }
+    public bool HasProviderApplication { get; set; }
 }

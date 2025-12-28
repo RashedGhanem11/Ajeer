@@ -5,6 +5,8 @@ using Ajeer.Api.Middlewares;
 using Ajeer.Api.Services.Auth;
 using Ajeer.Api.Services.Bookings;
 using Ajeer.Api.Services.Chats;
+using Ajeer.Api.Services.Email;
+using Ajeer.Api.Services.Emails;
 using Ajeer.Api.Services.Files;
 using Ajeer.Api.Services.Formatting;
 using Ajeer.Api.Services.Notifications;
@@ -15,12 +17,15 @@ using Ajeer.Api.Services.ServiceProviders;
 using Ajeer.Api.Services.Services;
 using Ajeer.Api.Services.Subscriptions;
 using Ajeer.Api.Services.Users;
+using Blazored.LocalStorage;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MudBlazor.Services;
 
 namespace Ajeer.Api.Extensions;
 
@@ -39,6 +44,7 @@ public static class DependencyInjection
             //.AddSwaggerGen()
             .AddExceptionHandling()
             .AddBusinessServices()
+            .AddAdminPanelServices()
             .AddSignalR();
 
         return services;
@@ -127,6 +133,7 @@ public static class DependencyInjection
         services.AddScoped<IServiceService, ServiceService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IEmailService, EmailService>();
 
         return services;
     }
@@ -182,6 +189,25 @@ public static class DependencyInjection
     {
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+        return services;
+    }
+
+    public static IServiceCollection AddAdminPanelServices(this IServiceCollection services)
+    {
+        services.AddRazorPages(options =>
+        {
+            options.RootDirectory = "/Admin/Pages";
+        });
+        services.AddServerSideBlazor();
+        services.AddMudServices();
+        services.AddBlazoredLocalStorage();
+
+        services.Configure<RazorViewEngineOptions>(options =>
+        {
+            options.ViewLocationFormats.Add("/Admin/Pages/{0}.cshtml");
+        });
+
+
         return services;
     }
 }

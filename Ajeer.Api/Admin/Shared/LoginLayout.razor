@@ -1,0 +1,21 @@
+@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="MyCustomTheme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div style="height: 100vh; overflow: hidden;">
+    @Body
+</div>
+
+@code {
+    // Keep consistent theme
+    private MudTheme MyCustomTheme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#2563EB", 
+            Secondary = "#64748B",
+        }
+    };
+}

@@ -1,0 +1,175 @@
+@page "/areas"
+@using Ajeer.Api.Services.ServiceAreas
+@using Ajeer.Api.DTOs.Admin.Areas
+@using Ajeer.Api.Admin.Shared
+@inject IServiceAreaService _areaService
+@inject ISnackbar _snackbar
+@inject IDialogService _dialogService
+
+<MudText Typo="Typo.h5" Style="font-weight: 700; color: #1E293B;" Class="mb-6">Area Management</MudText>
+
+<MudGrid Spacing="4">
+    <MudItem xs="12" md="4">
+        <MudPaper Elevation="0" Class="rounded-xl border mud-border-lines-default overflow-hidden pa-4 h-100" Style="background-color: #fff;">
+            <div class="d-flex align-center mb-4 px-2">
+                 <MudText Typo="Typo.h6" Style="font-weight: 600; color: #334155;">Cities</MudText>
+            </div>
+           
+            @if (_cities.Any())
+            {
+                <MudList T="string" Clickable="true" SelectedValue="@_selectedCityName" SelectedValueChanged="OnCitySelected" Color="Color.Primary" Class="rounded-lg">
+                    @foreach (var city in _cities)
+                    {
+                        <MudListItem Value="@city" Class="rounded-lg mb-1 px-2">
+                            <div class="d-flex align-center width-100 py-1">
+                                <MudIcon Icon="@Icons.Material.Rounded.LocationCity" Color="Color.Primary" Class="mr-4" Size="Size.Medium" />
+                                <MudText Typo="Typo.body1" Style="font-weight: 500; color: #475569;">@city</MudText>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+            else
+            {
+                 <div class="d-flex justify-center align-center h-100">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">No cities found.</MudText>
+                 </div>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="8">
+        <MudPaper Elevation="0" Class="rounded-xl border mud-border-lines-default overflow-hidden pa-4 h-100" Style="background-color: #fff;">
+             <div class="d-flex flex-wrap justify-space-between align-center mb-4 gap-2">
+                 <MudText Typo="Typo.h6" Style="font-weight: 600; color: #334155;">
+                     @(_selectedCityName ?? "Select a City")
+                 </MudText>
+                 <div class="d-flex gap-2">
+                     <MudTextField @bind-Value="_searchString" Placeholder="Search areas..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Rounded.Search" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Style="background: #F8FAFC; max-width: 250px; border-radius: 8px;" Class="mt-0" />
+                     <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Rounded.Add" Disabled="@(string.IsNullOrEmpty(_selectedCityName))" Style="font-weight: 600; border-radius: 8px;" OnClick="OpenCreateAreaDialog">New Area</MudButton>
+                 </div>
+            </div>
+
+            <MudTable Items="@_filteredAreas" Hover="true" Elevation="0" Filter="new Func<ServiceArea,bool>(FilterFunc)" FixedHeader="true" Height="calc(100vh - 250px)" Class="pa-0">
+                <HeaderContent>
+                    <MudTh Style="color:#64748B; font-weight:600; border-bottom: none;">Area Name</MudTh>
+                    <MudTh Style="color:#64748B; font-weight:600; text-align:center; border-bottom: none;">Status</MudTh>
+                    <MudTh Style="color:#64748B; font-weight:600; text-align:right; border-bottom: none;">Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd Style="border-bottom: 1px solid #F1F5F9;"><MudText Typo="Typo.body2" Style="font-weight: 500; color: #334155;">@context.AreaName</MudText></MudTd>
+                    <MudTd Style="text-align:center; border-bottom: 1px solid #F1F5F9;">
+                        <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Error)" Variant="Variant.Text" Class="rounded-lg font-weight-bold">
+                            @(context.IsActive ? "Active" : "Inactive")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd Style="text-align:right; border-bottom: 1px solid #F1F5F9;">
+                        <div class="d-flex justify-end gap-3 align-center">
+                            <MudIconButton Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" Color="Color.Default" Style="opacity: 0.6;" OnClick="@(() => OpenEditAreaDialog(context))" />
+                        </div>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <div class="d-flex justify-center align-center py-8">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @(string.IsNullOrEmpty(_selectedCityName) ? "Please select a city from the list." : "No areas found in this city.")
+                        </MudText>
+                    </div>
+                </NoRecordsContent>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private List<ServiceArea> _allAreas = new();
+    private List<string> _cities = new();
+    private List<ServiceArea> _filteredAreas = new();
+
+    private string? _selectedCityName; 
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _allAreas = await _areaService.GetAdminAreasAsync();
+        _cities = _allAreas.Select(a => a.CityName).Distinct().OrderBy(c => c).ToList();
+
+        if (_cities.Any() && _selectedCityName == null)
+        {
+            _selectedCityName = _cities.First();
+        }
+        FilterAreas();
+    }
+
+    private void OnCitySelected(string cityName)
+    {
+        _selectedCityName = cityName;
+        FilterAreas();
+    }
+
+    private void FilterAreas()
+    {
+        if (_selectedCityName != null)
+            _filteredAreas = _allAreas.Where(a => a.CityName == _selectedCityName).ToList();
+        else
+            _filteredAreas = new();
+        StateHasChanged();
+    }
+
+    private async Task OpenCreateAreaDialog()
+    {
+        var parameters = new DialogParameters 
+        { 
+            ["Cities"] = _cities,
+            ["Model"] = new UpdateAreaRequest { CityName = _selectedCityName ?? "", IsActive = true } 
+        };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        
+        var dialog = await _dialogService.ShowAsync<AreaDialog>("Create Area", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: UpdateAreaRequest req })
+        {
+            var createReq = new CreateAreaRequest { AreaName = req.AreaName, CityName = req.CityName, IsActive = req.IsActive };
+            await _areaService.CreateAreaAsync(createReq);
+            await LoadData();
+            
+            // Auto-select if new city added
+            if (!_cities.Contains(req.CityName)) _selectedCityName = req.CityName;
+            
+            FilterAreas();
+            _snackbar.Add("Area created.", Severity.Success);
+        }
+    }
+
+    private async Task OpenEditAreaDialog(ServiceArea area)
+    {
+        var request = new UpdateAreaRequest 
+        { 
+            Id = area.Id, AreaName = area.AreaName, CityName = area.CityName, IsActive = area.IsActive 
+        };
+        var parameters = new DialogParameters 
+        { 
+            ["Model"] = request,
+            ["Cities"] = _cities
+        };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+        var dialog = await _dialogService.ShowAsync<AreaDialog>("Edit Area", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: UpdateAreaRequest updatedReq })
+        {
+            await _areaService.UpdateAreaAsync(updatedReq);
+            await LoadData();
+            _snackbar.Add("Area updated.", Severity.Success);
+        }
+    }
+
+    private bool FilterFunc(ServiceArea element) => string.IsNullOrWhiteSpace(_searchString) || element.AreaName.Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+}

@@ -67,9 +67,13 @@ namespace Ajeer.Api.Data.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
-                        .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
+                        .HasColumnType("nvarchar(300)")
+                        .HasDefaultValue("");
+
+                    b.Property<DateTime?>("CompletedDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -351,6 +355,11 @@ namespace Ajeer.Api.Data.Migrations
                     b.Property<decimal>("EstimatedHours")
                         .HasColumnType("decimal(5,2)");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -369,6 +378,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 10m,
                             CategoryId = -1,
                             EstimatedHours = 1.5m,
+                            IsActive = true,
                             Name = "Leak Repair"
                         },
                         new
@@ -377,6 +387,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 25m,
                             CategoryId = -1,
                             EstimatedHours = 3m,
+                            IsActive = true,
                             Name = "Pipe Installation"
                         },
                         new
@@ -385,6 +396,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 15m,
                             CategoryId = -1,
                             EstimatedHours = 2m,
+                            IsActive = true,
                             Name = "Drain Cleaning"
                         },
                         new
@@ -393,6 +405,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 10m,
                             CategoryId = -2,
                             EstimatedHours = 1m,
+                            IsActive = true,
                             Name = "Light Fixture Installation"
                         },
                         new
@@ -401,6 +414,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 30m,
                             CategoryId = -2,
                             EstimatedHours = 2.5m,
+                            IsActive = true,
                             Name = "Wiring Maintenance"
                         },
                         new
@@ -409,6 +423,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 40m,
                             CategoryId = -3,
                             EstimatedHours = 4m,
+                            IsActive = true,
                             Name = "Home Deep Cleaning"
                         },
                         new
@@ -417,6 +432,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 30m,
                             CategoryId = -3,
                             EstimatedHours = 3m,
+                            IsActive = true,
                             Name = "Office Cleaning"
                         },
                         new
@@ -425,6 +441,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 20m,
                             CategoryId = -3,
                             EstimatedHours = 2m,
+                            IsActive = true,
                             Name = "Carpet Cleaning"
                         },
                         new
@@ -433,6 +450,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 60m,
                             CategoryId = -4,
                             EstimatedHours = 6m,
+                            IsActive = true,
                             Name = "Interior Painting"
                         },
                         new
@@ -441,6 +459,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 80m,
                             CategoryId = -4,
                             EstimatedHours = 8m,
+                            IsActive = true,
                             Name = "Exterior Painting"
                         },
                         new
@@ -449,6 +468,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 30m,
                             CategoryId = -5,
                             EstimatedHours = 3m,
+                            IsActive = true,
                             Name = "Door Installation"
                         },
                         new
@@ -457,6 +477,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 20m,
                             CategoryId = -5,
                             EstimatedHours = 2m,
+                            IsActive = true,
                             Name = "Furniture Repair"
                         },
                         new
@@ -465,6 +486,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 20m,
                             CategoryId = -6,
                             EstimatedHours = 2m,
+                            IsActive = true,
                             Name = "AC Repair"
                         },
                         new
@@ -473,6 +495,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 15m,
                             CategoryId = -6,
                             EstimatedHours = 1.5m,
+                            IsActive = true,
                             Name = "Fridge Maintenance"
                         },
                         new
@@ -481,6 +504,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 20m,
                             CategoryId = -6,
                             EstimatedHours = 2m,
+                            IsActive = true,
                             Name = "Washing Machine Repair"
                         },
                         new
@@ -489,6 +513,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 20m,
                             CategoryId = -7,
                             EstimatedHours = 2m,
+                            IsActive = true,
                             Name = "Grass Cutting"
                         },
                         new
@@ -497,6 +522,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 50m,
                             CategoryId = -7,
                             EstimatedHours = 5m,
+                            IsActive = true,
                             Name = "Garden Design"
                         },
                         new
@@ -505,6 +531,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 15m,
                             CategoryId = -8,
                             EstimatedHours = 1.5m,
+                            IsActive = true,
                             Name = "Laptop Repair"
                         },
                         new
@@ -513,6 +540,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 30m,
                             CategoryId = -8,
                             EstimatedHours = 3m,
+                            IsActive = true,
                             Name = "Network Setup"
                         },
                         new
@@ -521,6 +549,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 10m,
                             CategoryId = -8,
                             EstimatedHours = 1m,
+                            IsActive = true,
                             Name = "Software Installation"
                         },
                         new
@@ -529,6 +558,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 80m,
                             CategoryId = -9,
                             EstimatedHours = 8m,
+                            IsActive = true,
                             Name = "Home Moving"
                         },
                         new
@@ -537,6 +567,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 100m,
                             CategoryId = -9,
                             EstimatedHours = 10m,
+                            IsActive = true,
                             Name = "Office Relocation"
                         },
                         new
@@ -545,6 +576,7 @@ namespace Ajeer.Api.Data.Migrations
                             BasePrice = 30m,
                             CategoryId = -9,
                             EstimatedHours = 2m,
+                            IsActive = true,
                             Name = "Furniture Delivery"
                         });
                 });
@@ -567,6 +599,11 @@ namespace Ajeer.Api.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.HasKey("Id");
 
                     b.ToTable("ServiceAreas", (string)null);
@@ -576,49 +613,57 @@ namespace Ajeer.Api.Data.Migrations
                         {
                             Id = -1,
                             AreaName = "Abdoun",
-                            CityName = "Amman"
+                            CityName = "Amman",
+                            IsActive = true
                         },
                         new
                         {
                             Id = -2,
                             AreaName = "Jabal Al-Weibdeh",
-                            CityName = "Amman"
+                            CityName = "Amman",
+                            IsActive = true
                         },
                         new
                         {
                             Id = -3,
                             AreaName = "Shmeisani",
-                            CityName = "Amman"
+                            CityName = "Amman",
+                            IsActive = true
                         },
                         new
                         {
                             Id = -4,
                             AreaName = "Al-Rabieh",
-                            CityName = "Amman"
+                            CityName = "Amman",
+                            IsActive = true
                         },
                         new
                         {
                             Id = -5,
                             AreaName = "Dabouq",
-                            CityName = "Amman"
+                            CityName = "Amman",
+                            IsActive = true
                         },
                         new
                         {
                             Id = -6,
                             AreaName = "Al-Jubeiha",
-                            CityName = "Amman"
+                            CityName = "Amman",
+                            IsActive = true
                         },
                         new
                         {
                             Id = -7,
                             AreaName = "Al-Bayader",
-                            CityName = "Amman"
+                            CityName = "Amman",
+                            IsActive = true
                         },
                         new
                         {
                             Id = -8,
                             AreaName = "Tla' Al-Ali",
-                            CityName = "Amman"
+                            CityName = "Amman",
+                            IsActive = true
                         });
                 });
 
@@ -640,6 +685,11 @@ namespace Ajeer.Api.Data.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -655,6 +705,7 @@ namespace Ajeer.Api.Data.Migrations
                             Id = -1,
                             Description = "Leak repair, pipe installation, and maintenance.",
                             IconUrl = "plumbing.png",
+                            IsActive = true,
                             Name = "Plumbing"
                         },
                         new
@@ -662,6 +713,7 @@ namespace Ajeer.Api.Data.Migrations
                             Id = -2,
                             Description = "Electrical repairs, wiring, and installations.",
                             IconUrl = "electrical.png",
+                            IsActive = true,
                             Name = "Electrical"
                         },
                         new
@@ -669,6 +721,7 @@ namespace Ajeer.Api.Data.Migrations
                             Id = -3,
                             Description = "Home, office, and carpet cleaning.",
                             IconUrl = "cleaning.png",
+                            IsActive = true,
                             Name = "Cleaning"
                         },
                         new
@@ -676,6 +729,7 @@ namespace Ajeer.Api.Data.Migrations
                             Id = -4,
                             Description = "Interior and exterior wall painting.",
                             IconUrl = "painting.png",
+                            IsActive = true,
                             Name = "Painting"
                         },
                         new
@@ -683,6 +737,7 @@ namespace Ajeer.Api.Data.Migrations
                             Id = -5,
                             Description = "Wood furniture and door repair or installation.",
                             IconUrl = "carpentry.png",
+                            IsActive = true,
                             Name = "Carpentry"
                         },
                         new
@@ -690,6 +745,7 @@ namespace Ajeer.Api.Data.Migrations
                             Id = -6,
                             Description = "Fixing washing machines, fridges, and ACs.",
                             IconUrl = "appliance_repair.png",
+                            IsActive = true,
                             Name = "Appliance Repair"
                         },
                         new
@@ -697,6 +753,7 @@ namespace Ajeer.Api.Data.Migrations
                             Id = -7,
                             Description = "Lawn care, trimming, and garden design.",
                             IconUrl = "gardening.png",
+                            IsActive = true,
                             Name = "Gardening"
                         },
                         new
@@ -704,6 +761,7 @@ namespace Ajeer.Api.Data.Migrations
                             Id = -8,
                             Description = "Computer setup, repair, and software help.",
                             IconUrl = "it_support.png",
+                            IsActive = true,
                             Name = "IT Support"
                         },
                         new
@@ -711,6 +769,7 @@ namespace Ajeer.Api.Data.Migrations
                             Id = -9,
                             Description = "Home and office moving or furniture delivery.",
                             IconUrl = "moving_and_delivery.png",
+                            IsActive = true,
                             Name = "Moving & Delivery"
                         });
                 });
@@ -724,8 +783,14 @@ namespace Ajeer.Api.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int?>("IdCardAttachmentId")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("IdCardUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -748,10 +813,6 @@ namespace Ajeer.Api.Data.Migrations
                         .HasDefaultValue(0);
 
                     b.HasKey("UserId");
-
-                    b.HasIndex("IdCardAttachmentId")
-                        .IsUnique()
-                        .HasFilter("[IdCardAttachmentId] IS NOT NULL");
 
                     b.ToTable("ServiceProviders", (string)null);
                 });
@@ -1095,17 +1156,11 @@ namespace Ajeer.Api.Data.Migrations
 
             modelBuilder.Entity("Ajeer.Api.Models.ServiceProvider", b =>
                 {
-                    b.HasOne("Ajeer.Api.Models.Attachment", "IdCardAttachment")
-                        .WithOne()
-                        .HasForeignKey("Ajeer.Api.Models.ServiceProvider", "IdCardAttachmentId");
-
                     b.HasOne("Ajeer.Api.Models.User", "User")
                         .WithOne("ServiceProvider")
                         .HasForeignKey("Ajeer.Api.Models.ServiceProvider", "UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("IdCardAttachment");
 
                     b.Navigation("User");
                 });

@@ -10,9 +10,10 @@ public class Booking
     public int ServiceAreaId { get; set; }
     public BookingStatus Status { get; set; }
     public DateTime ScheduledDate { get; set; }
+    public DateTime? CompletedDate { get; set; }
     public decimal EstimatedHours { get; set; }
     public decimal TotalAmount { get; set; }
-    public string Address { get; set; } = null!;
+    public string? Address { get; set; }
     public decimal Latitude { get; set; }
     public decimal Longitude { get; set; }
     public string? Notes { get; set; }

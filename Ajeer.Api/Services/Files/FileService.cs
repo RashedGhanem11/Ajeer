@@ -25,6 +25,25 @@ public class FileService(IWebHostEnvironment _environment) : IFileService
         return uniqueFileName;
     }
 
+    public async Task<string?> SaveFileAsync(Stream fileStream, string fileName, string folderName)
+    {
+        if (fileStream == null || fileStream.Length == 0) return null;
+
+        string uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", folderName);
+        if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+        string ext = Path.GetExtension(fileName);
+        string uniqueFileName = $"{Guid.NewGuid()}{ext}";
+        string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+        using (var fs = new FileStream(filePath, FileMode.Create))
+        {
+            await fileStream.CopyToAsync(fs);
+        }
+
+        return uniqueFileName;
+    }
+
     public void DeleteFile(string folderName, string? fileName)
     {
         if (string.IsNullOrEmpty(fileName)) return;

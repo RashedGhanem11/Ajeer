@@ -24,6 +24,10 @@ public class ServiceConfiguration : IEntityTypeConfiguration<Service>
             .IsRequired()
             .HasColumnType("decimal(5,2)");
 
+        builder.Property(sc => sc.IsActive)
+            .IsRequired()
+            .HasDefaultValue(true);
+
         builder.HasOne(s => s.Category)
             .WithMany(c => c.Services)
             .HasForeignKey(s => s.CategoryId)

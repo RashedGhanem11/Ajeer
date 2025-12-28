@@ -1,0 +1,53 @@
+@using MudBlazor
+
+<MudPaper Elevation="0" Class="pa-5 rounded-xl hover-card d-flex flex-column justify-center relative overflow-hidden" Style="height: 100%; min-height: 140px;">
+    
+    <div class="d-flex justify-space-between align-start z-10">
+        <div class="d-flex flex-column justify-center h-100">
+            <MudText Typo="Typo.caption" Style="font-weight: 600; color: #64748B; letter-spacing: 0.5px;">@Title.ToUpper()</MudText>
+            
+            <div class="d-flex align-center mt-2">
+                <MudText Typo="Typo.h4" Style="font-weight: 500; color: #1E293B;">@Value</MudText>
+                
+                @if (IsRating)
+                {
+                    <MudIcon Icon="@Icons.Material.Rounded.Star" Size="Size.Small" Color="Color.Warning" Class="ml-1 mb-1" />
+                }
+            </div>
+        </div>
+
+        <div class="icon-bubble d-flex align-center justify-center rounded-lg" style="@($"background-color: var(--mud-palette-{Color.ToString().ToLower()}-hover); color: var(--mud-palette-{Color.ToString().ToLower()});")">
+            <MudIcon Icon="@Icon" Size="Size.Medium" />
+        </div>
+    </div>
+
+</MudPaper>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "";
+    [Parameter] public Color Color { get; set; } = Color.Default;
+    [Parameter] public bool IsRating { get; set; } = false;
+}
+
+<style>
+    .hover-card {
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border: 1px solid transparent;
+        background: white;
+    }
+    .hover-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 20px -10px rgba(0, 0, 0, 0.1);
+        border-color: #E2E8F0;
+    }
+    .icon-bubble {
+        width: 54px; /* Slightly bigger bubble */
+        height: 54px;
+        transition: transform 0.3s ease;
+    }
+    .hover-card:hover .icon-bubble {
+        transform: scale(1.1) rotate(5deg);
+    }
+</style>

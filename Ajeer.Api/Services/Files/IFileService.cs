@@ -6,6 +6,8 @@ public interface IFileService
 {
     Task<string?> SaveFileAsync(IFormFile file, string folderName);
 
+    Task<string?> SaveFileAsync(Stream fileStream, string fileName, string folderName);
+
     void DeleteFile(string folderName, string? fileName);
 
     string? GetPublicUrl(string folderName, string? fileName);
