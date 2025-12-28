@@ -10,6 +10,7 @@ import 'work_schedule_screen.dart';
 import '../../models/provider_data.dart';
 import '../../config/app_config.dart';
 import '../../widgets/shared_widgets/snackbar.dart';
+import 'dart:io';
 
 class AreaResponse {
   final int id;
@@ -57,6 +58,7 @@ class LocationScreen extends StatefulWidget {
   final List<int> serviceIds;
   final bool isEdit;
   final ProviderData? initialData;
+  final File? idCardImage;
 
   const LocationScreen({
     super.key,
@@ -65,6 +67,7 @@ class LocationScreen extends StatefulWidget {
     required this.serviceIds,
     this.isEdit = false,
     this.initialData,
+    this.idCardImage,
   });
 
   @override
@@ -198,6 +201,7 @@ class _LocationScreenState extends State<LocationScreen> {
             areaIds: areaIds,
             isEdit: widget.isEdit,
             initialData: widget.initialData,
+            idCardImage: widget.idCardImage,
           ),
         ),
       );

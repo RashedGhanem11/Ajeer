@@ -11,17 +11,20 @@ import '../../../models/provider_data.dart';
 import '../../notifiers/language_notifier.dart';
 import '../../widgets/shared_widgets/snackbar.dart';
 import 'dart:ui';
+import 'dart:io';
 
 class ServicesScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
   final bool isEdit;
   final ProviderData? initialData;
+  final File? idCardImage;
 
   const ServicesScreen({
     super.key,
     required this.themeNotifier,
     this.isEdit = false,
     this.initialData,
+    this.idCardImage,
   });
 
   @override
@@ -173,6 +176,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
             serviceIds: ids,
             isEdit: widget.isEdit,
             initialData: widget.initialData,
+            idCardImage: widget.idCardImage,
           ),
         ),
       );

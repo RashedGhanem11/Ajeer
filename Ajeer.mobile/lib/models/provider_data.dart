@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 
 int _toInt(dynamic value) {
   if (value == null) return 0;
@@ -108,6 +109,7 @@ class LocationSelection {
 }
 
 class ProviderData {
+  final File? idCardImage;
   final Map<String, Set<String>> selectedServices;
   final List<LocationSelection> selectedLocations;
   final List<WorkSchedule> finalSchedule;
@@ -115,6 +117,7 @@ class ProviderData {
   final List<int> _areaIds;
 
   ProviderData({
+    this.idCardImage,
     required this.selectedServices,
     required this.selectedLocations,
     required this.finalSchedule,

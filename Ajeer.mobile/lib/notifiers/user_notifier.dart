@@ -49,8 +49,16 @@ class UserNotifier extends ChangeNotifier {
 
   Future<void> completeProviderSetup(ProviderData data) async {
     try {
+      // 1. Send the application to the backend
       await _apiService.registerProvider(data);
-      await _updateLocalState(data, isNewProvider: true);
+
+      // ⚠️ FIX: Removed _updateLocalState(data, isNewProvider: true).
+      // We do NOT want to force the app into Provider Mode here.
+      // The user must remain a Customer until the Admin approves.
+      // The ProfileScreen will read the 'hasProviderApplication' flag
+      // from SharedPreferences (saved by ProviderService) and show the "Pending" UI.
+
+      notifyListeners();
     } catch (e) {
       if (e.toString().contains("already registered") ||
           e.toString().contains("already a service provider")) {

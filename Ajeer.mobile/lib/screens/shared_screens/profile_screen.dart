@@ -25,6 +25,7 @@ import '../../services/subscription_service.dart'; // Added Service
 import '../../models/change_password_request.dart';
 import '../service_provider_screens/bookings_screen.dart' as provider_screens;
 import 'dart:ui';
+import '../service_provider_screens/id_upload_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -83,6 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   String _fullName = '', _mobileNumber = '', _email = '', _password = '';
   String? _profileImageUrl;
   File? _profileImage, _originalProfileImage;
+  bool _hasProviderApplication = false;
 
   late TextEditingController _fullNameController,
       _mobileController,
@@ -358,6 +360,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       final user = jsonDecode(userJson);
       if (mounted) {
         setState(() {
+          _hasProviderApplication = user['hasProviderApplication'] ?? false;
           _fullName = user['name'] ?? '';
           _mobileNumber = user['phone'] ?? '';
           _email = user['email'] ?? '';
@@ -641,34 +644,32 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _handleSwitchModeTap(UserNotifier userNotifier) async {
-    if (!userNotifier.isProviderSetupComplete) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              ServicesScreen(themeNotifier: widget.themeNotifier),
-        ),
-      );
-    } else {
-      setState(() {
-        _overlayIcon = userNotifier.isProvider ? Icons.person : Icons.handyman;
-        _overlayIconColor = userNotifier.isProvider
-            ? _customerPrimaryBlue
-            : _providerPrimaryBlue;
-        _showOverlay = true;
-      });
-      await _overlayController.forward(from: 0.0);
-      await Future.delayed(const Duration(milliseconds: 150));
-      userNotifier.toggleUserMode();
-      // Fetch subscription status if we just switched to Provider
-      if (userNotifier.isProvider) {
-        _fetchSubscriptionStatus();
-      }
-      _overlayController.reset();
-      setState(() {
-        _showOverlay = false;
-      });
+    // Guard clause: We only switch modes if the provider setup is actually complete.
+    // The "Become Ajeer" navigation is now handled in the button's onTap directly.
+    if (!userNotifier.isProviderSetupComplete) return;
+
+    setState(() {
+      _overlayIcon = userNotifier.isProvider ? Icons.person : Icons.handyman;
+      _overlayIconColor = userNotifier.isProvider
+          ? _customerPrimaryBlue
+          : _providerPrimaryBlue;
+      _showOverlay = true;
+    });
+
+    await _overlayController.forward(from: 0.0);
+    await Future.delayed(const Duration(milliseconds: 150));
+
+    userNotifier.toggleUserMode();
+
+    // Fetch subscription status if we just switched to Provider
+    if (userNotifier.isProvider) {
+      _fetchSubscriptionStatus();
     }
+
+    _overlayController.reset();
+    setState(() {
+      _showOverlay = false;
+    });
   }
 
   List<Map<String, dynamic>> _getNavItems(UserNotifier userNotifier) {
@@ -859,38 +860,72 @@ class _ProfileScreenState extends State<ProfileScreen>
     bool isDarkMode,
     UserNotifier userNotifier,
   ) {
-    final bool isSetupComplete = userNotifier.isProviderSetupComplete;
+    final bool isSetupComplete =
+        userNotifier.isProviderSetupComplete; // Role == Provider
 
-    // Check if the user is in the "Become an Ajeer" state
-    final bool isBecomeAjeer = !isSetupComplete;
+    // ✅ Logic for Pending vs New
+    final bool isPending = !isSetupComplete && _hasProviderApplication;
+    final bool isBecomeAjeer = !isSetupComplete && !isPending;
 
-    // Determine Label
-    String label = isBecomeAjeer
-        ? _languageNotifier.translate('becomeAjeer')
-        : (userNotifier.isProvider
-              ? _languageNotifier.translate('switchToCustomer')
-              : _languageNotifier.translate('switchToProvider'));
+    String label;
+    IconData icon;
+    Color backgroundColor;
+    Color foregroundColor;
+    BorderSide borderSide;
+    VoidCallback? onTapAction;
 
-    // Determine Icon
-    IconData icon = isBecomeAjeer
-        ? Icons.rocket_launch
-        : (userNotifier.isProvider ? Icons.person : Icons.handyman);
-
-    // Determine Colors
-    final backgroundColor = isBecomeAjeer
-        ? const Color(0xFFFFD700) // Gold Color
-        : (isDarkMode ? _subtleDark : Colors.grey.shade300);
-
-    final foregroundColor = isBecomeAjeer
-        ? Colors.black
-        : (isDarkMode ? Colors.white : _primaryBlue);
-
-    final borderSide = isBecomeAjeer
-        ? const BorderSide(color: Color.fromARGB(255, 255, 119, 0), width: 2.0)
-        : BorderSide.none;
+    if (isPending) {
+      // --- PENDING STATE ---
+      label = _languageNotifier.translate(
+        'applicationPending',
+      ); // Ensure you add this key to translations
+      icon = Icons.hourglass_top;
+      backgroundColor = Colors.orange.shade100;
+      foregroundColor = Colors.orange.shade900;
+      borderSide = BorderSide(color: Colors.orange.shade900, width: 2.0);
+      onTapAction = () {
+        CustomSnackBar.show(
+          context,
+          messageKey: 'applicationPending',
+          dynamicText: "Your application is currently under review.",
+          backgroundColor: Colors.orange,
+        );
+      };
+    } else if (isBecomeAjeer) {
+      // --- NEW APPLICANT ---
+      label = _languageNotifier.translate('becomeAjeer');
+      icon = Icons.rocket_launch;
+      backgroundColor = const Color(0xFFFFD700);
+      foregroundColor = Colors.black;
+      borderSide = const BorderSide(
+        color: Color.fromARGB(255, 255, 119, 0),
+        width: 2.0,
+      );
+      onTapAction = () {
+        // Navigate to ID Upload Screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            // Make sure IdUploadScreen is imported
+            builder: (context) =>
+                IdUploadScreen(themeNotifier: widget.themeNotifier),
+          ),
+        );
+      };
+    } else {
+      // --- NORMAL SWITCH MODE ---
+      label = userNotifier.isProvider
+          ? _languageNotifier.translate('switchToCustomer')
+          : _languageNotifier.translate('switchToProvider');
+      icon = userNotifier.isProvider ? Icons.person : Icons.handyman;
+      backgroundColor = isDarkMode ? _subtleDark : Colors.grey.shade300;
+      foregroundColor = isDarkMode ? Colors.white : _primaryBlue;
+      borderSide = BorderSide.none;
+      onTapAction = () => _handleSwitchModeTap(userNotifier);
+    }
 
     Widget button = ElevatedButton.icon(
-      onPressed: () {},
+      onPressed: () {}, // Handled by wrapper
       icon: Icon(icon, size: 20),
       label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
       style: ElevatedButton.styleFrom(
@@ -904,18 +939,19 @@ class _ProfileScreenState extends State<ProfileScreen>
         elevation: 8,
       ),
     );
-    Widget content = _Bounceable(
-      onTap: () => _handleSwitchModeTap(userNotifier),
-      child: isBecomeAjeer
-          ? ScaleTransition(scale: _heartbeatAnimation, child: button)
-          : button,
-    );
 
     return Positioned(
       top: MediaQuery.of(context).padding.top + 70,
       left: 0,
       right: 0,
-      child: Center(child: content),
+      child: Center(
+        child: _Bounceable(
+          onTap: onTapAction,
+          child: isBecomeAjeer
+              ? ScaleTransition(scale: _heartbeatAnimation, child: button)
+              : button,
+        ),
+      ),
     );
   }
 

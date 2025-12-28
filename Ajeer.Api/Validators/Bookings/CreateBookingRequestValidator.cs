@@ -26,9 +26,6 @@ public class CreateBookingRequestValidator : AbstractValidator<CreateBookingRequ
             .NotEmpty().WithMessage("Date must be not empty.")
             .GreaterThan(DateTime.Now).WithMessage("Scheduled date must be in the future.");
 
-        RuleFor(x => x.Address)
-            .NotEmpty().WithMessage("Address is required.");
-
         RuleFor(x => x.Latitude)
             .NotEmpty().WithMessage("Latitude is required.")
             .NotEqual(0).WithMessage("Invalid Latitude.");

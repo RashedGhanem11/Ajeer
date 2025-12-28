@@ -13,7 +13,7 @@ public class ServiceProvidersController(IServiceProviderService _providerService
 {
     [HttpPost("register")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthResponse))]
-    public async Task<IActionResult> BecomeProvider([FromBody] BecomeProviderRequest dto)
+    public async Task<IActionResult> BecomeProvider([FromForm] BecomeProviderRequest dto)
     {
         int userId = GetUserId();
         var response = await _providerService.BecomeProviderAsync(userId, dto);

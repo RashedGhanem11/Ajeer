@@ -9,6 +9,7 @@ import '../../notifiers/language_notifier.dart';
 import '../shared_screens/profile_screen.dart';
 import 'dart:ui';
 import '../../widgets/shared_widgets/snackbar.dart';
+import 'dart:io';
 
 const Color kPrimaryBlue = Color(0xFF2f6cfa);
 const Color kLightBlue = Color(0xFFa2bdfc);
@@ -38,6 +39,7 @@ class WorkScheduleScreen extends StatefulWidget {
   final List<int> areaIds;
   final bool isEdit;
   final ProviderData? initialData;
+  final File? idCardImage;
 
   const WorkScheduleScreen({
     super.key,
@@ -48,6 +50,7 @@ class WorkScheduleScreen extends StatefulWidget {
     required this.areaIds,
     this.isEdit = false,
     this.initialData,
+    this.idCardImage,
   });
 
   @override
@@ -203,6 +206,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                           );
 
                           final providerData = ProviderData(
+                            idCardImage: widget.idCardImage,
                             selectedServices: widget.selectedServices,
                             selectedLocations: widget.selectedLocations,
                             finalSchedule: _finalSchedule,
@@ -1328,12 +1332,22 @@ class _WorkScheduleList extends StatelessWidget {
 }
 
 String extractErrorMessage(dynamic error, LanguageNotifier lang) {
+  // 1. Get the string representation of the error
   String errorString = error.toString();
+
+  // 2. Remove the "Exception: " prefix if it exists (common in Dart http calls)
+  if (errorString.startsWith("Exception: ")) {
+    errorString = errorString.substring(11);
+  }
+
+  // 3. Try to parse it as JSON to see if it's a structured backend error
+  // If parsing fails, we just return the raw string we cleaned in step 2.
   try {
-    int jsonStartIndex = errorString.indexOf('{');
-    if (jsonStartIndex != -1) {
-      String jsonString = errorString.substring(jsonStartIndex);
-      Map<String, dynamic> decoded = jsonDecode(jsonString);
+    // Check if it looks like JSON
+    if (errorString.trim().startsWith('{')) {
+      Map<String, dynamic> decoded = jsonDecode(errorString);
+
+      // Handle ASP.NET Core Validation Errors (errors: { Field: [ "Error" ] })
       if (decoded.containsKey('errors') && decoded['errors'] != null) {
         Map<String, dynamic> errors = decoded['errors'];
         if (errors.isNotEmpty) {
@@ -1344,10 +1358,18 @@ String extractErrorMessage(dynamic error, LanguageNotifier lang) {
           }
         }
       }
-      if (decoded.containsKey('title')) {
-        return decoded['title'];
-      }
+
+      // Handle standard API errors (message or title fields)
+      if (decoded.containsKey('message')) return decoded['message'];
+      if (decoded.containsKey('title')) return decoded['title'];
     }
-  } catch (e) {}
-  return lang.translate('unexpectedError');
+  } catch (_) {
+    // JSON parsing failed, so it's just a plain text error.
+    // Fall through to return the raw string.
+  }
+
+  // 4. Return the raw string if no JSON structure was found
+  return errorString.isNotEmpty
+      ? errorString
+      : lang.translate('unexpectedError');
 }
