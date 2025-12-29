@@ -15,6 +15,7 @@ const Color kPrimaryBlue = Color(0xFF2f6cfa);
 const Color kLightBlue = Color(0xFFa2bdfc);
 const Color kDeleteRed = Color(0xFFF44336);
 const Color kSelectedGreen = Color(0xFF3ab542);
+const Color kPendingOrange = Color(0xFFFF9800);
 const double kBorderRadius = 50.0;
 const double kWhiteContainerTopRatio = 0.15;
 const double kSaveButtonHeight = 50.0;
@@ -126,6 +127,12 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
         ? Colors.grey.shade400
         : Colors.black54;
 
+    // Determine Color and Icon based on mode
+    final Color dialogColor = widget.isEdit ? kSelectedGreen : kPendingOrange;
+    final IconData dialogIcon = widget.isEdit
+        ? Icons.check_circle_outline
+        : Icons.error_outline;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -143,16 +150,14 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.check_circle_outline,
-                  color: kSelectedGreen,
-                  size: 60,
-                ),
+                // CHANGED: Use dynamic icon and color
+                Icon(dialogIcon, color: dialogColor, size: 60),
                 const SizedBox(height: 15.0),
+                // CHANGED: Use new title key
                 Text(
                   widget.isEdit
                       ? _languageNotifier.translate('saveChanges')
-                      : _languageNotifier.translate('becomeAjeer'),
+                      : _languageNotifier.translate('applicationPending'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
@@ -162,8 +167,9 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                 ),
                 const SizedBox(height: 10.0),
                 if (!widget.isEdit) ...[
+                  // CHANGED: Use new message key
                   Text(
-                    _languageNotifier.translate('freeTrialMsg'),
+                    _languageNotifier.translate('applicationPendingMsg'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15,
@@ -261,7 +267,8 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: kSelectedGreen,
+                          backgroundColor:
+                              dialogColor, // CHANGED: Use dynamic color
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                           shape: RoundedRectangleBorder(

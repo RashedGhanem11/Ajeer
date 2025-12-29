@@ -476,8 +476,6 @@ class LanguageNotifier extends ChangeNotifier {
       'scheduleDesc': 'Schedule your work days and hours.',
       'allDaysScheduled': 'All days have been scheduled!',
       'saveChanges': 'Save Changes?',
-      'freeTrialMsg':
-          'Start providing your services to customers and using the Ajeer App for free for 30 days. After this period, you will need to subscribe to continue.',
       'unexpectedError': 'An unexpected error occurred.',
       'confirmBooking': 'Confirm your booking',
       'estimatedCost': 'Estimated Cost',
@@ -642,9 +640,14 @@ class LanguageNotifier extends ChangeNotifier {
       'provider_not_found': 'Provider not found.',
       'provider_application_not_found': 'Provider application not found.',
       'applicationPendingMsg': 'Your application is currently under review.',
+      'applicationPending': 'Application Pending',
+      'applicationPendingMsg':
+          'Wait for an Admin application approval, check your email to see the application status!',
     },
     'ar': {
-      'applicationPendingMsg': 'طلبك حالياً قيد المراجعة.',
+      'applicationPending': 'الطلب قيد الانتظار',
+      'applicationPendingMsg':
+          'يرجى انتظار موافقة المسؤول على الطلب، تفقد بريدك الإلكتروني لمعرفة حالة الطلب!',
       'user_not_found': 'المستخدم غير موجود.',
       'provider_already_registered': 'المستخدم مسجل بالفعل كمزود خدمة.',
       'provider_profile_not_found': 'ملف مزود الخدمة غير موجود.',
@@ -917,8 +920,6 @@ class LanguageNotifier extends ChangeNotifier {
       'scheduleDesc': 'قم بجدولة أيام وساعات عملك.',
       'allDaysScheduled': 'تم جدولة جميع الأيام!',
       'saveChanges': 'حفظ التغييرات؟',
-      'freeTrialMsg':
-          'ابدأ بتقديم خدماتك للعملاء واستخدم تطبيق أجير مجانًا لمدة 30 يومًا. بعد هذه الفترة، ستحتاج إلى الاشتراك للمتابعة.',
       'unexpectedError': 'حدث خطأ غير متوقع.',
       'confirmBooking': 'تأكيد الحجز',
       'estimatedCost': 'التكلفة التقديرية',
