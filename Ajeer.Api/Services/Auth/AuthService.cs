@@ -4,13 +4,14 @@ using System.Text;
 using Ajeer.Api.Data;
 using Ajeer.Api.DTOs.Auth;
 using Ajeer.Api.Models;
+using Ajeer.Api.Services.Emails;
 using Ajeer.Api.Services.Files;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Ajeer.Api.Services.Auth;
 
-public class AuthService(AppDbContext context, IConfiguration configuration, IFileService fileService) : IAuthService
+public class AuthService(AppDbContext context, IConfiguration configuration, IFileService fileService, IEmailService emailService) : IAuthService
 {
     public string GenerateJwtToken(User user)
     {
@@ -64,10 +65,15 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IFi
             Email = dto.Email,
             Phone = dto.Phone,
             Password = passwordHash,
+            IsEmailVerified = false,
+            VerificationToken = Guid.NewGuid().ToString("N")
         };
 
         context.Users.Add(newUser);
         await context.SaveChangesAsync();
+
+        string link = $"{configuration["UrlSettings:BaseUrl"]}/api/auth/verify?token={newUser.VerificationToken}";
+        _ = emailService.SendEmailAsync(newUser.Email, "Verify Account", $"<a href='{link}'>Click here to verify</a>");
 
         string token = GenerateJwtToken(newUser);
 
@@ -102,6 +108,11 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IFi
             return null;
         }
 
+        if (!user.IsEmailVerified)
+        {
+            throw new Exception("Please verify your email before logging in. Check your inbox.");
+        }
+
         string token = GenerateJwtToken(user);
 
         string? profilePictureUrl = fileService.GetPublicUrl("profilePictures", user.ProfilePictureUrl);
@@ -119,5 +130,21 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IFi
             ProfilePictureUrl = profilePictureUrl,
             HasProviderApplication = hasApp
         };
+    }
+
+    public async Task<bool?> VerifyEmailAsync(string token)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.VerificationToken == token);
+
+        if (user == null)
+            return false;
+
+        if (user.IsEmailVerified) return null;
+
+        user.IsEmailVerified = true;
+        user.VerificationToken = null;
+        await context.SaveChangesAsync();
+
+        return true;
     }
 }

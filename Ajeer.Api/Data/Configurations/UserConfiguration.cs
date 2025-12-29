@@ -52,6 +52,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.CreatedAt)
             .HasDefaultValueSql("GETDATE()");
 
+        builder.Property(u => u.IsEmailVerified)
+            .HasDefaultValue(false);
+
         builder.HasOne(u => u.ServiceProvider)
             .WithOne(sp => sp.User)
             .HasForeignKey<Models.ServiceProvider>(sp => sp.UserId)

@@ -58,4 +58,18 @@ public class AuthController(IAuthService _authService) : BaseApiController
             Role = userRole
         });
     }
+
+    [HttpGet("verify")]
+    public async Task<IActionResult> VerifyEmail([FromQuery] string token)
+    {
+        var result = await _authService.VerifyEmailAsync(token);
+
+        if (result == true)
+        return Content("<h1 style='color:green; text-align:center; margin-top:50px;'>Verified! You can now login.</h1>", "text/html");
+
+        if (result == null)
+            return Content("<h1 style='color:blue; text-align:center; margin-top:50px;'>Your email is already verified.</h1>", "text/html");
+
+        return Content("<h1 style='color:red; text-align:center; margin-top:50px;'>Invalid or expired link.</h1>", "text/html");
+    }
 }

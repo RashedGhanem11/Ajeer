@@ -15,6 +15,8 @@ public class User
     public string? ProfilePictureUrl { get; set; }
     public DateTime LastLoginAt { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool IsEmailVerified { get; set; } = false;
+    public string? VerificationToken { get; set; }
 
     public ServiceProvider? ServiceProvider { get; set; }
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

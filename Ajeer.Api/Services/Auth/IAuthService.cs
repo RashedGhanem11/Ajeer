@@ -9,5 +9,7 @@ public interface IAuthService
 
     Task<AuthResponse?> LoginAsync(LoginRequest dto);
 
+    Task<bool?> VerifyEmailAsync(string token);
+
     string GenerateJwtToken(User user);
 }
