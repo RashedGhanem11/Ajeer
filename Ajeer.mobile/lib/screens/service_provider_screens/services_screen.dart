@@ -130,17 +130,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       _selectedUnitTypes.values.any((set) => set.isNotEmpty);
 
   void _onBackTap() {
-    if (widget.isEdit) {
-      Navigator.pop(context);
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              ProfileScreen(themeNotifier: widget.themeNotifier),
-        ),
-      );
-    }
+    Navigator.pop(context);
   }
 
   List<int> _getSelectedServiceIds() {

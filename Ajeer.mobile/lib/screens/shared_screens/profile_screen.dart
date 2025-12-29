@@ -93,6 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   late AnimationController _overlayController;
   late AnimationController _heartbeatController;
   late Animation<double> _heartbeatAnimation;
+  late AnimationController _spinController;
   bool _showOverlay = false;
   IconData? _overlayIcon;
   Color? _overlayIconColor;
@@ -120,6 +121,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     _heartbeatAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
       CurvedAnimation(parent: _heartbeatController, curve: Curves.easeInOut),
     );
+
+    _spinController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notifier = Provider.of<UserNotifier>(context, listen: false);
@@ -224,7 +230,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         CustomSnackBar.show(
           context,
           messageKey: 'error',
-          dynamicText: e.toString().replaceAll("Exception:", ""),
+          dynamicText: _languageNotifier.translateBackendError(e.toString()),
           backgroundColor: Colors.red,
         );
       }
@@ -389,6 +395,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     _passwordController.dispose();
     _overlayController.dispose();
     _heartbeatController.dispose();
+    _spinController.dispose();
     super.dispose();
   }
 
@@ -444,11 +451,11 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context); // Close loading dialog
         CustomSnackBar.show(
           context,
           messageKey: 'updateFailed',
-          dynamicText: e.toString().replaceAll("Exception:", ""),
+          dynamicText: _languageNotifier.translateBackendError(e.toString()),
           backgroundColor: Colors.red,
         );
       }
@@ -592,6 +599,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     "Exception:",
                                     "",
                                   ),
+
                                   backgroundColor: Colors.red,
                                 );
                             }
@@ -860,15 +868,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     bool isDarkMode,
     UserNotifier userNotifier,
   ) {
-    final bool isSetupComplete =
-        userNotifier.isProviderSetupComplete; // Role == Provider
-
-    // ✅ Logic for Pending vs New
+    final bool isSetupComplete = userNotifier.isProviderSetupComplete;
     final bool isPending = !isSetupComplete && _hasProviderApplication;
     final bool isBecomeAjeer = !isSetupComplete && !isPending;
 
     String label;
-    IconData icon;
+    Widget iconWidget; // Changed from IconData to Widget
     Color backgroundColor;
     Color foregroundColor;
     BorderSide borderSide;
@@ -876,10 +881,13 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     if (isPending) {
       // --- PENDING STATE ---
-      label = _languageNotifier.translate(
-        'applicationPending',
-      ); // Ensure you add this key to translations
-      icon = Icons.hourglass_top;
+      label = _languageNotifier.translate('applicationPending');
+      // CREATIVE ANIMATION: Spinning Hourglass
+      iconWidget = RotationTransition(
+        turns: _spinController,
+        child: const Icon(Icons.hourglass_top, size: 20),
+      );
+
       backgroundColor = Colors.orange.shade100;
       foregroundColor = Colors.orange.shade900;
       borderSide = BorderSide(color: Colors.orange.shade900, width: 2.0);
@@ -887,14 +895,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         CustomSnackBar.show(
           context,
           messageKey: 'applicationPending',
-          dynamicText: "Your application is currently under review.",
+          dynamicText: _languageNotifier.translate('applicationPendingMsg'),
           backgroundColor: Colors.orange,
         );
       };
     } else if (isBecomeAjeer) {
-      // --- NEW APPLICANT ---
       label = _languageNotifier.translate('becomeAjeer');
-      icon = Icons.rocket_launch;
+      iconWidget = const Icon(Icons.rocket_launch, size: 20);
       backgroundColor = const Color(0xFFFFD700);
       foregroundColor = Colors.black;
       borderSide = const BorderSide(
@@ -902,22 +909,24 @@ class _ProfileScreenState extends State<ProfileScreen>
         width: 2.0,
       );
       onTapAction = () {
-        // Navigate to ID Upload Screen
         Navigator.push(
           context,
           MaterialPageRoute(
-            // Make sure IdUploadScreen is imported
             builder: (context) =>
                 IdUploadScreen(themeNotifier: widget.themeNotifier),
           ),
         );
       };
     } else {
-      // --- NORMAL SWITCH MODE ---
       label = userNotifier.isProvider
           ? _languageNotifier.translate('switchToCustomer')
           : _languageNotifier.translate('switchToProvider');
-      icon = userNotifier.isProvider ? Icons.person : Icons.handyman;
+
+      iconWidget = Icon(
+        userNotifier.isProvider ? Icons.person : Icons.handyman,
+        size: 20,
+      );
+
       backgroundColor = isDarkMode ? _subtleDark : Colors.grey.shade300;
       foregroundColor = isDarkMode ? Colors.white : _primaryBlue;
       borderSide = BorderSide.none;
@@ -925,8 +934,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     Widget button = ElevatedButton.icon(
-      onPressed: () {}, // Handled by wrapper
-      icon: Icon(icon, size: 20),
+      onPressed: () {},
+      icon: iconWidget,
       label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
       style: ElevatedButton.styleFrom(
         backgroundColor: backgroundColor,
@@ -947,7 +956,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Center(
         child: _Bounceable(
           onTap: onTapAction,
-          child: isBecomeAjeer
+          child: (isBecomeAjeer || isPending)
               ? ScaleTransition(scale: _heartbeatAnimation, child: button)
               : button,
         ),
@@ -1113,6 +1122,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         Icons.email_outlined,
                         isDarkMode,
                         type: TextInputType.emailAddress,
+                        allowEdit: false, // This triggers the logic above
                       ),
                       _Bounceable(
                         child: Padding(
@@ -1398,26 +1408,38 @@ class _ProfileScreenState extends State<ProfileScreen>
     bool isDarkMode, {
     bool isPassword = false,
     TextInputType type = TextInputType.text,
+    bool allowEdit = true,
   }) {
-    final Color textColor = _isEditing
+    // 1. Determine if this specific field is editable
+    final bool isFieldEditable = _isEditing && allowEdit;
+
+    // 2. Use 'isFieldEditable' for colors instead of '_isEditing'
+    final Color textColor = isFieldEditable
         ? (isDarkMode ? Colors.white : Colors.black87)
-        : Colors.grey.shade400;
+        : Colors.grey.shade400; // Gray text when not editable
+
     final Color fillColor = isDarkMode
-        ? (_isEditing ? _subtleDark : _subtleLighterDark)
-        : (_isEditing ? Colors.white : Colors.grey.shade100);
-    final Color borderColor = _isEditing
+        ? (isFieldEditable ? _subtleDark : _subtleLighterDark)
+        : (isFieldEditable
+              ? Colors.white
+              : Colors.grey.shade100); // Gray bg when not editable
+
+    final Color borderColor = isFieldEditable
         ? (isDarkMode ? _editableBorderColorDark : Colors.grey.shade400)
-        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
+        : (isDarkMode
+              ? Colors.grey.shade700
+              : Colors.grey.shade300); // Gray border when not editable
+
     return _Bounceable(
       child: Padding(
         padding: const EdgeInsets.only(bottom: 15.0),
         child: TextField(
           controller: controller,
-          readOnly: !_isEditing,
+          readOnly: !isFieldEditable,
           obscureText: isPassword,
           keyboardType: type,
-          enableInteractiveSelection: _isEditing,
-          contextMenuBuilder: _isEditing
+          enableInteractiveSelection: isFieldEditable,
+          contextMenuBuilder: isFieldEditable
               ? null
               : (context, state) => const SizedBox.shrink(),
           style: TextStyle(color: textColor),
@@ -1425,7 +1447,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             labelText: label,
             prefixIcon: Icon(
               icon,
-              color: _isEditing ? _primaryBlue : Colors.grey,
+              // Icon stays grey if field is not editable
+              color: isFieldEditable ? _primaryBlue : Colors.grey,
             ),
             filled: true,
             fillColor: fillColor,

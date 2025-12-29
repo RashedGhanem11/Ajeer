@@ -203,6 +203,29 @@ class LanguageNotifier extends ChangeNotifier {
     return message;
   }
 
+  String translateBackendError(String message) {
+    if (!isArabic) return message;
+    final cleanMessage = message.replaceAll("Exception:", "").trim();
+    if (cleanMessage.contains("User not found")) {
+      return translate('user_not_found');
+    }
+    if (cleanMessage.contains(
+      "User is already registered as a service provider",
+    )) {
+      return translate('provider_already_registered');
+    }
+    if (cleanMessage.contains("Provider profile not found")) {
+      return translate('provider_profile_not_found');
+    }
+    if (cleanMessage.contains("Provider application not found")) {
+      return translate('provider_application_not_found');
+    }
+    if (cleanMessage.contains("Provider not found")) {
+      return translate('provider_not_found');
+    }
+    return translateAuthError(cleanMessage);
+  }
+
   static final Map<int, String> _arabicMonths = {
     1: 'يناير',
     2: 'فبراير',
@@ -607,8 +630,30 @@ class LanguageNotifier extends ChangeNotifier {
           'No service providers are currently available for these services in your area at this time.',
       'selectFutureTime': 'Please select a future time',
       'timeErrorTitle': 'Time Error',
+      'uploadId': 'Upload ID',
+      'uploadIdDesc':
+          'Please upload a clear photo of your ID card for verification.',
+      'tapToUpload': 'Tap to upload',
+      'applicationPending': 'Application Pending',
+      'user_not_found': 'User not found.',
+      'provider_already_registered':
+          'User is already registered as a service provider.',
+      'provider_profile_not_found': 'Provider profile not found.',
+      'provider_not_found': 'Provider not found.',
+      'provider_application_not_found': 'Provider application not found.',
+      'applicationPendingMsg': 'Your application is currently under review.',
     },
     'ar': {
+      'applicationPendingMsg': 'طلبك حالياً قيد المراجعة.',
+      'user_not_found': 'المستخدم غير موجود.',
+      'provider_already_registered': 'المستخدم مسجل بالفعل كمزود خدمة.',
+      'provider_profile_not_found': 'ملف مزود الخدمة غير موجود.',
+      'provider_not_found': 'مزود الخدمة غير موجود.',
+      'provider_application_not_found': 'طلب مزود الخدمة غير موجود.',
+      'applicationPending': 'الطلب قيد الانتظار',
+      'uploadId': 'تحميل الهوية',
+      'uploadIdDesc': 'يرجى تحميل صورة واضحة لهويتك للتحقق.',
+      'tapToUpload': 'اضغط للتحميل',
       'selectFutureTime': 'يرجى اختيار وقت في المستقبل',
       'timeErrorTitle': 'خطأ في الوقت',
       'The requested Service Area is not available.':
